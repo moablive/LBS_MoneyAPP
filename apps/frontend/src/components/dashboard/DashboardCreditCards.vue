@@ -26,11 +26,11 @@ const brl = (n: number | string) =>
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-20"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
       <span class="text-sm">Nenhum cartão.</span>
     </div>
-    <ul v-else class="space-y-5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
       <li v-for="(card, idx) in creditCards" :key="card.id" 
           class="group p-2 -mx-2 rounded-xl transition-colors animate-fade-in-up"
           :style="{ animationDelay: `${(idx * 75) + 300}ms` }">
-        <div class="flex items-center gap-3 mb-2">
+        <div class="flex items-center gap-3 mb-1.5">
           <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base/50 border border-surface-border shrink-0 group-hover:scale-105 transition-transform">
             <img v-if="card.customIconUrl" :src="card.customIconUrl" class="w-5 h-5 rounded-md object-contain" />
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>

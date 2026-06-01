@@ -18,7 +18,12 @@ const accounts = ref<any[]>([]);
 const subscriptionsSummary = ref<any | null>(null);
 const upcomingTransactions = ref<any[]>([]);
 const categories = ref<any[]>([]);
-const loading = ref(true);
+
+const loadingSummary = ref(true);
+const loadingRanking = ref(true);
+const loadingAccounts = ref(true);
+const loadingUpcoming = ref(true);
+
 const showEditAccount = ref(false);
 const editingAccount = ref<any | null>(null);
 const showCreate = ref(false);
@@ -38,33 +43,53 @@ function handleCloseAccount() {
   editingAccount.value = null;
 }
 
-const loadData = async () => {
-  loading.value = true;
+const loadSummary = async () => {
+  loadingSummary.value = true;
   try {
-    const fromDate = new Date();
-    fromDate.setHours(0, 0, 0, 0);
-
-    const toDate = new Date(fromDate);
-    toDate.setMonth(toDate.getMonth() + 1);
-    toDate.setHours(23, 59, 59, 999);
-    
-    const fromParam = fromDate.toISOString();
-    const toParam = toDate.toISOString();
-
-    const [summaryRes, rankingRes, accountsRes, subscriptionsRes, transactionsRes, categoriesRes, loansRes] = await Promise.all([
+    const [summaryRes, subscriptionsRes] = await Promise.all([
       api.get<DashboardSummaryResponse>('/dashboard/summary'),
-      api.get<CategoryRankingResponse>('/dashboard/categories/ranking?type=expense&includeZero=true'),
-      api.get<any[]>('/accounts'),
       api.get<any>('/subscriptions/summary'),
+    ]);
+    summary.value = summaryRes;
+    subscriptionsSummary.value = subscriptionsRes;
+  } catch (e) {
+    console.error(e);
+  } finally {
+    loadingSummary.value = false;
+  }
+};
+
+const loadRanking = async () => {
+  loadingRanking.value = true;
+  try {
+    ranking.value = await api.get<CategoryRankingResponse>('/dashboard/categories/ranking?type=expense&includeZero=true');
+  } catch (e) {
+    console.error(e);
+  } finally {
+    loadingRanking.value = false;
+  }
+};
+
+const loadAccounts = async () => {
+  loadingAccounts.value = true;
+  try {
+    accounts.value = await api.get<any[]>('/accounts');
+  } catch (e) {
+    console.error(e);
+  } finally {
+    loadingAccounts.value = false;
+  }
+};
+
+const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, toDate: Date) => {
+  loadingUpcoming.value = true;
+  try {
+    const [transactionsRes, categoriesRes, loansRes] = await Promise.all([
       api.get<any[]>(`/transactions?status=pending&sort=date_asc&limit=100&from=${fromParam}&to=${toParam}`),
       api.get<any[]>('/categories'),
       api.get<any>('/loans/summary'),
     ]);
-
-    summary.value = summaryRes;
-    ranking.value = rankingRes;
-    accounts.value = accountsRes;
-    subscriptionsSummary.value = subscriptionsRes;
+    
     categories.value = categoriesRes;
 
     const upcomingLoans = loansRes.items.filter((loan: any) => {
@@ -73,7 +98,6 @@ const loadData = async () => {
       return loanDate >= fromDate && loanDate <= toDate;
     }).map((loan: any) => {
       const type = loan.type === 'received' ? 'expense' : 'income';
-      // Normalize amount sign: expenses should be negative
       const amount = type === 'expense' ? -Math.abs(Number(loan.amount)) : Math.abs(Number(loan.amount));
       return {
         id: loan.id,
@@ -88,9 +112,28 @@ const loadData = async () => {
     });
 
     upcomingTransactions.value = [...transactionsRes, ...upcomingLoans].sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+  } catch (e) {
+    console.error(e);
   } finally {
-    loading.value = false;
+    loadingUpcoming.value = false;
   }
+};
+
+const loadData = () => {
+  const fromDate = new Date();
+  fromDate.setHours(0, 0, 0, 0);
+
+  const toDate = new Date(fromDate);
+  toDate.setMonth(toDate.getMonth() + 1);
+  toDate.setHours(23, 59, 59, 999);
+  
+  const fromParam = fromDate.toISOString();
+  const toParam = toDate.toISOString();
+
+  loadSummary();
+  loadRanking();
+  loadAccounts();
+  loadUpcoming(fromParam, toParam, fromDate, toDate);
 };
 
 onMounted(() => {
@@ -124,28 +167,28 @@ onUnmounted(() => {
       <DashboardKPIs 
         :summary="summary"
         :subscriptionsSummary="subscriptionsSummary"
-        :loading="loading" 
+        :loading="loadingSummary" 
       />
 
       <!-- Bottom row: Accounts, CreditCards, Categories, Upcoming -->
       <section class="grid lg:grid-cols-4 gap-6">
         <DashboardAccounts 
           :accounts="accounts"
-          :loading="loading"
+          :loading="loadingAccounts"
           @edit-account="editAccount"
         />
         <DashboardCreditCards 
           :accounts="accounts"
-          :loading="loading"
+          :loading="loadingAccounts"
         />
         <DashboardCategories 
           :ranking="ranking"
-          :loading="loading"
+          :loading="loadingRanking"
         />
         <DashboardUpcoming 
           :upcomingTransactions="upcomingTransactions"
           :categoriesMap="categoriesMap"
-          :loading="loading"
+          :loading="loadingUpcoming"
         />
       </section>
     </div>

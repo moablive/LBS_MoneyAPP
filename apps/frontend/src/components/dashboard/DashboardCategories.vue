@@ -18,9 +18,9 @@ const brl = (n: number | string) =>
     <div v-if="loading" class="space-y-4">
       <div v-for="i in 5" :key="i" class="skeleton h-12 w-full" />
     </div>
-    <ul v-else-if="ranking" class="space-y-5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <ul v-else-if="ranking" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
       <li v-for="(item, idx) in ranking.ranking" :key="item.categoryId" 
-          class="space-y-2 animate-fade-in-up"
+          class="space-y-1.5 animate-fade-in-up"
           :style="{ animationDelay: `${(idx * 75) + 400}ms` }">
         <div class="flex items-baseline justify-between text-sm">
           <span class="font-medium text-white/90">{{ item.name }}</span>
