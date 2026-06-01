@@ -63,13 +63,14 @@ const filteredItems = computed(() => {
 const brl = (n: number) =>
   n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const formatDay = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+const formatDay = (iso: string) => {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const monthNum = String(d.getUTCMonth() + 1).padStart(2, '0');
+  let monthName = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+  monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  return `${day}/${monthNum} - ${monthName}`;
+};
 
 const groupedLoans = computed(() => {
   const map = new Map<string, LoanItem[]>();
@@ -171,11 +172,11 @@ function openEditModal(item: LoanItem) {
             <li
               v-for="item in list"
               :key="item.id"
-              class="px-4 py-3 flex items-center justify-between gap-3 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
               <!-- Left: Icon & Description -->
-              <div class="flex items-center justify-start gap-3 min-w-0 flex-1">
+              <div class="flex items-center justify-start gap-3 min-w-0">
                 <div class="h-8 w-8 rounded-lg border border-surface-border shrink-0 flex items-center justify-center bg-surface-base">
                   <svg v-if="item.type === 'given'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                   <svg v-else-if="item.type === 'received'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-expense"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
@@ -185,22 +186,37 @@ function openEditModal(item: LoanItem) {
               </div>
               
               <!-- Center: Tags (Account) -->
-              <div class="hidden sm:flex items-center justify-end gap-2 shrink-0">
-                <div v-if="item.accountId && accountsMap.get(item.accountId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border">
-                  <img v-if="accountsMap.get(item.accountId)?.customIconUrl" :src="accountsMap.get(item.accountId)?.customIconUrl ?? undefined" class="w-3.5 h-3.5 rounded-sm object-contain" />
-                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide">{{ accountsMap.get(item.accountId)?.name }}</span>
+              <div class="hidden sm:flex items-center justify-start min-w-0">
+                <div v-if="item.accountId && accountsMap.get(item.accountId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
+                  <img v-if="accountsMap.get(item.accountId)?.customIconUrl" :src="accountsMap.get(item.accountId)?.customIconUrl ?? undefined" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" />
+                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ accountsMap.get(item.accountId)?.name }}</span>
                 </div>
               </div>
               
-              <!-- Right: Receipt & Amount & Status -->
-              <div class="flex items-center justify-end gap-3 min-w-0 shrink-0">
+              <!-- Center: Status & Receipt -->
+              <div class="hidden sm:flex items-center justify-start gap-3 min-w-0">
+                <div 
+                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[60px] shrink-0"
+                  :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-surface-overlay text-muted border border-surface-border'"
+                >
+                  {{ item.status === 'paid' ? 'Pago' : 'Aberto' }}
+                </div>
                 <Paperclip
                   v-if="item.hasReceipt"
-                  class="w-4 h-4 text-white/50 hover:text-white transition-colors" 
+                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
                   title="Comprovante Anexado"
                 />
+              </div>
+
+              <!-- Right: Amount -->
+              <div class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate" :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')">
+                {{ brl(item.amount) }}
+              </div>
+
+              <!-- Mobile view right side -->
+              <div class="flex sm:hidden items-center justify-end gap-3 min-w-0 shrink-0">
                 <div
-                  class="tabular-nums font-semibold text-sm min-w-[5rem] text-right"
+                  class="tabular-nums font-semibold text-sm text-right"
                   :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')"
                 >
                   {{ brl(item.amount) }}

@@ -142,11 +142,11 @@ function openEditModal(item: SubscriptionItem) {
         <article
           v-for="item in filteredItems"
           :key="item.id"
-          class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 flex items-center justify-between gap-3 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
+          class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_1fr] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
           @click="openEditModal(item)"
         >
           <!-- Icon & Info -->
-          <div class="flex items-center gap-3 min-w-0 flex-1">
+          <div class="flex items-center gap-3 min-w-0">
             <div class="w-8 h-8 rounded-lg bg-surface-base border border-surface-border p-1 flex items-center justify-center shrink-0">
               <img
                 :src="iconFor(item)"
@@ -162,24 +162,35 @@ function openEditModal(item: SubscriptionItem) {
             >Inativa</span>
           </div>
 
-          <!-- Tags -->
-          <div class="hidden sm:flex items-center gap-2 shrink-0">
-            <div v-if="item.accountName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide">
-              <span>{{ item.accountName }}</span>
+          <!-- Tags: Category -->
+          <div class="hidden sm:flex items-center justify-start min-w-0">
+            <div v-if="item.categoryName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
+              <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: item.categoryColor || '#666' }"></div>
+              <span class="truncate">{{ item.categoryName }}</span>
             </div>
-            
-            <div v-if="item.billingDay" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide">
-              <span>Dia {{ item.billingDay }}</span>
+          </div>
+
+          <!-- Tags: Account -->
+          <div class="hidden sm:flex items-center justify-start min-w-0">
+            <div v-if="item.accountName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
+              <span class="truncate">{{ item.accountName }}</span>
             </div>
-            
-            <div v-if="item.categoryName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide">
-              <div class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: item.categoryColor || '#666' }"></div>
-              <span>{{ item.categoryName }}</span>
+          </div>
+
+          <!-- Tags: Billing Day -->
+          <div class="hidden sm:flex items-center justify-start min-w-0">
+            <div v-if="item.billingDay" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
+              <span class="truncate">Dia {{ item.billingDay }}</span>
             </div>
           </div>
 
           <!-- Value -->
-          <div class="flex items-center justify-end min-w-[5rem] shrink-0">
+          <div class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate" :class="item.type === 'expense' ? 'text-expense' : 'text-income'">
+            {{ brl(item.amount) }}
+          </div>
+
+          <!-- Mobile view right side -->
+          <div class="flex sm:hidden items-center justify-end min-w-0 shrink-0">
             <div
               class="tabular-nums font-semibold text-sm text-right"
               :class="item.type === 'expense' ? 'text-expense' : 'text-income'"

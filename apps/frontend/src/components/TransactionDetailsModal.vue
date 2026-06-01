@@ -28,13 +28,13 @@ const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const formatDay = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  if (!iso) return '';
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const monthNum = String(d.getUTCMonth() + 1).padStart(2, '0');
+  let monthName = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+  monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  return `${day}/${monthNum} - ${monthName}`;
 };
 
 

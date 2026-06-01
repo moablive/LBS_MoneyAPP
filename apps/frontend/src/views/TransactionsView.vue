@@ -82,13 +82,14 @@ const grouped = computed(() => {
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const formatDay = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+const formatDay = (iso: string) => {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const monthNum = String(d.getUTCMonth() + 1).padStart(2, '0');
+  let monthName = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+  monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  return `${day}/${monthNum} - ${monthName}`;
+};
 
 async function toggleStatus(t: Transaction, e: Event) {
   e.stopPropagation();
@@ -187,10 +188,10 @@ async function handleDelete(t: Transaction | null) {
               v-for="r in list"
               :key="r.id"
               @click="selectedRow = r"
-              class="px-4 py-3 flex items-center justify-between gap-3 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
             >
               <!-- Left: Account Icon & Description -->
-              <div class="flex items-center justify-start gap-3 min-w-0 flex-1">
+              <div class="flex items-center justify-start gap-3 min-w-0">
                 <div v-if="r.accountId && accountsMap.get(r.accountId)" 
                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-white/80 shrink-0">
                   <img v-if="accountsMap.get(r.accountId)?.customIconUrl" :src="accountsMap.get(r.accountId)?.customIconUrl ?? undefined" class="w-5 h-5 rounded-md object-contain" />
@@ -204,28 +205,53 @@ async function handleDelete(t: Transaction | null) {
               </div>
               
               <!-- Center: Tags (Category) -->
-              <div class="hidden sm:flex items-center justify-end gap-2 shrink-0">
-                <div v-if="r.categoryId && categoriesMap.get(r.categoryId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border">
-                  <div class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: categoriesMap.get(r.categoryId)?.color || '#666' }"></div>
-                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide">{{ categoriesMap.get(r.categoryId)?.name }}</span>
+              <div class="hidden sm:flex items-center justify-start min-w-0">
+                <div v-if="r.categoryId && categoriesMap.get(r.categoryId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
+                  <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: categoriesMap.get(r.categoryId)?.color || '#666' }"></div>
+                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ categoriesMap.get(r.categoryId)?.name }}</span>
+                </div>
+              </div>
+
+              <!-- Center: Account Name -->
+              <div class="hidden sm:flex items-center justify-start min-w-0">
+                <div v-if="r.accountId && accountsMap.get(r.accountId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
+                  <Landmark class="w-2.5 h-2.5 text-muted shrink-0" />
+                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ accountsMap.get(r.accountId)?.name }}</span>
                 </div>
               </div>
               
-              <!-- Right: Receipt, Amount & Status -->
-              <div class="flex items-center justify-end gap-3 min-w-0 shrink-0">
+              <!-- Right: Status & Receipt -->
+              <div class="hidden sm:flex items-center justify-start gap-3 min-w-0">
+                <button 
+                  @click="(e) => toggleStatus(r, e)"
+                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md hover:opacity-80 transition-opacity w-[72px] shrink-0"
+                  :class="r.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'"
+                >
+                  <CheckCircle2 v-if="r.status === 'paid'" class="w-2.5 h-2.5" />
+                  <Clock v-else class="w-2.5 h-2.5" />
+                  {{ r.status === 'paid' ? 'Pago' : 'Pendente' }}
+                </button>
                 <Paperclip 
                   v-if="r.hasReceipt"
-                  class="w-4 h-4 text-white/50 hover:text-white transition-colors" 
+                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
                   title="Comprovante Anexado"
                 />
+              </div>
 
+              <div
+                class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate"
+                :class="r.type === 'expense' ? 'text-expense' : 'text-income'"
+              >
+                {{ r.type === 'expense' && !r.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(r.amount) }}
+              </div>
+
+              <div class="flex sm:hidden items-center justify-end gap-3 min-w-0 shrink-0">
                 <div
-                  class="tabular-nums font-semibold text-sm min-w-[5rem] text-right"
+                  class="tabular-nums font-semibold text-sm text-right"
                   :class="r.type === 'expense' ? 'text-expense' : 'text-income'"
                 >
                   {{ r.type === 'expense' && !r.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(r.amount) }}
                 </div>
-
                 <button 
                   @click="(e) => toggleStatus(r, e)"
                   class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md hover:opacity-80 transition-opacity w-[72px] shrink-0"
