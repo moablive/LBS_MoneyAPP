@@ -20,6 +20,8 @@ const categories = ref<any[]>([]);
 const loading = ref(true);
 const showEditAccount = ref(false);
 const editingAccount = ref<any | null>(null);
+const showCreate = ref(false);
+const createType = ref<'expense' | 'income'>('expense');
 
 const categoriesMap = computed(() => {
   return new Map(categories.value.map(c => [c.id, c]));
@@ -102,6 +104,21 @@ onUnmounted(() => {
 <template>
   <AppShell>
     <div class="mx-auto max-w-7xl px-4 py-8 space-y-6 relative z-10">
+      
+      <header class="flex items-center justify-between gap-4 flex-wrap mb-6">
+        <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+        <div class="flex items-center gap-2">
+          <button
+            class="px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap flex items-center gap-1"
+            @click="showCreate = true; createType = 'expense'"
+          ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg> Despesa</button>
+          <button
+            class="px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap flex items-center gap-1"
+            @click="showCreate = true; createType = 'income'"
+          ><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Receita</button>
+        </div>
+      </header>
+
       <DashboardKPIs 
         :summary="summary"
         :subscriptionsSummary="subscriptionsSummary"
@@ -135,5 +152,18 @@ onUnmounted(() => {
       @close="handleCloseAccount"
       @created="loadData"
     />
+
+    <NewTransactionModal
+      v-model:open="showCreate"
+      :defaultType="createType"
+      @created="loadData"
+    />
   </AppShell>
 </template>
+
+<script lang="ts">
+import NewTransactionModal from '../components/NewTransactionModal.vue';
+export default {
+  components: { NewTransactionModal }
+}
+</script>

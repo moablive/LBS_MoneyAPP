@@ -15,6 +15,7 @@ const accounts = ref<Account[]>([]);
 const categories = ref<Category[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
+const createType = ref<TransactionType>('expense');
 const filterType = ref<'all' | TransactionType>('all');
 const filterCategory = ref<string>('all');
 const filterPeriod = ref<'current_month' | 'next_month' | 'all'>('current_month');
@@ -166,10 +167,16 @@ async function handleDelete(t: Transaction | null) {
             <option value="all">Todas Categorias</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
-          <button
-            class="px-4 py-2 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 hover:bg-accent/90 transition-all hover:-translate-y-0.5"
-            @click="showCreate = true"
-          >+ Nova Transação</button>
+          <div class="flex items-center gap-2">
+            <button
+              class="px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              @click="showCreate = true; createType = 'expense'"
+            >+ Despesa</button>
+            <button
+              class="px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              @click="showCreate = true; createType = 'income'"
+            >+ Receita</button>
+          </div>
         </div>
       </header>
 
@@ -279,6 +286,7 @@ async function handleDelete(t: Transaction | null) {
     <NewTransactionModal
       v-model:open="showCreate"
       :transaction="editingRow"
+      :defaultType="createType"
       @created="reload"
     />
 

@@ -9,7 +9,7 @@ import type { Transaction } from '@moneyapp/models';
 
 const authStore = useAuthStore();
 const open = defineModel<boolean>('open', { default: false });
-const props = defineProps<{ transaction?: Transaction | null }>();
+const props = defineProps<{ transaction?: Transaction | null; defaultType?: TransactionType }>();
 const emit = defineEmits<{
   (e: 'created', value: unknown): void;
 }>();
@@ -66,7 +66,7 @@ onMounted(() => reset());
 function reset() {
   description.value = '';
   absAmount.value = null;
-  type.value = 'expense';
+  type.value = props.defaultType || 'expense';
   status.value = 'paid';
   occurredAt.value = new Date().toISOString().slice(0, 10);
   categoryId.value = '';
@@ -86,8 +86,8 @@ async function submit() {
   const hasExistingReceipt = props.transaction?.hasReceipt && !removeExistingReceipt.value;
   const requireReceipts = authStore.user?.settings?.requireReceipts ?? true;
   
-  if (requireReceipts && status.value === 'paid' && !hasUploadedReceipt && !hasExistingReceipt) {
-    error.value = 'É necessário anexar um comprovante para marcar a transação como paga.';
+  if (requireReceipts && type.value === 'expense' && status.value === 'paid' && !hasUploadedReceipt && !hasExistingReceipt) {
+    error.value = 'É necessário anexar um comprovante para marcar a despesa como paga.';
     return;
   }
   
