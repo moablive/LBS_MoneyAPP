@@ -162,19 +162,10 @@ moneyapp/
 │       └── Dockerfile
 │
 ├── 📂 packages/
-│   └── 📂 shared/                # Pacote compartilhado client ↔ server
-│       └── 📂 src/
-│           ├── 📂 db/             # Drizzle schema + migrations
-│           └── 📂 schema/
-│               ├── auth.ts            # loginSchema
-│               ├── account.ts         # createAccountSchema
-│               ├── category.ts        # create/updateCategorySchema
-│               ├── common.ts          # Tipos comuns (paginação, etc.)
-│               ├── dashboard.ts       # categoryRankingQuerySchema, etc.
-│               ├── subscription.ts    # create/updateSubscriptionSchema
-│               ├── transaction.ts     # create/updateTransactionSchema
-│               ├── investment.ts      # create/updateInvestmentSchema
-│               └── loan.ts            # create/updateLoanSchema
+│   ├── 📂 api-client/            # Cliente HTTP e fetch wrappers
+│   ├── 📂 db/                    # Drizzle schema + migrations + client
+│   ├── 📂 models/                # Zod schemas e tipos TypeScript
+│   └── 📂 services/              # Serviços core (auth, configs, criptografia)
 │
 ├── 📂 AI_context/                # Documentação para agentes de IA
 ├── docker-compose.yml            # 2 serviços (backend + frontend)

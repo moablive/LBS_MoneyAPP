@@ -56,11 +56,10 @@ moneyapp/
 │           ├── app.ts        # Express app setup
 │           └── server.ts     # HTTP server entrypoint
 ├── packages/
-│   └── shared/              # Zod schemas, Drizzle schema, inferred TS types
-│       └── src/
-│           ├── db/           # schema.ts (Drizzle db schemas) + migrations
-│           └── schema/       # auth, account, category, common, dashboard,
-│                             #   subscription, transaction, investment, loan
+│   ├── api-client/          # Cliente HTTP e tipagens de rotas
+│   ├── db/                  # Drizzle ORM schemas e automação de migrations
+│   ├── models/              # Zod validation schemas (auth, transactions, etc)
+│   └── services/            # Serviços backend compartilhados (configs, hash)
 └── AI_context/              # This directory
 ```
 

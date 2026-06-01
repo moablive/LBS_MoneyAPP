@@ -31,9 +31,21 @@
       "schema": "packages/shared/src/db/schema.ts",
       "routesRoot": "src/routes"
     },
-    "packages/shared": {
-      "stack": ["Zod", "Drizzle ORM"],
+    "packages/db": {
+      "stack": ["Drizzle ORM", "PostgreSQL"],
+      "exports": ["schema", "db", "migrations"]
+    },
+    "packages/models": {
+      "stack": ["Zod", "TypeScript"],
       "exports": ["common", "auth", "category", "account", "transaction", "dashboard", "subscription", "investment", "loan"]
+    },
+    "packages/api-client": {
+      "stack": ["TypeScript", "Fetch"],
+      "exports": ["api", "client"]
+    },
+    "packages/services": {
+      "stack": ["Node.js", "argon2"],
+      "exports": ["config", "password", "master-user"]
     }
   },
   "entities": {
