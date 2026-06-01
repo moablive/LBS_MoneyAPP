@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useMediaQuery } from '@vueuse/core';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
@@ -31,6 +32,32 @@ const error = ref<string | null>(null);
 
 const visibleCategories = computed(() => categories.value.filter((c) => c.type === type.value));
 
+// "< sm" no Tailwind = mobile. Reativo (não só CSS) para podermos definir
+// padrões de formulário no celular.
+const isMobile = useMediaQuery('(max-width: 639px)');
+
+// Categoria "Controle" (despesa) — usada para registro rápido no fim de semana.
+// Casa pelo nome (ex.: "Controle 📊"), case-insensitive, para tolerar emoji/variações.
+const controleCategory = computed(
+  () => categories.value.find((c) => c.type === 'expense' && /controle/i.test(c.name)) ?? null,
+);
+
+// Categoria selecionada atualmente é a de Controle? (isenta de comprovante)
+const isControleCategory = computed(() => {
+  const sel = categories.value.find((c) => c.id === categoryId.value);
+  return !!sel && /controle/i.test(sel.name);
+});
+
+// No mobile, despesa nova já inicia em "Controle" para agilizar o lançamento.
+// O comprovante fica para depois (no PC), ao trocar para a categoria definitiva.
+function maybeDefaultControle() {
+  if (props.transaction) return; // só na criação, nunca na edição
+  if (!isMobile.value) return; // padrão é exclusivo do mobile
+  if (type.value !== 'expense') return; // regra vale só para despesas
+  if (categoryId.value) return; // não sobrescreve escolha manual
+  if (controleCategory.value) categoryId.value = controleCategory.value.id;
+}
+
 watch(
   open,
   async (v) => {
@@ -54,12 +81,23 @@ watch(
         api.get<Category[]>('/categories'),
         api.get<Account[]>('/accounts'),
       ]);
+      maybeDefaultControle();
     } catch {
       error.value = 'Não foi possível carregar categorias e contas.';
     }
   },
   { immediate: true }
 );
+
+// Categoria é específica por tipo: ao trocar o tipo, descarta seleção inválida
+// e, no mobile, re-aplica o padrão "Controle" para despesas.
+watch(type, () => {
+  if (props.transaction) return;
+  if (categoryId.value && !visibleCategories.value.some((c) => c.id === categoryId.value)) {
+    categoryId.value = '';
+  }
+  maybeDefaultControle();
+});
 
 onMounted(() => reset());
 
@@ -86,7 +124,9 @@ async function submit() {
   const hasExistingReceipt = props.transaction?.hasReceipt && !removeExistingReceipt.value;
   const requireReceipts = authStore.user?.settings?.requireReceipts ?? true;
   
-  if (requireReceipts && type.value === 'expense' && status.value === 'paid' && !hasUploadedReceipt && !hasExistingReceipt) {
+  // Categoria "Controle" é isenta: registra-se rápido no mobile sem comprovante.
+  // Ao mudar para outra categoria (ex.: no PC), a exigência normal volta a valer.
+  if (requireReceipts && type.value === 'expense' && status.value === 'paid' && !isControleCategory.value && !hasUploadedReceipt && !hasExistingReceipt) {
     error.value = 'É necessário anexar um comprovante para marcar a despesa como paga.';
     return;
   }
@@ -240,6 +280,7 @@ function onFileChange(e: Event) {
         />
         
         <p v-if="removeExistingReceipt && !receiptFile" class="text-xs text-muted mt-1">O comprovante atual será removido ao salvar.</p>
+        <p v-if="isControleCategory && type === 'expense'" class="text-xs text-muted mt-1">Categoria Controle: comprovante opcional. Ao trocar para a categoria definitiva, o comprovante passa a ser exigido.</p>
       </label>
 
       <p v-if="error" class="text-sm text-expense">{{ error }}</p>
