@@ -1,0 +1,23 @@
+{
+  "name": "moneyapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PWA de controle financeiro pessoal — monorepo Vue 3 + Express + Drizzle + PostgreSQL",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "db:generate": "pnpm --filter @moneyapp/backend run db:generate",
+    "db:migrate": "pnpm --filter @moneyapp/backend run db:migrate",
+    "db:studio": "pnpm --filter @moneyapp/backend run db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}

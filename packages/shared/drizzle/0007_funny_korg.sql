@@ -1,0 +1,1 @@
+ALTER TYPE "loan_type" ADD VALUE 'fgts';

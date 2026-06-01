@@ -1,0 +1,128 @@
+import { Router } from 'express';
+import { investmentsService, investmentSchema, updateInvestmentSchema } from '../services/investments.js';
+
+export const investmentsRouter = Router();
+import { requireAuth } from '@moneyapp/shared/server';
+investmentsRouter.use(requireAuth);
+
+investmentsRouter.get('/', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const data = await investmentsService.getByUserId(userId);
+    res.json(data);
+  } catch (err) {
+    req.log.error(err, 'Failed to fetch investments');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.get('/summary', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const summary = await investmentsService.getSummary(userId);
+    res.json(summary);
+  } catch (err) {
+    req.log.error(err, 'Failed to fetch investments summary');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.post('/', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const data = investmentSchema.parse(req.body);
+    const created = await investmentsService.create(userId, data);
+    res.status(201).json(created);
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation error', details: err.errors });
+    }
+    req.log.error(err, 'Failed to create investment');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.put('/:id', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const data = updateInvestmentSchema.parse(req.body);
+    const updated = await investmentsService.update(userId, req.params.id, data);
+    
+    if (!updated) {
+      return res.status(404).json({ error: 'Investment not found' });
+    }
+    
+    res.json(updated);
+  } catch (err: any) {
+    if (err.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation error', details: err.errors });
+    }
+    req.log.error(err, 'Failed to update investment');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.get('/:id/chart', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const data = await investmentsService.getPiggyBankChart(userId, req.params.id);
+    res.json(data);
+  } catch (err) {
+    req.log.error(err, 'Failed to fetch investment chart');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.post('/:id/deposit', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const { amount, accountId } = req.body;
+    await investmentsService.deposit(userId, req.params.id, Number(amount), accountId);
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err, 'Failed to deposit into investment');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.post('/:id/withdraw', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const { amount, accountId } = req.body;
+    await investmentsService.withdraw(userId, req.params.id, Number(amount), accountId);
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err, 'Failed to withdraw from investment');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+investmentsRouter.delete('/:id', async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const success = await investmentsService.delete(userId, req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: 'Investment not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err, 'Failed to delete investment');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

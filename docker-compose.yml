@@ -1,0 +1,61 @@
+# =============================================================================
+# MoneyAPP — only application services. PostgreSQL is intentionally OMITTED:
+# we attach to the pre-existing `awlsrvDB_postgres` container via the shared
+# external network `awl_network`.
+#
+# Prereq (one-time, run on the host if it does not exist):
+#   docker network inspect awl_network >/dev/null 2>&1 || \
+#     docker network create awl_network
+#
+# Run from this directory:
+#   docker compose --env-file .env up -d --build
+# =============================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: moneyapp_backend
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    networks:
+      - awl_network
+    expose:
+      - "3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: moneyapp_frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - awl_network
+    # No host port binding — production ingress goes through the Cloudflare
+    # Tunnel container on `awl_network` directly to `moneyapp_frontend:80`.
+    # For local debugging, uncomment the next two lines (pick a free port):
+    # ports:
+    #   - "8088:80"
+    restart: unless-stopped
+
+networks:
+  # External — already exists on the host alongside `awlsrvDB_postgres`.
+  # NOTE: the brief mentioned `awlsrv_network`, but the real network name on
+  # this host (verified via `docker inspect awlsrvDB_postgres`) is `awl_network`.
+  awl_network:
+    external: true

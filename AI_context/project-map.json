@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "moneyapp",
+  "version": "0.1.0",
+  "language": "pt-BR",
+  "purpose": "PWA de controle financeiro pessoal com PostgreSQL compartilhado em homelab.",
+  "infra": {
+    "postgres": {
+      "container": "awlsrvDB_postgres",
+      "database": "postgres",
+      "schema": "moneyapp",
+      "user": "admin_root",
+      "passwordEscape": "Wrap the DATABASE_URL in single quotes — the password contains '$$' which the shell and docker-compose would otherwise expand."
+    },
+    "network": {
+      "name": "awl_network",
+      "external": true,
+      "notes": "Brief originally called it 'awlsrv_network'; the real name on the host is 'awl_network' (verified via docker inspect)."
+    },
+    "services": ["moneyapp_backend (Express)", "moneyapp_frontend (nginx)"]
+  },
+  "packages": {
+    "apps/frontend": {
+      "stack": ["Vue 3 <script setup>", "Vite", "Pinia", "TailwindCSS", "VitePWA"],
+      "entry": "src/main.ts",
+      "routes": ["/", "/transacoes", "/recorrentes", "/contas", "/categorias", "/investimentos", "/emprestimos"]
+    },
+    "apps/backend": {
+      "stack": ["Express", "TypeScript", "Drizzle ORM", "node-postgres", "JWT", "argon2", "Zod"],
+      "entry": "src/server.ts",
+      "schema": "packages/shared/src/db/schema.ts",
+      "routesRoot": "src/routes"
+    },
+    "packages/shared": {
+      "stack": ["Zod", "Drizzle ORM"],
+      "exports": ["common", "auth", "category", "account", "transaction", "dashboard", "subscription", "investment", "loan"]
+    }
+  },
+  "entities": {
+    "users":        ["id", "name", "email", "passwordHash", "createdAt"],
+    "categories":   ["id", "userId", "name", "type", "color"],
+    "accounts":     ["id", "userId", "name", "type", "currentBalance", "bankCode"],
+    "transactions": [
+      "id", "userId", "description", "amount", "type", "occurredAt",
+      "categoryId", "accountId", "subscriptionId", "investmentId", "isRecurring", "isInvestment",
+      "receiptBase64", "receiptMimeType"
+    ],
+    "subscriptions": [
+      "id", "userId", "description", "amount", "type", "categoryId",
+      "accountId", "status", "billingDay"
+    ],
+    "investments": [
+      "id", "userId", "accountId", "name", "type", "quantity", "buyPrice",
+      "currentPrice", "buyDate", "goalAmount", "yieldRate", "yieldIndex"
+    ],
+    "loans": [
+      "id", "userId", "accountId", "description", "amount", "date", "type", "status",
+      "receiptBase64", "receiptMimeType"
+    ]
+  },
+  "invariants": [
+    "expense -> amount < 0, income -> amount > 0; type matches sign",
+    "isInvestment excluded from default Despesas/Receitas aggregations",
+    "receipts inline as base64 in TEXT, capped at 5MB decoded",
+    "userId only ever read from req.user.id, never from body/query",
+    "month-over-month comparisons use UTC calendar months",
+    "subscriptions are distinct entities linking to generated transactions",
+    "investments update tracking with current_price and map to transactions",
+    "loans are distinct entities for tracking money given, received or fgts"
+  ],
+  "documents": {
+    "architecture": "AI_context/architecture.md",
+    "businessRules": "AI_context/business-rules.md",
+    "dataModel": "AI_context/data-model.md",
+    "apiContracts": "AI_context/api-contracts.md",
+    "uiGuidelines": "AI_context/ui-guidelines.md"
+  }
+}
