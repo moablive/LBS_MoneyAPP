@@ -9,6 +9,7 @@ import {
   varchar,
   pgEnum,
   pgTable,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 export const transactionTypeEnum = pgEnum('transaction_type', ['expense', 'income']);
@@ -38,6 +39,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  settings: jsonb('settings').default({ requireReceipts: true }).notNull(),
 });
 
 // -------- categories ---------------------------------------------------------

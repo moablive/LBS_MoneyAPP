@@ -8,10 +8,15 @@ export const loginSchema = z
   .strict();
 export type LoginInput = z.infer<typeof loginSchema>;
 
+export interface UserSettings {
+  requireReceipts: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  settings: UserSettings;
 }
 
 export interface AuthResponse {

@@ -4,8 +4,10 @@ import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
 
+import { useAuthStore } from '../stores/auth';
 import type { Transaction } from '@moneyapp/models';
 
+const authStore = useAuthStore();
 const open = defineModel<boolean>('open', { default: false });
 const props = defineProps<{ transaction?: Transaction | null }>();
 const emit = defineEmits<{
@@ -82,7 +84,9 @@ async function submit() {
   
   const hasUploadedReceipt = !!receiptFile.value;
   const hasExistingReceipt = props.transaction?.hasReceipt && !removeExistingReceipt.value;
-  if (status.value === 'paid' && !hasUploadedReceipt && !hasExistingReceipt) {
+  const requireReceipts = authStore.user?.settings?.requireReceipts ?? true;
+  
+  if (requireReceipts && status.value === 'paid' && !hasUploadedReceipt && !hasExistingReceipt) {
     error.value = 'É necessário anexar um comprovante para marcar a transação como paga.';
     return;
   }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authRouter } from './auth';
+import { usersRouter } from './users';
 import { accountsRouter } from './accounts';
 import { categoriesRouter } from './categories';
 import { dashboardRouter } from './dashboard';
@@ -11,6 +12,7 @@ import { loansRouter } from './loans';
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/users', usersRouter);
 apiRouter.use('/categories', categoriesRouter);
 apiRouter.use('/accounts', accountsRouter);
 apiRouter.use('/transactions', transactionsRouter);

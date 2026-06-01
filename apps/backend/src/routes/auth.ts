@@ -22,7 +22,7 @@ authRouter.post('/login', validate(loginSchema), async (req, res, next) => {
       return;
     }
     const token = signToken({ sub: user.id, email: user.email });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, settings: user.settings } });
   } catch (err) {
     next(err);
   }

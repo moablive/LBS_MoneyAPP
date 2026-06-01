@@ -49,5 +49,22 @@ export const useAuthStore = defineStore('auth', () => {
     persist();
   }
 
-  return { token, user, isAuthenticated, login, logout, persist };
+  async function updateSettings(settings: { requireReceipts: boolean }) {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? '/api'}/users/me/settings`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token.value}`,
+      },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error('Failed to update settings');
+    const updatedSettings = await res.json();
+    if (user.value) {
+      user.value.settings = updatedSettings;
+      persist();
+    }
+  }
+
+  return { token, user, isAuthenticated, login, logout, persist, updateSettings };
 });
