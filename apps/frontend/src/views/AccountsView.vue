@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { api } from '@moneyapp/shared';
+import { computed, onMounted, ref, shallowRef } from 'vue';
+import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/NewAccountModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
-import type { AccountType, Account } from '@moneyapp/shared';
+import type { AccountType, Account } from '@moneyapp/models';
 
-const items = ref<Account[]>([]);
+const items = shallowRef<Account[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
 const editingAccount = ref<Account | null>(null);
@@ -16,11 +16,6 @@ const editingAccount = ref<Account | null>(null);
 function editAccount(a: Account) {
   editingAccount.value = a;
   showCreate.value = true;
-}
-
-function handleClose() {
-  showCreate.value = false;
-  editingAccount.value = null;
 }
 
 async function reload() {
@@ -100,6 +95,7 @@ const typeLabels: Record<AccountType, string> = {
         <article
           v-for="a in items"
           :key="a.id"
+          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type]"
           class="bg-surface-raised border border-surface-border rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer hover:bg-surface-overlay/50 transition-colors"
           @click="editAccount(a)"
         >
@@ -135,9 +131,9 @@ const typeLabels: Record<AccountType, string> = {
     </div>
 
     <NewAccountModal
-      :open="showCreate"
+      v-model:open="showCreate"
       :account="editingAccount"
-      @close="handleClose"
+      @update:open="val => { if (!val) editingAccount = null; }"
       @created="reload"
     />
   </AppShell>

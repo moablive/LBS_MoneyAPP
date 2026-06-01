@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { investmentsService, investmentSchema, updateInvestmentSchema } from '../services/investments.js';
+import { investmentsService, investmentSchema, updateInvestmentSchema } from '@moneyapp/services';
 
 export const investmentsRouter = Router();
-import { requireAuth } from '@moneyapp/shared/server';
+import { requireAuth } from '../middleware/auth.js';
 investmentsRouter.use(requireAuth);
 
 investmentsRouter.get('/', async (req, res) => {

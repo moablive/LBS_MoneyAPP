@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { api } from '@moneyapp/shared';
+import { api } from '@moneyapp/api-client';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
-import type { CreateSubscriptionInput, SubscriptionItem, UpdateSubscriptionInput, Account } from '@moneyapp/shared';
+import type { CreateSubscriptionInput, SubscriptionItem, UpdateSubscriptionInput, Account } from '@moneyapp/models';
 
 const { confirm } = useConfirmDialog();
 
+const show = defineModel<boolean>('show', { default: false });
 const props = defineProps<{
-  show: boolean;
   subscriptionToEdit?: SubscriptionItem | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'saved'): void;
   (e: 'deleted'): void;
 }>();
@@ -44,7 +43,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => props.show,
+  show,
   (newVal) => {
     if (newVal) {
       if (props.subscriptionToEdit) {
@@ -67,7 +66,8 @@ watch(
         errorMsg.value = '';
       }
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(type, (newType) => {
@@ -104,7 +104,7 @@ async function save() {
       await api.post('/subscriptions', payload);
     }
     emit('saved');
-    emit('close');
+    show.value = false;
   } catch (e) {
     console.error(e);
   } finally {
@@ -120,7 +120,7 @@ async function remove() {
   try {
     await api.delete(`/subscriptions/${props.subscriptionToEdit.id}`);
     emit('deleted');
-    emit('close');
+    show.value = false;
   } catch (e) {
     console.error(e);
   } finally {
@@ -131,13 +131,13 @@ async function remove() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="emit('close')"></div>
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="show = false"></div>
     <div class="relative bg-surface-raised border border-surface-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
       <header class="px-5 py-4 border-b border-surface-border flex justify-between items-center bg-surface-overlay/30">
         <h2 class="text-lg font-medium">
           {{ subscriptionToEdit ? 'Editar Assinatura' : 'Nova Assinatura' }}
         </h2>
-        <button @click="emit('close')" class="text-muted hover:text-slate-100 p-1">
+        <button @click="show = false" class="text-muted hover:text-slate-100 p-1">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -241,7 +241,7 @@ async function remove() {
           <button
             type="button"
             class="px-4 py-2 rounded-xl bg-surface-overlay hover:bg-surface-border text-sm font-medium transition-colors"
-            @click="emit('close')"
+            @click="show = false"
           >
             Cancelar
           </button>

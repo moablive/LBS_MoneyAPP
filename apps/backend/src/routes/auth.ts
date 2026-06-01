@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
-import { loginSchema } from '@moneyapp/shared';
-import { db, schema } from '@moneyapp/shared/db';
+import { loginSchema } from '@moneyapp/models';
+import { db, schema } from '@moneyapp/db';
 const { users } = schema;
-import { signToken, validate, verifyPassword } from '@moneyapp/shared/server';
+import { validate } from '../middleware/validate.js';
+import { signToken } from '../middleware/auth.js';
+import { verifyPassword } from '@moneyapp/services';
 
 export const authRouter = Router();
 
 authRouter.post('/login', validate(loginSchema), async (req, res, next) => {
   try {
-    const { email, password } = req.body as import('@moneyapp/shared').LoginInput;
+    const { email, password } = req.body as import('@moneyapp/models').LoginInput;
     const user = await db.query.users.findFirst({ where: eq(users.email, email) });
     // Constant-ish time: always run verifyPassword even when the user is
     // missing, against a throwaway hash, to mask the existence check.

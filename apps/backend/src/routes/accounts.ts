@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { and, asc, eq } from 'drizzle-orm';
-import { createAccountSchema, updateAccountSchema } from '@moneyapp/shared';
-import { db, schema } from '@moneyapp/shared/db';
+import { createAccountSchema, updateAccountSchema } from '@moneyapp/models';
+import { db, schema } from '@moneyapp/db';
 const { accounts } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
@@ -25,7 +26,7 @@ accountsRouter.get('/', async (req, res, next) => {
 accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) => {
   try {
     const userId = req.user!.id;
-    const body = req.body as import('@moneyapp/shared').CreateAccountInput;
+    const body = req.body as import('@moneyapp/models').CreateAccountInput;
     const [row] = await db
       .insert(accounts)
       .values({
@@ -47,7 +48,7 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
   try {
     const userId = req.user!.id;
     const id = req.params.id!;
-    const body = req.body as import('@moneyapp/shared').UpdateAccountInput;
+    const body = req.body as import('@moneyapp/models').UpdateAccountInput;
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) patch.name = body.name;
     if (body.type !== undefined) patch.type = body.type;

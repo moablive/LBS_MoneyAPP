@@ -52,6 +52,10 @@ const config: Config = {
         expense: '#ef4444',
         muted: '#7a8499',
       },
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       borderRadius: {
         '2xl': '1.25rem',
         '3xl': '1.75rem',
@@ -60,8 +64,24 @@ const config: Config = {
         'card': '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35)',
         'modal': '0 30px 80px rgba(0,0,0,0.55)',
       },
-      backdropBlur: { xs: '2px' },
+      backdropBlur: { xs: '2px', md: '12px', xl: '24px' },
       transitionTimingFunction: { smooth: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      keyframes: {
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'blob': {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        }
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'blob': 'blob 7s infinite',
+      }
     },
   },
   plugins: [],

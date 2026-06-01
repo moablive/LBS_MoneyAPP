@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { and, asc, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
-import { createTransactionSchema, transactionFiltersSchema, updateTransactionSchema } from '@moneyapp/shared';
-import { db, schema } from '@moneyapp/shared/db';
+import { createTransactionSchema, transactionFiltersSchema, updateTransactionSchema } from '@moneyapp/models';
+import { db, schema } from '@moneyapp/db';
 const { accounts, transactions } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 export const transactionsRouter = Router();
 transactionsRouter.use(requireAuth);
@@ -12,7 +13,7 @@ transactionsRouter.use(requireAuth);
 transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (req, res, next) => {
   try {
     const userId = req.user!.id;
-    const f = req.query as unknown as import('@moneyapp/shared').TransactionFilters;
+    const f = req.query as unknown as import('@moneyapp/models').TransactionFilters;
 
     const monthRange = f.month ? monthBounds(f.month) : null;
     const from = f.from ?? monthRange?.start;
@@ -68,7 +69,7 @@ transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (
 transactionsRouter.post('/', validate(createTransactionSchema), async (req, res, next) => {
   try {
     const userId = req.user!.id;
-    const body = req.body as import('@moneyapp/shared').CreateTransactionInput;
+    const body = req.body as import('@moneyapp/models').CreateTransactionInput;
 
     const created = await db.transaction(async (tx) => {
       const [row] = await tx
@@ -104,7 +105,7 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
   try {
     const userId = req.user!.id;
     const id = req.params.id!;
-    const body = req.body as import('@moneyapp/shared').UpdateTransactionInput;
+    const body = req.body as import('@moneyapp/models').UpdateTransactionInput;
 
     const updated = await db.transaction(async (tx) => {
       const existing = await tx.query.transactions.findFirst({

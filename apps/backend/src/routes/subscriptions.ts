@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { eq, desc, and } from 'drizzle-orm';
-import { db, schema } from '@moneyapp/shared/db';
+import { db, schema } from '@moneyapp/db';
 const { subscriptions, accounts, categories } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
-import { createSubscriptionSchema, updateSubscriptionSchema, type SubscriptionSummaryResponse } from '@moneyapp/shared';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { createSubscriptionSchema, updateSubscriptionSchema, type SubscriptionSummaryResponse } from '@moneyapp/models';
 
 export const subscriptionsRouter = Router();
 
@@ -89,7 +90,7 @@ subscriptionsRouter.post(
   async (req, res, next) => {
     try {
       const userId = req.user!.id;
-      const data = req.body as import('@moneyapp/shared').CreateSubscriptionInput;
+      const data = req.body as import('@moneyapp/models').CreateSubscriptionInput;
 
       const [newSub] = await db
         .insert(subscriptions)
@@ -124,7 +125,7 @@ subscriptionsRouter.put(
     try {
       const userId = req.user!.id;
       const id = req.params.id as string;
-      const data = req.body as import('@moneyapp/shared').UpdateSubscriptionInput;
+      const data = req.body as import('@moneyapp/models').UpdateSubscriptionInput;
 
       const updateData: any = { ...data };
       if (data.amount !== undefined) updateData.amount = data.amount.toString();

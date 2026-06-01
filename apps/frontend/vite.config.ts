@@ -39,6 +39,15 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia', '@vueuse/core'],
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: { '/api': 'http://localhost:3000' },

@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { api } from '@moneyapp/shared';
-import type { CreateCategoryInput, CategoryType, Category } from '@moneyapp/shared';
+import { api } from '@moneyapp/api-client';
+import type { CreateCategoryInput, CategoryType, Category } from '@moneyapp/models';
 import Modal from './Modal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
 
+const open = defineModel<boolean>('open', { default: false });
 const props = defineProps<{ 
-  open: boolean;
   categoryToEdit?: Category | null;
 }>();
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'created', value: unknown): void;
   (e: 'deleted'): void;
 }>();
@@ -34,7 +33,7 @@ const submitting = ref(false);
 const error = ref<string | null>(null);
 
 watch(
-  () => props.open,
+  open,
   (v) => {
     if (v) {
       if (props.categoryToEdit) {
@@ -49,6 +48,7 @@ watch(
       error.value = null;
     }
   },
+  { immediate: true }
 );
 
 async function submit() {
@@ -66,7 +66,7 @@ async function submit() {
       await api.post<unknown>('/categories', payload);
     }
     emit('created', null); // Trigger reload
-    emit('close');
+    open.value = false;
   } catch (e: any) {
     if (e?.response?.data?.error === 'duplicate_category') {
       error.value = 'Já existe uma categoria com esse nome e tipo.';
@@ -87,7 +87,7 @@ async function remove() {
   try {
     await api.delete(`/categories/${props.categoryToEdit.id}`);
     emit('deleted');
-    emit('close');
+    open.value = false;
   } catch (e: any) {
     if (e?.response?.data?.error === 'category_in_use') {
       error.value = 'Esta categoria está em uso por transações ou assinaturas e não pode ser excluída.';
@@ -101,7 +101,7 @@ async function remove() {
 </script>
 
 <template>
-  <Modal :open="open" :title="categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'" @close="emit('close')">
+  <Modal :open="open" :title="categoryToEdit ? 'Editar Categoria' : 'Nova Categoria'" @close="open = false">
     <form class="space-y-4" @submit.prevent="submit">
       <label class="block space-y-1">
         <span class="text-xs uppercase tracking-wide text-muted">Nome</span>
@@ -159,7 +159,7 @@ async function remove() {
           <button
             type="button"
             class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
-            @click="emit('close')"
+            @click="open = false"
           >
             Cancelar
           </button>

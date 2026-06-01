@@ -12,11 +12,13 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
-    "@moneyapp/shared": "workspace:*",
+    "@moneyapp/api-client": "workspace:*",
+    "@moneyapp/models": "workspace:*",
     "@vuepic/vue-datepicker": "^13.0.0",
+    "@vueuse/core": "^14.3.0",
     "apexcharts": "^3.49.0",
     "pinia": "^2.2.0",
-    "vue": "^3.4.37",
+    "vue": "^3.5.0",
     "vue-router": "^4.4.0",
     "vue3-apexcharts": "^1.5.3"
   },

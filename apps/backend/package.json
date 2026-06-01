@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@moneyapp/shared": "workspace:*",
+    "@moneyapp/models": "workspace:*",
+    "@moneyapp/db": "workspace:*",
+    "@moneyapp/services": "workspace:*",
     "argon2": "^0.40.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

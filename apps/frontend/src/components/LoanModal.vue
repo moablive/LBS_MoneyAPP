@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { api, fileToBase64 } from '@moneyapp/shared';
-import type { LoanItem, Account } from '@moneyapp/shared';
+import { api, fileToBase64 } from '@moneyapp/api-client';
+import type { LoanItem, Account } from '@moneyapp/models';
 import { useAuthStore } from '../stores/auth';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm, alert } = useConfirmDialog();
 
+const show = defineModel<boolean>('show', { default: false });
 const props = defineProps<{
-  show: boolean;
   loanToEdit: LoanItem | null;
   defaultType?: 'given' | 'received' | 'fgts';
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'saved'): void;
   (e: 'deleted'): void;
 }>();
@@ -71,7 +70,7 @@ function resetForm() {
   }
 }
 
-watch(() => props.show, async (val) => {
+watch(show, async (val) => {
   if (val) {
     if (accounts.value.length === 0) {
       try {
@@ -106,7 +105,7 @@ watch(() => props.show, async (val) => {
       }
     }
   }
-});
+}, { immediate: true });
 
 async function save() {
   const payload = {
@@ -130,7 +129,7 @@ async function save() {
       await api.post('/loans', payload);
     }
     emit('saved');
-    emit('close');
+    show.value = false;
   } catch (error) {
     await alert('Erro ao salvar empréstimo.');
     console.error(error);
@@ -147,7 +146,7 @@ async function destroy() {
     loading.value = true;
     await api.delete(`/loans/${props.loanToEdit.id}`);
     emit('deleted');
-    emit('close');
+    show.value = false;
   } catch (error) {
     await alert('Erro ao apagar empréstimo.');
     console.error(error);
@@ -161,7 +160,7 @@ async function destroy() {
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
     <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center bg-surface-raised">
-        <button @click="$emit('close')" class="text-muted hover:text-white transition-colors">
+        <button @click="show = false" class="text-muted hover:text-white transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </header>
@@ -276,7 +275,7 @@ async function destroy() {
 
         <div class="flex gap-3">
           <button
-            @click="$emit('close')"
+            @click="show = false"
             :disabled="loading"
             class="px-4 py-2 rounded-xl text-muted hover:bg-surface-overlay transition-colors font-medium text-sm disabled:opacity-50"
           >

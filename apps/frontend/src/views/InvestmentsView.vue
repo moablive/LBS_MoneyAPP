@@ -5,7 +5,8 @@ import InvestmentModal from '../components/InvestmentModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
-import PiggyBankDetails from '../components/PiggyBankDetails.vue';
+import { defineAsyncComponent } from 'vue';
+const PiggyBankDetails = defineAsyncComponent(() => import('../components/PiggyBankDetails.vue'));
 import { useInvestmentsStore } from '../stores/investments';
 import { PlusIcon as Plus, ArrowTrendingUpIcon as TrendingUp, ArrowTrendingDownIcon as TrendingDown, WalletIcon as Wallet, PencilSquareIcon as Edit2, TrashIcon as Trash2 } from '@heroicons/vue/24/outline';
 

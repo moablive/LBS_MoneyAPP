@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { api, fileToBase64 } from '@moneyapp/shared';
-import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/shared';
+import { api, fileToBase64 } from '@moneyapp/api-client';
+import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
 
-import type { Transaction } from '@moneyapp/shared';
+import type { Transaction } from '@moneyapp/models';
 
-const props = defineProps<{ open: boolean; transaction?: Transaction | null }>();
+const open = defineModel<boolean>('open', { default: false });
+const props = defineProps<{ transaction?: Transaction | null }>();
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'created', value: unknown): void;
 }>();
 
@@ -30,7 +30,7 @@ const error = ref<string | null>(null);
 const visibleCategories = computed(() => categories.value.filter((c) => c.type === type.value));
 
 watch(
-  () => props.open,
+  open,
   async (v) => {
     if (!v) return;
     if (props.transaction) {
@@ -56,6 +56,7 @@ watch(
       error.value = 'Não foi possível carregar categorias e contas.';
     }
   },
+  { immediate: true }
 );
 
 onMounted(() => reset());
@@ -116,7 +117,7 @@ async function submit() {
     }
     emit('created', saved);
     window.dispatchEvent(new CustomEvent('transaction-created'));
-    emit('close');
+    open.value = false;
   } catch (e) {
     error.value = 'Não foi possível salvar a transação.';
   } finally {
@@ -131,7 +132,7 @@ function onFileChange(e: Event) {
 </script>
 
 <template>
-  <Modal :open="open" :title="transaction ? 'Editar Transação' : 'Nova Transação'" @close="emit('close')">
+  <Modal :open="open" :title="transaction ? 'Editar Transação' : 'Nova Transação'" @close="open = false">
     <form class="space-y-4" @submit.prevent="submit">
       <div class="grid grid-cols-2 gap-3">
         <label class="block space-y-1 col-span-2">
@@ -243,7 +244,7 @@ function onFileChange(e: Event) {
         <button
           type="button"
           class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
-          @click="emit('close')"
+          @click="open = false"
         >
           Cancelar
         </button>

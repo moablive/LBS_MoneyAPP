@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { categoryTypeEnum, createCategorySchema, updateCategorySchema } from '@moneyapp/shared';
-import { db, schema } from '@moneyapp/shared/db';
+import { categoryTypeEnum, createCategorySchema, updateCategorySchema } from '@moneyapp/models';
+import { db, schema } from '@moneyapp/db';
 const { categories } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 export const categoriesRouter = Router();
 categoriesRouter.use(requireAuth);
@@ -35,7 +36,7 @@ categoriesRouter.get('/', validate(listQuerySchema, 'query'), async (req, res, n
 categoriesRouter.post('/', validate(createCategorySchema), async (req, res, next) => {
   try {
     const userId = req.user!.id;
-    const body = req.body as import('@moneyapp/shared').CreateCategoryInput;
+    const body = req.body as import('@moneyapp/models').CreateCategoryInput;
     const [row] = await db
       .insert(categories)
       .values({ ...body, userId })
@@ -55,7 +56,7 @@ categoriesRouter.patch('/:id', validate(updateCategorySchema), async (req, res, 
   try {
     const userId = req.user!.id;
     const id = req.params.id!;
-    const body = req.body as import('@moneyapp/shared').UpdateCategoryInput;
+    const body = req.body as import('@moneyapp/models').UpdateCategoryInput;
     const [row] = await db
       .update(categories)
       .set(body)

@@ -6,9 +6,12 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /repo
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* tsconfig.base.json ./
 COPY apps/frontend/package.json apps/frontend/
-COPY packages/shared/package.json packages/shared/
+COPY packages/models/package.json packages/models/
+COPY packages/db/package.json packages/db/
+COPY packages/api-client/package.json packages/api-client/
+COPY packages/services/package.json packages/services/
 RUN pnpm install --frozen-lockfile || pnpm install
-COPY packages/shared packages/shared
+COPY packages/ packages/
 COPY apps/frontend apps/frontend
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL

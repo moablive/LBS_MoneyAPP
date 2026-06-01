@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
-import { api } from '@moneyapp/shared';
+import { computed, onMounted, ref, shallowRef } from 'vue';
+import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewCategoryModal from '../components/NewCategoryModal.vue';
 import EmptyState from '../components/EmptyState.vue';
-import type { Category } from '@moneyapp/shared';
+import type { Category } from '@moneyapp/models';
 
-const items = ref<Category[]>([]);
+const items = shallowRef<Category[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
 const categoryToEdit = ref<Category | null>(null);
@@ -108,6 +108,7 @@ onMounted(reload);
         <article
           v-for="c in items"
           :key="c.id"
+          v-memo="[c.id, c.name, c.color, c.type]"
           class="glass-card rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer"
           @click="openEditModal(c)"
         >
@@ -135,9 +136,9 @@ onMounted(reload);
     </div>
 
     <NewCategoryModal
-      :open="showCreate"
-      :category-to-edit="categoryToEdit"
-      @close="showCreate = false"
+      v-model:open="showCreate"
+      :categoryToEdit="categoryToEdit"
+      @update:open="val => { if (!val) categoryToEdit = null; }"
       @created="reload"
       @deleted="reload"
     />

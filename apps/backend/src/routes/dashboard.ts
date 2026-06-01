@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
-import { categoryRankingQuerySchema, dashboardSummaryQuerySchema, spendingEvolutionQuerySchema, type CategoryRankingResponse, type DashboardSummaryResponse, type SpendingEvolutionResponse } from '@moneyapp/shared';
-import { db, schema } from '@moneyapp/shared/db';
+import { categoryRankingQuerySchema, dashboardSummaryQuerySchema, spendingEvolutionQuerySchema, type CategoryRankingResponse, type DashboardSummaryResponse, type SpendingEvolutionResponse } from '@moneyapp/models';
+import { db, schema } from '@moneyapp/db';
 const { accounts, categories, transactions } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 export const dashboardRouter = Router();
 
@@ -26,7 +27,7 @@ dashboardRouter.get(
     try {
       const userId = req.user!.id;
       const { month, type, includeZero, limit } = req.query as unknown as
-        import('@moneyapp/shared').CategoryRankingQuery;
+        import('@moneyapp/models').CategoryRankingQuery;
 
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
@@ -124,7 +125,7 @@ dashboardRouter.get(
   async (req, res, next) => {
     try {
       const userId = req.user!.id;
-      const { month } = req.query as unknown as import('@moneyapp/shared').DashboardSummaryQuery;
+      const { month } = req.query as unknown as import('@moneyapp/models').DashboardSummaryQuery;
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
 
@@ -184,7 +185,7 @@ dashboardRouter.get(
   async (req, res, next) => {
     try {
       const userId = req.user!.id;
-      const { month } = req.query as unknown as import('@moneyapp/shared').SpendingEvolutionQuery;
+      const { month } = req.query as unknown as import('@moneyapp/models').SpendingEvolutionQuery;
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
       const prevMonthStart = addMonths(monthStart, -1);

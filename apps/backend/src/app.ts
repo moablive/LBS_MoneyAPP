@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
-import { env } from '@moneyapp/shared/server';
+import { env } from '@moneyapp/services';
 import { apiRouter } from './routes';
 
 export function createApp() {

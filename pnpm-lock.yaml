@@ -17,9 +17,15 @@ importers:
 
   apps/backend:
     dependencies:
-      '@moneyapp/shared':
+      '@moneyapp/db':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/db
+      '@moneyapp/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@moneyapp/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       argon2:
         specifier: ^0.40.3
         version: 0.40.3
@@ -75,12 +81,18 @@ importers:
       '@heroicons/vue':
         specifier: ^2.2.0
         version: 2.2.0(vue@3.5.35(typescript@5.9.3))
-      '@moneyapp/shared':
+      '@moneyapp/api-client':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/api-client
+      '@moneyapp/models':
+        specifier: workspace:*
+        version: link:../../packages/models
       '@vuepic/vue-datepicker':
         specifier: ^13.0.0
         version: 13.0.0(vue@3.5.35(typescript@5.9.3))
+      '@vueuse/core':
+        specifier: ^14.3.0
+        version: 14.3.0(vue@3.5.35(typescript@5.9.3))
       apexcharts:
         specifier: ^3.49.0
         version: 3.54.1
@@ -88,7 +100,7 @@ importers:
         specifier: ^2.2.0
         version: 2.3.1(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3))
       vue:
-        specifier: ^3.4.37
+        specifier: ^3.5.0
         version: 3.5.35(typescript@5.9.3)
       vue-router:
         specifier: ^4.4.0
@@ -122,36 +134,27 @@ importers:
         specifier: ^2.0.29
         version: 2.2.12(typescript@5.9.3)
 
-  packages/shared:
+  packages/api-client:
     dependencies:
-      argon2:
-        specifier: ^0.40.3
-        version: 0.40.3
+      '@moneyapp/models':
+        specifier: workspace:*
+        version: link:../models
+
+  packages/db:
+    dependencies:
+      '@moneyapp/models':
+        specifier: workspace:*
+        version: link:../models
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
       drizzle-orm:
         specifier: ^0.33.0
         version: 0.33.0(@types/pg@8.20.0)(pg@8.21.0)
-      express:
-        specifier: ^4.19.2
-        version: 4.22.2
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.3
       pg:
         specifier: ^8.12.0
         version: 8.21.0
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
     devDependencies:
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.25
-      '@types/jsonwebtoken':
-        specifier: ^9.0.6
-        version: 9.0.10
       '@types/pg':
         specifier: ^8.11.6
         version: 8.20.0
@@ -161,6 +164,40 @@ importers:
       tsx:
         specifier: ^4.16.2
         version: 4.22.3
+
+  packages/models:
+    dependencies:
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+
+  packages/services:
+    dependencies:
+      '@moneyapp/db':
+        specifier: workspace:*
+        version: link:../db
+      '@moneyapp/models':
+        specifier: workspace:*
+        version: link:../models
+      argon2:
+        specifier: ^0.40.3
+        version: 0.40.3
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      drizzle-orm:
+        specifier: ^0.33.0
+        version: 0.33.0(@types/pg@8.20.0)(pg@8.21.0)
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.3
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/jsonwebtoken':
+        specifier: ^9.0.6
+        version: 9.0.10
 
 packages:
 

@@ -4,10 +4,10 @@ import { CheckCircleIcon as CheckCircle2, ClockIcon as Clock, BuildingLibraryIco
 import Modal from './Modal.vue';
 import { useAuthStore } from '../stores/auth';
 
-import type { Transaction } from '@moneyapp/shared';
+import type { Transaction } from '@moneyapp/models';
 
+const open = defineModel<boolean>('open', { default: false });
 const props = defineProps<{
-  open: boolean;
   transaction: Transaction | null;
   accountName?: string;
   categoryName?: string;
@@ -15,7 +15,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'edit'): void;
   (e: 'delete'): void;
 }>();
@@ -63,11 +62,11 @@ watch(() => props.transaction, async (t) => {
   } else {
     receiptBlobUrl.value = null;
   }
-});
+}, { immediate: true });
 </script>
 
 <template>
-  <Modal :open="open" @close="emit('close')">
+  <Modal :open="open" @close="open = false">
     <div v-if="transaction" class="p-6 space-y-6">
       <header>
         <h2 class="text-2xl font-bold tracking-tight text-white">Detalhes da Transação</h2>
@@ -160,7 +159,7 @@ watch(() => props.transaction, async (t) => {
           Editar
         </button>
         <button
-          @click="emit('close')"
+          @click="open = false"
           class="px-5 py-2.5 rounded-xl border border-surface-border text-white text-sm font-bold hover:bg-surface-raised transition-colors"
         >
           Fechar

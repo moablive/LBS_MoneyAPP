@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { investmentsApi, type Investment, type InvestmentSummary, type CreateInvestmentPayload } from '@moneyapp/shared';
+import { investmentsApi } from '@moneyapp/api-client';
+import { type Investment, type InvestmentSummary, type CreateInvestmentPayload } from '@moneyapp/models';
 
 export const useInvestmentsStore = defineStore('investments', () => {
   const items = ref<Investment[]>([]);

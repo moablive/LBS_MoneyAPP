@@ -4,7 +4,7 @@ import App from './App.vue';
 import { router } from './router';
 import './styles/main.css';
 
-import { setupApi } from '@moneyapp/shared';
+import { setupApi } from '@moneyapp/api-client';
 import { useAuthStore } from './stores/auth';
 
 const pinia = createPinia();

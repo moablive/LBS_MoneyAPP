@@ -28,14 +28,14 @@
 
 @layer components {
   .card {
-    @apply bg-surface-raised border border-surface-border rounded-2xl p-5 shadow-card;
+    @apply bg-surface-raised/70 backdrop-blur-xl border border-surface-border rounded-2xl p-5 shadow-card;
   }
   .modal-shell {
     @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center
-           bg-black/50 backdrop-blur-xs;
+           bg-black/60 backdrop-blur-md;
   }
   .modal-panel {
-    @apply w-full sm:max-w-lg bg-surface-overlay border border-surface-border
+    @apply w-full sm:max-w-lg bg-surface-overlay/90 backdrop-blur-xl border border-surface-border
            rounded-t-3xl sm:rounded-3xl p-6 shadow-modal
            transition-transform duration-200 ease-smooth;
   }
@@ -43,3 +43,9 @@
     @apply animate-pulse rounded-xl bg-surface-border/40;
   }
 }
+
+.delay-75 { animation-delay: 75ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }

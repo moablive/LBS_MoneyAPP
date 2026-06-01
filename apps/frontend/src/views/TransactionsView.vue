@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { api } from '@moneyapp/shared';
+import { computed, onMounted, ref, shallowRef, triggerRef } from 'vue';
+import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewTransactionModal from '../components/NewTransactionModal.vue';
 import TransactionDetailsModal from '../components/TransactionDetailsModal.vue';
 import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip } from '@heroicons/vue/24/outline';
-import type { TransactionType, Transaction, Account, Category } from '@moneyapp/shared';
+import type { TransactionType, Transaction, Account, Category } from '@moneyapp/models';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm, alert } = useConfirmDialog();
 
-const rows = ref<Transaction[]>([]);
+const rows = shallowRef<Transaction[]>([]);
 const accounts = ref<Account[]>([]);
 const categories = ref<Category[]>([]);
 const loading = ref(true);
@@ -102,7 +102,14 @@ async function toggleStatus(t: Transaction, e: Event) {
   loading.value = true;
   try {
     await api.patch(`/transactions/${t.id}`, { status: t.status === 'paid' ? 'pending' : 'paid' });
-    await reload();
+    const idx = rows.value.findIndex(r => r.id === t.id);
+    const r = rows.value[idx];
+    if (r) {
+      r.status = t.status === 'paid' ? 'pending' : 'paid';
+      triggerRef(rows);
+    } else {
+      await reload();
+    }
   } catch (err) {
     console.error('Failed to toggle status', err);
     loading.value = false;
@@ -187,6 +194,7 @@ async function handleDelete(t: Transaction | null) {
             <li
               v-for="r in list"
               :key="r.id"
+              v-memo="[r.id, r.status, selectedRow?.id === r.id]"
               @click="selectedRow = r"
               class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
             >
@@ -269,19 +277,18 @@ async function handleDelete(t: Transaction | null) {
     </div>
 
     <NewTransactionModal
-      :open="showCreate"
+      v-model:open="showCreate"
       :transaction="editingRow"
-      @close="showCreate = false; editingRow = null"
       @created="reload"
     />
 
     <TransactionDetailsModal
       :open="!!selectedRow"
+      @update:open="(val) => { if (!val) selectedRow = null; }"
       :transaction="selectedRow"
       :accountName="selectedRow?.accountId ? accountsMap.get(selectedRow.accountId)?.name : undefined"
       :categoryName="selectedRow?.categoryId ? categoriesMap.get(selectedRow.categoryId)?.name : undefined"
       :categoryColor="selectedRow?.categoryId ? (categoriesMap.get(selectedRow.categoryId)?.color || undefined) : undefined"
-      @close="selectedRow = null"
       @edit="editingRow = selectedRow; selectedRow = null; showCreate = true"
       @delete="handleDelete(selectedRow)"
     />

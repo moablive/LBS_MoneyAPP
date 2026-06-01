@@ -1,5 +1,5 @@
 import { createApp } from './app';
-import { bootstrapMasterUser, env } from '@moneyapp/shared/server';
+import { bootstrapMasterUser, env } from '@moneyapp/services';
 
 async function main() {
   await bootstrapMasterUser();

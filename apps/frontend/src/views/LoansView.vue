@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { refDebounced } from '@vueuse/core';
 import { useRoute } from 'vue-router';
-import { api } from '@moneyapp/shared';
+import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import LoanModal from '../components/LoanModal.vue';
 import { PaperClipIcon as Paperclip } from '@heroicons/vue/24/outline';
-import type { LoanSummaryResponse, LoanItem } from '@moneyapp/shared';
+import type { LoanSummaryResponse, LoanItem } from '@moneyapp/models';
 
 const route = useRoute();
 
@@ -13,12 +14,14 @@ const data = ref<LoanSummaryResponse | null>(null);
 const loading = ref(true);
 const tab = ref<'all' | 'given' | 'received' | 'fgts'>('all');
 const search = ref('');
+const debouncedSearch = refDebounced(search, 300);
 
 // Modal state
 const showModal = ref(false);
 const loanToEdit = ref<LoanItem | null>(null);
+const loans = shallowRef<LoanItem[]>([]);
 
-const accounts = ref<import('@moneyapp/shared').Account[]>([]);
+const accounts = ref<import('@moneyapp/models').Account[]>([]);
 const accountsMap = computed(() => new Map(accounts.value.map(a => [a.id, a])));
 
 async function loadData() {
@@ -26,9 +29,10 @@ async function loadData() {
   try {
     const [summaryData, accs] = await Promise.all([
       api.get<LoanSummaryResponse>('/loans/summary'),
-      api.get<import('@moneyapp/shared').Account[]>('/accounts').catch(() => [])
+      api.get<import('@moneyapp/models').Account[]>('/accounts').catch(() => [])
     ]);
     data.value = summaryData;
+    loans.value = summaryData.items;
     accounts.value = accs;
   } finally {
     loading.value = false;
@@ -47,9 +51,8 @@ watch(() => route.params.type, (newType) => {
 }, { immediate: true });
 
 const filteredItems = computed(() => {
-  if (!data.value) return [];
-  const term = search.value.trim().toLowerCase();
-  return data.value.items
+  const term = debouncedSearch.value.trim().toLowerCase();
+  return loans.value
     .filter((it) => {
       if (tab.value === 'given' && it.type !== 'given') return false;
       if (tab.value === 'received' && it.type !== 'received') return false;
@@ -172,6 +175,7 @@ function openEditModal(item: LoanItem) {
             <li
               v-for="item in list"
               :key="item.id"
+              v-memo="[item.id, item.status, item.amount, item.description]"
               class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
@@ -236,10 +240,9 @@ function openEditModal(item: LoanItem) {
 
     <!-- Modal -->
     <LoanModal
-      :show="showModal"
-      :loan-to-edit="loanToEdit"
-      :default-type="tab !== 'all' ? tab : 'given'"
-      @close="showModal = false"
+      v-model:show="showModal"
+      :loanToEdit="loanToEdit"
+      :defaultType="tab === 'received' ? 'received' : 'given'"
       @saved="loadData"
       @deleted="loadData"
     />

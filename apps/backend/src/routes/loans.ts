@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { eq, desc, and, sql } from 'drizzle-orm';
-import { db, schema } from '@moneyapp/shared/db';
+import { db, schema } from '@moneyapp/db';
 const { loans } = schema;
-import { requireAuth, validate } from '@moneyapp/shared/server';
-import { createLoanSchema, updateLoanSchema, type LoanSummaryResponse } from '@moneyapp/shared';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { createLoanSchema, updateLoanSchema, type LoanSummaryResponse } from '@moneyapp/models';
 
 export const loansRouter = Router();
 
@@ -79,7 +80,7 @@ loansRouter.post(
   async (req, res, next) => {
     try {
       const userId = req.user!.id;
-      const data = req.body as import('@moneyapp/shared').CreateLoanInput;
+      const data = req.body as import('@moneyapp/models').CreateLoanInput;
       const installmentsCount = data.installments ?? 1;
 
       if (installmentsCount > 1) {
@@ -149,7 +150,7 @@ loansRouter.put(
     try {
       const userId = req.user!.id;
       const id = req.params.id as string;
-      const data = req.body as import('@moneyapp/shared').UpdateLoanInput;
+      const data = req.body as import('@moneyapp/models').UpdateLoanInput;
 
       const updateData: any = { ...data };
       if (data.accountId !== undefined) updateData.accountId = data.accountId;

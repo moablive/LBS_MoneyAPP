@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { api, fileToBase64 } from '@moneyapp/shared';
-import type { AccountType, CreateAccountInput, Account } from '@moneyapp/shared';
+import { ref, watch, useId } from 'vue';
+import { api, fileToBase64 } from '@moneyapp/api-client';
+import type { AccountType, CreateAccountInput, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
 
-const props = defineProps<{ open: boolean; account?: Account | null }>();
+const open = defineModel<boolean>('open', { default: false });
+const props = defineProps<{ account?: Account | null }>();
 const emit = defineEmits<{
-  (e: 'close'): void;
   (e: 'created', value: unknown): void;
 }>();
+
+const formId = useId();
 
 const name = ref('');
 const type = ref<AccountType>('checking');
@@ -43,7 +45,7 @@ const typeOptions: { value: AccountType; label: string }[] = [
 ];
 
 watch(
-  () => props.open,
+  open,
   (v) => {
     if (!v) return;
     if (props.account) {
@@ -69,6 +71,7 @@ watch(
     }
     error.value = null;
   },
+  { immediate: true }
 );
 
 
@@ -109,7 +112,7 @@ async function submit() {
     }
     emit('created', saved);
     window.dispatchEvent(new CustomEvent('transaction-created'));
-    emit('close');
+    open.value = false;
   } catch {
     error.value = 'Não foi possível criar a conta.';
   } finally {
@@ -119,7 +122,7 @@ async function submit() {
 </script>
 
 <template>
-  <Modal :open="open" :title="account ? 'Editar Conta' : 'Nova Conta'" @close="emit('close')">
+  <Modal :open="open" :title="account ? 'Editar Conta' : 'Nova Conta'" @close="open = false">
     <form class="space-y-5" @submit.prevent="submit">
       <!-- Custom icon upload -->
       <section class="space-y-3">
@@ -157,9 +160,10 @@ async function submit() {
 
       <!-- Account details -->
       <section class="grid grid-cols-2 gap-3">
-        <label class="block space-y-1 col-span-2">
+        <label :for="formId + '-name'" class="block space-y-1 col-span-2">
           <span class="text-xs uppercase tracking-wide text-muted">Nome da conta</span>
           <input
+            :id="formId + '-name'"
             v-model="name"
             required
             maxlength="120"
@@ -169,9 +173,10 @@ async function submit() {
           />
         </label>
 
-        <label class="block space-y-1">
+        <label :for="formId + '-type'" class="block space-y-1">
           <span class="text-xs uppercase tracking-wide text-muted">Tipo</span>
           <select
+            :id="formId + '-type'"
             v-model="type"
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
           >
@@ -181,9 +186,10 @@ async function submit() {
           </select>
         </label>
 
-        <label class="block space-y-1">
+        <label :for="formId + '-balance'" class="block space-y-1">
           <span class="text-xs uppercase tracking-wide text-muted">Saldo atual (R$)</span>
           <input
+            :id="formId + '-balance'"
             v-model.number="currentBalance"
             type="number"
             step="0.01"
@@ -215,7 +221,7 @@ async function submit() {
         <button
           type="button"
           class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
-          @click="emit('close')"
+          @click="open = false"
         >Cancelar</button>
         <button
           type="submit"
