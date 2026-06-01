@@ -139,11 +139,11 @@ async function handleDelete(t: Transaction | null) {
       <header class="flex items-center justify-between gap-4 flex-wrap mb-8">
         <h1 class="text-2xl font-bold tracking-tight text-white">Livro Caixa</h1>
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div class="inline-flex rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg">
+          <div class="order-3 sm:order-1 flex sm:inline-flex w-full sm:w-auto rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg">
             <button
               v-for="opt in (['all','expense','income'] as const)"
               :key="opt"
-              class="px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200"
+              class="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200"
               :class="filterType === opt ? 'bg-surface-overlay text-white shadow' : 'text-muted hover:text-white'"
               @click="filterType = opt; reload()"
             >
@@ -153,7 +153,7 @@ async function handleDelete(t: Transaction | null) {
           <select
             v-model="filterPeriod"
             @change="reload()"
-            class="flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="order-1 sm:order-2 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="current_month">Mês Atual</option>
             <option value="next_month">Próximo Mês</option>
@@ -162,12 +162,12 @@ async function handleDelete(t: Transaction | null) {
           <select
             v-model="filterCategory"
             @change="reload()"
-            class="flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="order-2 sm:order-3 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas Categorias</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
-          <div class="flex items-center gap-2 w-full sm:w-auto">
+          <div class="order-4 flex items-center gap-2 w-full sm:w-auto">
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="showCreate = true; createType = 'expense'"
