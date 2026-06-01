@@ -15,12 +15,16 @@ const brl = (n: number | string) =>
 </script>
 
 <template>
-  <div class="card flex flex-col animate-fade-in-up delay-200" v-if="creditCards.length > 0 || loading">
+  <div class="card flex flex-col animate-fade-in-up delay-200">
     <h2 class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Faturas</h2>
     <h3 class="text-lg text-white font-medium mb-6 font-display">Meus Cartões</h3>
     
     <div v-if="loading" class="space-y-4">
       <div v-for="i in 3" :key="i" class="skeleton h-14 w-full" />
+    </div>
+    <div v-else-if="creditCards.length === 0" class="flex-1 flex flex-col items-center justify-center text-center text-muted py-6">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-20"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+      <span class="text-sm">Nenhum cartão.</span>
     </div>
     <ul v-else class="space-y-5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
       <li v-for="(card, idx) in creditCards" :key="card.id" 
