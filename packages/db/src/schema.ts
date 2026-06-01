@@ -78,6 +78,9 @@ export const accounts = pgTable(
     // bank is not in the registry yet.
     customIconUrl: text('custom_icon_url'),
     currentBalance: numeric('current_balance', { precision: 14, scale: 2 }).default('0').notNull(),
+    creditLimit: numeric('credit_limit', { precision: 14, scale: 2 }),
+    closingDay: numeric('closing_day'), // 1-31
+    dueDay: numeric('due_day'), // 1-31
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({ userIdx: index('accounts_user_idx').on(t.userId) }),

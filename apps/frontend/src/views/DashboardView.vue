@@ -4,6 +4,7 @@ import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import DashboardKPIs from '../components/dashboard/DashboardKPIs.vue';
 import DashboardAccounts from '../components/dashboard/DashboardAccounts.vue';
+import DashboardCreditCards from '../components/dashboard/DashboardCreditCards.vue';
 import DashboardCategories from '../components/dashboard/DashboardCategories.vue';
 import DashboardUpcoming from '../components/dashboard/DashboardUpcoming.vue';
 import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyapp/models';
@@ -126,12 +127,16 @@ onUnmounted(() => {
         :loading="loading" 
       />
 
-      <!-- Bottom row: Accounts, Categories, Upcoming -->
-      <section class="grid lg:grid-cols-3 gap-6">
+      <!-- Bottom row: Accounts, CreditCards, Categories, Upcoming -->
+      <section class="grid lg:grid-cols-4 gap-6">
         <DashboardAccounts 
           :accounts="accounts"
           :loading="loading"
           @edit-account="editAccount"
+        />
+        <DashboardCreditCards 
+          :accounts="accounts"
+          :loading="loading"
         />
         <DashboardCategories 
           :ranking="ranking"

@@ -16,6 +16,9 @@ const name = ref('');
 const type = ref<AccountType>('checking');
 const bankCode = ref<string | null>(null);
 const currentBalance = ref<number>(0);
+const creditLimit = ref<number | null>(null);
+const closingDay = ref<number | null>(null);
+const dueDay = ref<number | null>(null);
 const customFile = ref<File | null>(null);
 const customPreview = ref<string | null>(null);
 const submitting = ref(false);
@@ -53,6 +56,9 @@ watch(
       type.value = props.account.type;
       bankCode.value = props.account.bankCode;
       currentBalance.value = Number(props.account.currentBalance);
+      creditLimit.value = props.account.creditLimit ? Number(props.account.creditLimit) : null;
+      closingDay.value = props.account.closingDay ? Number(props.account.closingDay) : null;
+      dueDay.value = props.account.dueDay ? Number(props.account.dueDay) : null;
       if (props.account.customIconUrl && props.account.customIconUrl.startsWith('/logos_bancarios')) {
         selectedPredefined.value = props.account.customIconUrl;
         customPreview.value = null;
@@ -65,6 +71,9 @@ watch(
       type.value = 'checking';
       bankCode.value = null;
       currentBalance.value = 0;
+      creditLimit.value = null;
+      closingDay.value = null;
+      dueDay.value = null;
       customFile.value = null;
       customPreview.value = null;
       selectedPredefined.value = null;
@@ -103,6 +112,11 @@ async function submit() {
       bankCode: bankCode.value,
       customIconUrl: customPreview.value || selectedPredefined.value,
       currentBalance: Number(currentBalance.value) || 0,
+      ...(type.value === 'credit_card' && {
+        creditLimit: creditLimit.value ? Number(creditLimit.value) : null,
+        closingDay: closingDay.value ? Number(closingDay.value) : null,
+        dueDay: dueDay.value ? Number(dueDay.value) : null,
+      }),
     };
     let saved;
     if (props.account) {
@@ -195,6 +209,42 @@ async function submit() {
             step="0.01"
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 tabular-nums
                    focus:outline-none focus:ring-2 focus:ring-accent/60"
+          />
+        </label>
+      </section>
+
+      <!-- Credit Card details -->
+      <section v-if="type === 'credit_card'" class="grid grid-cols-3 gap-3">
+        <label :for="formId + '-limit'" class="block space-y-1">
+          <span class="text-xs uppercase tracking-wide text-muted">Limite (R$)</span>
+          <input
+            :id="formId + '-limit'"
+            v-model.number="creditLimit"
+            type="number"
+            step="0.01"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/60"
+          />
+        </label>
+        <label :for="formId + '-closing'" class="block space-y-1">
+          <span class="text-xs uppercase tracking-wide text-muted">Fechamento</span>
+          <input
+            :id="formId + '-closing'"
+            v-model.number="closingDay"
+            type="number"
+            min="1" max="31"
+            placeholder="Dia"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/60"
+          />
+        </label>
+        <label :for="formId + '-due'" class="block space-y-1">
+          <span class="text-xs uppercase tracking-wide text-muted">Vencimento</span>
+          <input
+            :id="formId + '-due'"
+            v-model.number="dueDay"
+            type="number"
+            min="1" max="31"
+            placeholder="Dia"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/60"
           />
         </label>
       </section>

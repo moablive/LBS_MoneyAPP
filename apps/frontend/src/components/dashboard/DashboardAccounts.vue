@@ -11,7 +11,7 @@ const emit = defineEmits<{
 }>();
 
 const totalPositiveBalance = computed(() => {
-  return props.accounts.reduce((acc, account) => {
+  return sortedAccounts.value.reduce((acc, account) => {
     const bal = Number(account.currentBalance);
     return acc + (bal > 0 ? bal : 0);
   }, 0);
@@ -24,7 +24,9 @@ const getAccountShare = (balance: number | string) => {
 };
 
 const sortedAccounts = computed(() => {
-  return [...props.accounts].sort((a, b) => Number(b.currentBalance) - Number(a.currentBalance));
+  return props.accounts
+    .filter(a => a.type !== 'credit_card')
+    .sort((a, b) => Number(b.currentBalance) - Number(a.currentBalance));
 });
 
 const brl = (n: number | string) =>

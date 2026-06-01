@@ -6,7 +6,7 @@ import NewAccountModal from '../components/NewAccountModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
-import type { AccountType, Account } from '@moneyapp/models';
+import type { Account } from '@moneyapp/models';
 
 const items = shallowRef<Account[]>([]);
 const loading = ref(true);
@@ -22,7 +22,7 @@ async function reload() {
   loading.value = true;
   try {
     const data = await api.get<Account[]>('/accounts');
-    items.value = data.filter(a => a.type !== 'credit_card');
+    items.value = data.filter(a => a.type === 'credit_card');
   } finally {
     loading.value = false;
   }
@@ -40,17 +40,12 @@ const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const totalBalance = computed(() =>
-  items.value.reduce((acc, a) => acc + Number(a.currentBalance), 0),
+  items.value.reduce((acc, a) => acc + Math.abs(Number(a.currentBalance)), 0),
 );
 
-const typeLabels: Record<AccountType, string> = {
-  checking: 'Conta Corrente',
-  savings: 'Poupança',
-  credit_card: 'Cartão de Crédito',
-  wallet: 'Carteira',
-  investment: 'Investimento',
-  other: 'Outro',
-};
+const totalLimit = computed(() =>
+  items.value.reduce((acc, a) => acc + (Number(a.creditLimit) || 0), 0),
+);
 
 
 </script>
@@ -60,23 +55,24 @@ const typeLabels: Record<AccountType, string> = {
     <div class="mx-auto max-w-7xl px-6 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">Contas</h1>
-          <p class="text-sm text-muted">Gerencie suas contas bancárias, carteiras e cartões.</p>
+          <h1 class="text-2xl font-semibold tracking-tight">Cartões de Crédito</h1>
+          <p class="text-sm text-muted">Gerencie seus cartões, faturas e limites.</p>
         </div>
         <button
           class="px-3 py-2 rounded-xl bg-accent text-white text-sm font-medium"
           @click="showCreate = true"
-        >+ Nova Conta</button>
+        >+ Novo Cartão</button>
       </header>
 
       <!-- Total balance card -->
       <section class="card flex items-center justify-between gap-4">
         <div>
-          <div class="text-xs uppercase tracking-wide text-muted">Saldo geral</div>
-          <div class="mt-1 text-3xl font-semibold tabular-nums">{{ brl(totalBalance) }}</div>
+          <div class="text-xs uppercase tracking-wide text-muted">Faturas Abertas (Usado)</div>
+          <div class="mt-1 text-3xl font-semibold tabular-nums text-expense">{{ brl(totalBalance) }}</div>
+          <div class="text-sm text-muted mt-1">Limite Total: {{ brl(totalLimit) }}</div>
         </div>
         <div class="text-right text-sm text-muted">
-          <div>{{ items.length }} {{ items.length === 1 ? 'conta' : 'contas' }}</div>
+          <div>{{ items.length }} {{ items.length === 1 ? 'cartão' : 'cartões' }}</div>
         </div>
       </section>
 
@@ -85,10 +81,10 @@ const typeLabels: Record<AccountType, string> = {
       </section>
 
       <section v-else-if="items.length === 0" class="card text-center py-12 text-muted">
-        Nenhuma conta cadastrada ainda.
+        Nenhum cartão cadastrado ainda.
         <div class="mt-3">
           <button class="px-3 py-2 rounded-xl bg-accent text-white text-sm font-medium"
-                  @click="showCreate = true">Adicionar primeira conta</button>
+                  @click="showCreate = true">Adicionar primeiro cartão</button>
         </div>
       </section>
 
@@ -108,13 +104,22 @@ const typeLabels: Record<AccountType, string> = {
           <div class="min-w-0 flex-1 flex flex-col justify-center">
             <div class="flex items-center gap-2">
               <div class="font-medium text-sm truncate">{{ a.name }}</div>
-              <div class="text-[10px] text-muted uppercase font-semibold tracking-wide">
-                {{ typeLabels[a.type] }}
+              <div class="text-[10px] text-muted uppercase font-semibold tracking-wide" v-if="a.closingDay">
+                Vence dia {{ a.dueDay || a.closingDay }}
               </div>
             </div>
-            <div class="mt-0.5 text-base font-semibold tabular-nums"
-                 :class="Number(a.currentBalance) < 0 ? 'text-expense' : ''">
-              {{ brl(a.currentBalance) }}
+            
+            <div class="mt-2 w-full bg-surface-overlay h-1.5 rounded-full overflow-hidden border border-surface-border" v-if="a.creditLimit && Number(a.creditLimit) > 0">
+              <div class="bg-expense h-full transition-all" :style="{ width: Math.min(100, Math.max(0, (Math.abs(Number(a.currentBalance)) / Number(a.creditLimit)) * 100)) + '%' }"></div>
+            </div>
+            
+            <div class="mt-1 flex justify-between items-center w-full">
+              <div class="text-base font-semibold tabular-nums text-expense">
+                {{ brl(Math.abs(Number(a.currentBalance))) }}
+              </div>
+              <div class="text-[10px] text-muted" v-if="a.creditLimit && Number(a.creditLimit) > 0">
+                Livre: {{ brl(Number(a.creditLimit) - Math.abs(Number(a.currentBalance))) }}
+              </div>
             </div>
           </div>
           <button
