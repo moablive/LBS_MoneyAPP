@@ -4,10 +4,11 @@ import { RouterView } from 'vue-router';
 
 <template>
   <div class="min-h-dvh bg-surface-base relative overflow-hidden">
-    <!-- Animated ambient background blobs -->
-    <div class="absolute top-0 -left-4 w-72 h-72 bg-primary-soft rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
-    <div class="absolute top-0 -right-4 w-72 h-72 bg-accent-soft rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob delay-200"></div>
-    <div class="absolute -bottom-8 left-20 w-72 h-72 bg-brand-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-blob delay-400"></div>
+    <!-- Ambient background blobs (estáticos: a animação contínua forçava
+         os cards com backdrop-filter a re-borrar o fundo a cada frame). -->
+    <div class="absolute top-0 -left-4 w-72 h-72 bg-primary-soft rounded-full filter blur-3xl opacity-30"></div>
+    <div class="absolute top-0 -right-4 w-72 h-72 bg-accent-soft rounded-full filter blur-3xl opacity-30"></div>
+    <div class="absolute -bottom-8 left-20 w-72 h-72 bg-brand-500/20 rounded-full filter blur-3xl opacity-30"></div>
     
     <div class="relative z-10 h-full">
       <RouterView v-slot="{ Component }">
