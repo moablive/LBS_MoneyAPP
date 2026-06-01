@@ -138,7 +138,7 @@ async function handleDelete(t: Transaction | null) {
     <div class="mx-auto max-w-7xl px-4 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap mb-8">
         <h1 class="text-2xl font-bold tracking-tight text-white">Livro Caixa</h1>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div class="inline-flex rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg">
             <button
               v-for="opt in (['all','expense','income'] as const)"
@@ -150,30 +150,30 @@ async function handleDelete(t: Transaction | null) {
               {{ opt === 'all' ? 'Tudo' : opt === 'expense' ? 'Despesas' : 'Receitas' }}
             </button>
           </div>
-          <select 
-            v-model="filterPeriod" 
+          <select
+            v-model="filterPeriod"
             @change="reload()"
-            class="px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="current_month">Mês Atual</option>
             <option value="next_month">Próximo Mês</option>
             <option value="all">Todo Período</option>
           </select>
-          <select 
-            v-model="filterCategory" 
+          <select
+            v-model="filterCategory"
             @change="reload()"
-            class="px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas Categorias</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 w-full sm:w-auto">
             <button
-              class="px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="showCreate = true; createType = 'expense'"
             >+ Despesa</button>
             <button
-              class="px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="showCreate = true; createType = 'income'"
             >+ Receita</button>
           </div>
