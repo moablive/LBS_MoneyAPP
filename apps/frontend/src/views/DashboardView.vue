@@ -45,6 +45,7 @@ const loadData = async () => {
 
     const toDate = new Date(fromDate);
     toDate.setMonth(toDate.getMonth() + 1);
+    toDate.setHours(23, 59, 59, 999);
     
     const fromParam = fromDate.toISOString();
     const toParam = toDate.toISOString();
