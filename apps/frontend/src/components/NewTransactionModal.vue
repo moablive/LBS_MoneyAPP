@@ -162,8 +162,12 @@ async function submit() {
     emit('created', saved);
     window.dispatchEvent(new CustomEvent('transaction-created'));
     open.value = false;
-  } catch (e) {
-    error.value = 'Não foi possível salvar a transação.';
+  } catch (e: any) {
+    if (e.body?.error === 'receipt_required_for_fatura_payment') {
+      error.value = 'Para registrar o pagamento da fatura, é obrigatório anexar o comprovante.';
+    } else {
+      error.value = 'Não foi possível salvar a transação.';
+    }
   } finally {
     submitting.value = false;
   }

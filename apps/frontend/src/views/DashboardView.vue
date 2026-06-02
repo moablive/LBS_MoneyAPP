@@ -111,7 +111,37 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       };
     });
 
-    upcomingTransactions.value = [...transactionsRes, ...upcomingLoans].sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const creditCardInvoices = accounts.value
+      .filter(a => a.type === 'credit_card' && Number(a.currentBalance) !== 0)
+      .map(card => {
+        let dueDate = new Date(today.getFullYear(), today.getMonth(), card.dueDay || card.closingDay || 1, 12, 0, 0);
+        if (dueDate < today) {
+           dueDate.setMonth(dueDate.getMonth() + 1);
+        }
+        return {
+          id: `cc-${card.id}`,
+          description: `Fatura ${card.name}`,
+          amount: -Math.abs(Number(card.currentBalance)),
+          type: 'expense',
+          occurredAt: dueDate.toISOString(),
+          categoryId: null,
+          isCreditCard: true,
+          account: card
+        };
+      })
+      .filter(cc => {
+         const d = new Date(cc.occurredAt);
+         return d >= fromDate && d <= toDate;
+      });
+    upcomingTransactions.value = [...transactionsRes, ...upcomingLoans, ...creditCardInvoices].sort((a, b) => {
+      const dayA = Number(a.occurredAt.slice(8, 10));
+      const dayB = Number(b.occurredAt.slice(8, 10));
+      if (dayA !== dayB) return dayA - dayB;
+      return new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
+    });
   } catch (e) {
     console.error(e);
   } finally {
@@ -132,8 +162,9 @@ const loadData = () => {
 
   loadSummary();
   loadRanking();
-  loadAccounts();
-  loadUpcoming(fromParam, toParam, fromDate, toDate);
+  loadAccounts().then(() => {
+    loadUpcoming(fromParam, toParam, fromDate, toDate);
+  });
 };
 
 onMounted(() => {

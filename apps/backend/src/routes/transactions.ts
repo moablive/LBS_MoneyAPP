@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { and, asc, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
 import { createTransactionSchema, transactionFiltersSchema, updateTransactionSchema } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
-const { accounts, transactions } = schema;
+const { accounts, transactions, categories } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 
@@ -72,6 +72,13 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
     const body = req.body as import('@moneyapp/models').CreateTransactionInput;
 
     const created = await db.transaction(async (tx) => {
+      const isFatura = await isFaturaPaymentTx(tx, body.accountId ?? null, body.categoryId);
+      const status = body.status ?? 'paid';
+
+      if (isFatura && status === 'paid' && (!body.receipt || !body.receipt.base64)) {
+        throw new HttpError(400, 'receipt_required_for_fatura_payment');
+      }
+
       const [row] = await tx
         .insert(transactions)
         .values({
@@ -79,7 +86,7 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
           description: body.description,
           amount: body.amount.toFixed(2),
           type: body.type,
-          status: body.status ?? 'paid',
+          status,
           occurredAt: body.occurredAt,
           categoryId: body.categoryId,
           accountId: body.accountId ?? null,
@@ -89,13 +96,19 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
         .returning();
 
       if (row!.accountId && row!.status === 'paid') {
-        await applyBalanceDelta(tx, userId, row!.accountId, row!.amount);
+        let delta = Number(row!.amount);
+        if (isFatura) delta = Math.abs(delta);
+        await applyBalanceDelta(tx, userId, row!.accountId, delta);
       }
       return row!;
     });
 
     res.status(201).json(stripReceipt(created));
   } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ error: err.code });
+      return;
+    }
     next(err);
   }
 });
@@ -144,16 +157,27 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
         .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
         .returning();
 
+      const oldIsFatura = await isFaturaPaymentTx(tx, existing.accountId, existing.categoryId);
+      const newIsFatura = await isFaturaPaymentTx(tx, row!.accountId, row!.categoryId);
+
+      if (newIsFatura && row!.status === 'paid' && !row!.receiptBase64) {
+        throw new HttpError(400, 'receipt_required_for_fatura_payment');
+      }
+
       // Reverse the old delta on the old account, apply the new delta on the
       // new account.
-      const oldAmountToReverse = existing.status === 'paid' ? existing.amount : 0;
-      const newAmountToApply = row!.status === 'paid' ? row!.amount : 0;
+      const oldAmountToReverse = existing.status === 'paid' ? Number(existing.amount) : 0;
+      const newAmountToApply = row!.status === 'paid' ? Number(row!.amount) : 0;
 
       if (existing.accountId && oldAmountToReverse !== 0) {
-        await applyBalanceDelta(tx, userId, existing.accountId, negate(String(oldAmountToReverse)));
+        let deltaToReverse = oldAmountToReverse;
+        if (oldIsFatura) deltaToReverse = Math.abs(deltaToReverse);
+        await applyBalanceDelta(tx, userId, existing.accountId, negate(String(deltaToReverse)));
       }
       if (row!.accountId && newAmountToApply !== 0) {
-        await applyBalanceDelta(tx, userId, row!.accountId, newAmountToApply);
+        let deltaToApply = newAmountToApply;
+        if (newIsFatura) deltaToApply = Math.abs(deltaToApply);
+        await applyBalanceDelta(tx, userId, row!.accountId, deltaToApply);
       }
       return row!;
     });
@@ -186,8 +210,12 @@ transactionsRouter.delete('/:id', async (req, res, next) => {
       await tx
         .delete(transactions)
         .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+      
+      const oldIsFatura = await isFaturaPaymentTx(tx, existing.accountId, existing.categoryId);
       if (existing.accountId && existing.status === 'paid') {
-        await applyBalanceDelta(tx, userId, existing.accountId, negate(existing.amount));
+        let deltaToReverse = Number(existing.amount);
+        if (oldIsFatura) deltaToReverse = Math.abs(deltaToReverse);
+        await applyBalanceDelta(tx, userId, existing.accountId, negate(String(deltaToReverse)));
       }
       return existing;
     });
@@ -264,5 +292,16 @@ function monthBounds(month: string): { start: Date; end: Date } {
   const start = new Date(Date.UTC(y!, m! - 1, 1));
   const end = new Date(Date.UTC(y!, m!, 1));
   return { start, end };
+}
+
+async function isFaturaPaymentTx(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  accountId: string | null,
+  categoryId: string | null
+): Promise<boolean> {
+  if (!accountId || !categoryId) return false;
+  const acc = await tx.query.accounts.findFirst({ where: eq(accounts.id, accountId) });
+  const cat = await tx.query.categories.findFirst({ where: eq(categories.id, categoryId) });
+  return acc?.type === 'credit_card' && !!cat?.name.toUpperCase().includes('FATURA');
 }
 
