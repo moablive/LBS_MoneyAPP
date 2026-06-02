@@ -9,6 +9,7 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 const showGlobalCreate = ref(false);
+const showMore = ref(false);
 
 const LOGO_SRC = '/logo/MONEYAPP.png';
 const logoSrc = ref(LOGO_SRC);
@@ -159,12 +160,76 @@ function logout() {
         <span class="text-[10px] font-medium">Contas</span>
       </RouterLink>
 
-      <!-- Settings directly on mobile instead of logout for simplicity -->
-      <RouterLink to="/configuracoes" class="p-2 flex flex-col items-center gap-1 text-muted transition-colors hover:text-accent" active-class="text-accent !text-accent">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span class="text-[10px] font-medium">Config</span>
-      </RouterLink>
+      <!-- "Mais" opens a bottom sheet with the remaining sections -->
+      <button
+        @click="showMore = true"
+        class="p-2 flex flex-col items-center gap-1 text-muted transition-colors hover:text-accent"
+        :class="{ 'text-accent': showMore }"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg>
+        <span class="text-[10px] font-medium">Mais</span>
+      </button>
     </nav>
+
+    <!-- Mobile "Mais" bottom sheet -->
+    <div v-if="showMore" class="sm:hidden fixed inset-0 z-[60]" @click="showMore = false">
+      <div class="absolute inset-0 bg-black/60"></div>
+      <div
+        class="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto bg-surface-raised border-t border-surface-border rounded-t-2xl shadow-2xl pb-[env(safe-area-inset-bottom)]"
+        @click.stop
+      >
+        <div class="flex justify-center pt-3 pb-1">
+          <div class="h-1 w-10 rounded-full bg-surface-border"></div>
+        </div>
+        <div class="px-4 py-2 flex items-center justify-between border-b border-surface-border">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted">Menu</span>
+          <button @click="showMore = false" class="text-muted hover:text-white p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <nav class="p-3 space-y-1">
+          <template v-for="item in nav" :key="item.label">
+            <RouterLink
+              v-if="!item.children"
+              :to="item.to!"
+              @click="showMore = false"
+              class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-surface-overlay hover:text-white"
+              active-class="!text-white !bg-accent"
+            >
+              <span v-html="item.icon" class="flex-shrink-0"></span>
+              {{ item.label }}
+            </RouterLink>
+
+            <div v-else>
+              <div class="flex items-center gap-3 px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted/70">
+                <span v-html="item.icon" class="flex-shrink-0 opacity-70"></span>
+                {{ item.label }}
+              </div>
+              <RouterLink
+                v-for="child in item.children"
+                :key="child.to"
+                :to="child.to"
+                @click="showMore = false"
+                class="flex items-center gap-3 pl-9 pr-3 py-2.5 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-surface-overlay hover:text-white"
+                active-class="!text-white !bg-accent"
+              >
+                <span v-html="child.icon" class="flex-shrink-0"></span>
+                {{ child.label }}
+              </RouterLink>
+            </div>
+          </template>
+
+          <button
+            @click="logout"
+            class="w-full mt-2 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-400 bg-surface-overlay border border-surface-border hover:bg-red-500/10 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            Sair
+          </button>
+        </nav>
+      </div>
+    </div>
 
     <NewTransactionModal 
       :open="showGlobalCreate" 

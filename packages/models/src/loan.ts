@@ -7,6 +7,7 @@ export const loanSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   accountId: z.string().uuid().nullable().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, 'A descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
   date: z.string(), // ISO Date
@@ -21,6 +22,7 @@ export type Loan = z.infer<typeof loanSchema>;
 
 export const createLoanSchema = z.object({
   accountId: z.string().uuid().nullable().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, 'A descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
   date: z.string(), // ISO Date

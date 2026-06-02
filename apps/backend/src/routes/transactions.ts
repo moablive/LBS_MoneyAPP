@@ -237,7 +237,8 @@ function applyBalanceDelta(
     .set({
       currentBalance: sql`${accounts.currentBalance} + ${String(delta)}::numeric`,
     })
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId)));
+    // Frozen accounts keep a historical balance — skip the mutation for them.
+    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId), eq(accounts.freezeBalance, false)));
 }
 
 function negate(value: string): string {

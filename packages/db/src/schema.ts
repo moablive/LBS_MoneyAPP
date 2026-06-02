@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
 import {
+  boolean,
   index,
   numeric,
   text,
@@ -78,6 +79,10 @@ export const accounts = pgTable(
     // bank is not in the registry yet.
     customIconUrl: text('custom_icon_url'),
     currentBalance: numeric('current_balance', { precision: 14, scale: 2 }).default('0').notNull(),
+    // When true the account is "frozen": paid transactions/loans linked to it
+    // never mutate `currentBalance`. Used for closed/cancelled accounts whose
+    // balance is kept only as historical reference (e.g. cancelled Mercado Pago).
+    freezeBalance: boolean('freeze_balance').default(false).notNull(),
     creditLimit: numeric('credit_limit', { precision: 14, scale: 2 }),
     closingDay: numeric('closing_day'), // 1-31
     dueDay: numeric('due_day'), // 1-31
@@ -134,6 +139,7 @@ export const transactions = pgTable(
     accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
     subscriptionId: uuid('subscription_id').references(() => subscriptions.id, { onDelete: 'set null' }),
     investmentId: uuid('investment_id').references(() => investments.id, { onDelete: 'set null' }),
+    loanId: uuid('loan_id').references(() => loans.id, { onDelete: 'set null' }),
     receiptBase64: text('receipt_base64'),
     receiptMimeType: varchar('receipt_mime_type', { length: 80 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -164,6 +170,7 @@ export const loans = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+    categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
     description: varchar('description', { length: 255 }).notNull(),
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     date: timestamp('date', { withTimezone: true }).notNull(),
@@ -221,6 +228,7 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   user: one(users, { fields: [categories.userId], references: [users.id] }),
   transactions: many(transactions),
   subscriptions: many(subscriptions),
+  loans: many(loans),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
@@ -244,6 +252,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   account: one(accounts, { fields: [transactions.accountId], references: [accounts.id] }),
   subscription: one(subscriptions, { fields: [transactions.subscriptionId], references: [subscriptions.id] }),
   investment: one(investments, { fields: [transactions.investmentId], references: [investments.id] }),
+  loan: one(loans, { fields: [transactions.loanId], references: [loans.id] }),
 }));
 
 export const investmentsRelations = relations(investments, ({ one, many }) => ({
@@ -255,6 +264,7 @@ export const investmentsRelations = relations(investments, ({ one, many }) => ({
 export const loansRelations = relations(loans, ({ one }) => ({
   user: one(users, { fields: [loans.userId], references: [users.id] }),
   account: one(accounts, { fields: [loans.accountId], references: [accounts.id] }),
+  category: one(categories, { fields: [loans.categoryId], references: [categories.id] }),
 }));
 
 export type User = typeof users.$inferSelect;

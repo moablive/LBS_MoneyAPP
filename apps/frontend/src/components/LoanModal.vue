@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
-import type { LoanItem, Account } from '@moneyapp/models';
+import type { LoanItem, Account, Category } from '@moneyapp/models';
 import { useAuthStore } from '../stores/auth';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
@@ -28,9 +28,11 @@ const form = ref({
   date: new Date().toISOString().split('T')[0] as string,
   type: 'given' as 'given' | 'received' | 'fgts',
   status: 'active' as 'active' | 'paid',
+  categoryId: null as string | null,
 });
 
 const accounts = ref<Account[]>([]);
+const categories = ref<Category[]>([]);
 
 const receiptFile = ref<File | null>(null);
 const receiptBlobUrl = ref<string | null>(null);
@@ -56,6 +58,7 @@ function resetForm() {
       date: props.loanToEdit.date.split('T')[0] as string,
       type: props.loanToEdit.type,
       status: props.loanToEdit.status,
+      categoryId: (props.loanToEdit as any).categoryId || null,
     };
   } else {
     form.value = {
@@ -66,17 +69,23 @@ function resetForm() {
       date: new Date().toISOString().split('T')[0] as string,
       type: props.defaultType || 'given',
       status: 'active',
+      categoryId: null,
     };
   }
 }
 
 watch(show, async (val) => {
   if (val) {
-    if (accounts.value.length === 0) {
+    if (accounts.value.length === 0 || categories.value.length === 0) {
       try {
-        accounts.value = await api.get<Account[]>('/accounts');
+        const [accs, cats] = await Promise.all([
+          api.get<Account[]>('/accounts'),
+          api.get<Category[]>('/categories')
+        ]);
+        accounts.value = accs;
+        categories.value = cats;
       } catch (e) {
-        console.error('Failed to load accounts', e);
+        console.error('Failed to load accounts or categories', e);
       }
     }
     resetForm();
@@ -108,6 +117,18 @@ watch(show, async (val) => {
 }, { immediate: true });
 
 async function save() {
+  if (form.value.status === 'paid') {
+    if (!form.value.categoryId) {
+      await alert('É necessário selecionar uma categoria para marcar como pago.');
+      return;
+    }
+    const hasExistingReceipt = !!props.loanToEdit?.hasReceipt;
+    if (!receiptFile.value && !hasExistingReceipt) {
+      await alert('É necessário anexar um comprovante para marcar como pago.');
+      return;
+    }
+  }
+
   const payload = {
     description: form.value.description,
     amount: Number(String(form.value.amount).replace(',', '.')),
@@ -115,6 +136,7 @@ async function save() {
     date: new Date(form.value.date as string).toISOString(),
     type: form.value.type,
     status: form.value.status,
+    categoryId: form.value.categoryId || undefined,
     installments: form.value.installments,
     receipt: receiptFile.value
       ? ((await fileToBase64(receiptFile.value)) as { mimeType: string, base64: string })
@@ -160,6 +182,7 @@ async function destroy() {
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
     <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center bg-surface-raised">
+        <h2 v-if="props.loanToEdit?.status === 'paid'" class="flex-1 text-sm font-semibold text-expense">Empréstimo Finalizado</h2>
         <button @click="show = false" class="text-muted hover:text-white transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -170,7 +193,8 @@ async function destroy() {
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Descrição</label>
           <input
             v-model="form.description"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
+            :disabled="props.loanToEdit?.status === 'paid'"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
             placeholder="Ex: Empréstimo do João"
           />
         </div>
@@ -184,7 +208,8 @@ async function destroy() {
                 v-model="form.amount"
                 type="number"
                 step="0.01"
-                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
+                :disabled="props.loanToEdit?.status === 'paid'"
+                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
                 placeholder="0,00"
               />
             </div>
@@ -196,7 +221,8 @@ async function destroy() {
               type="number"
               min="1"
               step="1"
-              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
+              :disabled="props.loanToEdit?.status === 'paid'"
+              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
             />
           </div>
           <div v-else></div>
@@ -207,7 +233,8 @@ async function destroy() {
           <input
             v-model="form.date"
             type="date"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark]"
+            :disabled="props.loanToEdit?.status === 'paid'"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark] disabled:opacity-50"
           />
         </div>
 
@@ -215,7 +242,8 @@ async function destroy() {
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Conta (Opcional)</label>
           <select
             v-model="form.accountId"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer"
+            :disabled="props.loanToEdit?.status === 'paid'"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer disabled:opacity-50"
           >
             <option :value="null">Selecionar conta...</option>
             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
@@ -240,6 +268,17 @@ async function destroy() {
               Pago
             </button>
           </div>
+        </div>
+
+        <div v-if="form.status === 'paid'">
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Categoria</label>
+          <select
+            v-model="form.categoryId"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer"
+          >
+            <option :value="null">Nenhuma</option>
+            <option v-for="cat in categories.filter(c => c.type === (form.type === 'received' ? 'expense' : 'income'))" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+          </select>
         </div>
 
         <div>

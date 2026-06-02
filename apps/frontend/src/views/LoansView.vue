@@ -54,6 +54,12 @@ const filteredItems = computed(() => {
   const term = debouncedSearch.value.trim().toLowerCase();
   return loans.value
     .filter((it) => {
+      // Empréstimos pagos "saem" deste atalho APENAS quando migraram para uma
+      // categoria: ao pagar (com categoria + comprovante) o backend cria a
+      // transação espelho, então eles passam a viver no Livro Caixa. Um pago
+      // sem categoria (ex.: legado, sem transação espelho) continua visível
+      // aqui para não sumir de todos os lugares.
+      if (it.status === 'paid' && it.categoryId) return false;
       if (tab.value === 'given' && it.type !== 'given') return false;
       if (tab.value === 'received' && it.type !== 'received') return false;
       if (tab.value === 'fgts' && it.type !== 'fgts') return false;

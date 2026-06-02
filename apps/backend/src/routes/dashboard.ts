@@ -148,7 +148,9 @@ dashboardRouter.get(
           total: sql<string>`coalesce(sum(${accounts.currentBalance}), 0)`.as('total'),
         })
         .from(accounts)
-        .where(eq(accounts.userId, userId));
+        // Frozen accounts (freezeBalance = true) are historical and do NOT
+        // count toward the current total balance.
+        .where(and(eq(accounts.userId, userId), eq(accounts.freezeBalance, false)));
 
       const income = Number(agg!.income);
       const expense = Number(agg!.expense);

@@ -36,6 +36,7 @@ accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) =
         bankCode: body.bankCode ?? null,
         customIconUrl: body.customIconUrl ?? null,
         currentBalance: body.currentBalance.toFixed(2),
+        freezeBalance: body.freezeBalance ?? false,
         creditLimit: body.creditLimit ? body.creditLimit.toFixed(2) : null,
         closingDay: body.closingDay ? String(body.closingDay) : null,
         dueDay: body.dueDay ? String(body.dueDay) : null,
@@ -58,6 +59,7 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
     if (body.bankCode !== undefined) patch.bankCode = body.bankCode;
     if (body.customIconUrl !== undefined) patch.customIconUrl = body.customIconUrl;
     if (body.currentBalance !== undefined) patch.currentBalance = body.currentBalance.toFixed(2);
+    if (body.freezeBalance !== undefined) patch.freezeBalance = body.freezeBalance;
     if (body.creditLimit !== undefined) patch.creditLimit = body.creditLimit ? body.creditLimit.toFixed(2) : null;
     if (body.closingDay !== undefined) patch.closingDay = body.closingDay ? String(body.closingDay) : null;
     if (body.dueDay !== undefined) patch.dueDay = body.dueDay ? String(body.dueDay) : null;

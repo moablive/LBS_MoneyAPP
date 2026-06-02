@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN IF NOT EXISTS "freeze_balance" boolean DEFAULT false NOT NULL;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, useId } from 'vue';
+import { ref, watch, useId, computed } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { AccountType, CreateAccountInput, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
@@ -16,6 +16,12 @@ const name = ref('');
 const type = ref<AccountType>('checking');
 const bankCode = ref<string | null>(null);
 const currentBalance = ref<number>(0);
+const freezeBalance = ref<boolean>(false);
+// Switch exposto ao usuário: marcado = afeta o saldo (= não congelado).
+const affectsBalance = computed<boolean>({
+  get: () => !freezeBalance.value,
+  set: (v) => { freezeBalance.value = !v; },
+});
 const creditLimit = ref<number | null>(null);
 const closingDay = ref<number | null>(null);
 const dueDay = ref<number | null>(null);
@@ -56,6 +62,7 @@ watch(
       type.value = props.account.type;
       bankCode.value = props.account.bankCode;
       currentBalance.value = Number(props.account.currentBalance);
+      freezeBalance.value = props.account.freezeBalance ?? false;
       creditLimit.value = props.account.creditLimit ? Number(props.account.creditLimit) : null;
       closingDay.value = props.account.closingDay ? Number(props.account.closingDay) : null;
       dueDay.value = props.account.dueDay ? Number(props.account.dueDay) : null;
@@ -71,6 +78,7 @@ watch(
       type.value = 'checking';
       bankCode.value = null;
       currentBalance.value = 0;
+      freezeBalance.value = false;
       creditLimit.value = null;
       closingDay.value = null;
       dueDay.value = null;
@@ -112,6 +120,7 @@ async function submit() {
       bankCode: bankCode.value,
       customIconUrl: customPreview.value || selectedPredefined.value,
       currentBalance: Number(currentBalance.value) || 0,
+      freezeBalance: freezeBalance.value,
       ...(type.value === 'credit_card' && {
         creditLimit: creditLimit.value ? Number(creditLimit.value) : null,
         closingDay: closingDay.value ? Number(closingDay.value) : null,
@@ -210,6 +219,22 @@ async function submit() {
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 tabular-nums
                    focus:outline-none focus:ring-2 focus:ring-accent/60"
           />
+        </label>
+      </section>
+
+      <!-- Afeta o saldo? (desmarcado = conta histórica/encerrada) -->
+      <section class="flex items-start justify-between gap-3 rounded-xl border border-surface-border bg-surface-overlay/40 px-3 py-3">
+        <div class="min-w-0">
+          <div class="text-sm font-medium">Afeta o saldo total</div>
+          <p class="text-xs text-muted mt-0.5">
+            <strong>Marcado:</strong> a conta entra no saldo total e é alterada pelos pagamentos.
+            <strong>Desmarcado:</strong> conta histórica/encerrada — fica fora do saldo total e o
+            valor congela como referência.
+          </p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+          <input type="checkbox" v-model="affectsBalance" class="sr-only peer" />
+          <div class="w-11 h-6 bg-surface-overlay peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent border border-surface-border"></div>
         </label>
       </section>
 

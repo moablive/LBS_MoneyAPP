@@ -17,6 +17,7 @@ export const createAccountSchema = z
     bankCode: z.string().trim().min(1).max(32).nullish(),
     customIconUrl: z.string().trim().max(500_000).nullish(),
     currentBalance: z.number().finite().default(0),
+    freezeBalance: z.boolean().default(false),
     creditLimit: z.number().finite().nullish(),
     closingDay: z.number().int().min(1).max(31).nullish(),
     dueDay: z.number().int().min(1).max(31).nullish(),
@@ -34,6 +35,7 @@ export interface Account {
   bankCode: string | null;
   customIconUrl: string | null;
   currentBalance: string;
+  freezeBalance?: boolean;
   creditLimit?: string | null;
   closingDay?: string | null;
   dueDay?: string | null;
