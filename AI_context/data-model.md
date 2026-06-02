@@ -1,6 +1,6 @@
 # Data model
 
-Canonical source: `packages/shared/src/db/schema.ts`. This document explains the
+Canonical source: `packages/db/src/schema.ts`. This document explains the
 **shape and intent**; the schema file is the source of truth for column types.
 
 ## ER diagram
@@ -19,8 +19,10 @@ erDiagram
   accounts ||--o{ subscriptions: funds
   accounts ||--o{ investments  : custodies
   accounts ||--o{ loans        : custodies
+  categories ||--o{ loans      : classifies
   subscriptions ||--o{ transactions: generates
   investments ||--o{ transactions: generates
+  loans ||--o{ transactions    : generates
 
   users {
     uuid id PK
@@ -44,6 +46,7 @@ erDiagram
     varchar name
     enum type "checking | savings | credit_card | wallet | investment | other"
     numeric current_balance
+    bool freeze_balance "historical/closed account — excluded from totals & not mutated"
   }
 
   transactions {
@@ -57,6 +60,7 @@ erDiagram
     uuid account_id FK "nullable"
     uuid subscription_id FK "nullable"
     uuid investment_id FK "nullable"
+    uuid loan_id FK "nullable"
     bool is_recurring
     bool is_investment
     text receipt_base64 "nullable"
@@ -95,6 +99,7 @@ erDiagram
     uuid id PK
     uuid user_id FK
     uuid account_id FK "nullable"
+    uuid category_id FK "nullable — set when marked paid"
     varchar description
     numeric amount
     timestamptz date
@@ -129,3 +134,17 @@ erDiagram
 - All timestamps: `timestamptz` (`with timezone`). Server logic uses UTC.
 - Soft delete is **not used**. Hard deletes with FK cascades / restrict
   where appropriate.
+
+## Notable columns
+
+- **`accounts.freeze_balance`** (bool, default `false`). A *frozen* account
+  (historical / closed, e.g. a cancelled Mercado Pago) keeps its
+  `current_balance` as a read-only reference: paid transactions/loans never
+  mutate it, and it is **excluded** from the dashboard total balance. The UI
+  presents the inverse — a switch labelled "Afeta o saldo": checked = affects
+  (`freeze_balance = false`), unchecked = historical (`freeze_balance = true`).
+- **`loans.category_id`** + **`transactions.loan_id`**. When a loan is marked
+  `paid` (which requires a category and a receipt), the backend creates a mirror
+  `transaction` in that category linked back via `transactions.loan_id`, so the
+  paid loan shows up in the Livro Caixa under its category. Both FKs are
+  `onDelete: set null`.

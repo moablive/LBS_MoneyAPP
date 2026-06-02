@@ -29,6 +29,13 @@ regardless of how clean it looks.
 8. Accounts are optional on a transaction (a `Multa Detran RS` may have no
    linked account). The schema reflects this with a nullable FK and
    `onDelete: set null`.
+8b. **Frozen accounts (`freeze_balance = true`).** A frozen/historical account
+   (e.g. a closed Mercado Pago) keeps its `current_balance` as a read-only
+   reference. The `applyBalanceDelta` helper (in `loans.ts` and
+   `transactions.ts`) adds `freeze_balance = false` to its `WHERE`, so balance
+   mutations silently skip frozen accounts. The dashboard "Saldo Atual" total
+   also excludes them. The UI switch is phrased as "Afeta o saldo" — checked
+   means `freeze_balance = false`.
 
 ## Receipts
 
@@ -62,10 +69,24 @@ regardless of how clean it looks.
 18. **Loans** represent money given, received, or FGTS. They are distinct entities that can optionally link to an `accountId`.
 19. They have a `type` (`given`, `received`, `fgts`) and `status` (`active`, `paid`).
 20. Like transactions, loans support inline receipts in base64.
+20a. **Marking a loan `paid` requires a `category_id` AND a receipt** (enforced
+    client-side in `LoanModal`). On save the backend mirrors the loan into a
+    `transaction` in that category, linked via `transactions.loan_id`, applying
+    the signed amount (`received` → expense, otherwise income) and the account
+    balance delta — all inside one DB transaction. Editing back to `active` (or
+    clearing the category) deletes the mirror transaction and reverts the
+    balance.
+20b. **Paid loans leave the Empréstimos shortcut list.** The `LoansView` filter
+    hides a loan only when it is `paid` **and** has a `category_id` (i.e. it has
+    a mirror transaction and now lives in the Livro Caixa). A paid loan without
+    a category stays visible so it never vanishes from every screen.
 
 ## Aggregations
 
 21. All dashboard aggregations include all transactions within the selected period.
+21a. The dashboard **"Saldo Atual"** (sum of `accounts.current_balance`) excludes
+    frozen accounts (`freeze_balance = true`). Income/expense aggregations are
+    transaction-based and are not affected by this flag.
 22. Month-over-month comparisons use **calendar months in UTC**, anchored
     on day 1 at 00:00:00Z. We never use rolling 30-day windows.
 23. **Monthly projections** take the current month's expenses and combine them with recurring future expenses (from active Subscriptions) to predict end-of-month balances and spendings.

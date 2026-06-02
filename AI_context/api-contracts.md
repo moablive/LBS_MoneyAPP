@@ -1,7 +1,7 @@
 # API contracts
 
 All endpoints are under `/api`. Request and response bodies match the Zod
-schemas exported from `@moneyapp/shared`. Wherever a Zod schema exists, it
+schemas exported from `@moneyapp/models`. Wherever a Zod schema exists, it
 is the contract — this document is a map, not a duplicate.
 
 ## Conventions
@@ -34,6 +34,12 @@ is the contract — this document is a map, not a duplicate.
 | ------ | -------------------------- | ---------------------- |
 | GET    | `/api/accounts`            | —                      |
 | POST   | `/api/accounts`            | `createAccountSchema`  |
+| PATCH  | `/api/accounts/:id`        | `updateAccountSchema`  |
+| DELETE | `/api/accounts/:id`        | —                      |
+
+> `createAccountSchema` / `updateAccountSchema` include `freezeBalance: boolean`
+> (default `false`). `true` = historical account: balance frozen and excluded
+> from the dashboard total.
 
 ### Transactions
 | Method | Path                          | Schema                          |
@@ -63,11 +69,11 @@ is the contract — this document is a map, not a duplicate.
 ### Loans
 | Method | Path                          | Schema                          |
 | ------ | ----------------------------- | ------------------------------- |
-| GET    | `/api/loans`                  | —                               |
-| GET    | `/api/loans/summary`          | returns `LoanSummaryResponse`   |
-| POST   | `/api/loans`                  | `createLoanSchema`              |
-| PATCH  | `/api/loans/:id`              | `updateLoanSchema`              |
+| GET    | `/api/loans/summary`          | returns `LoanSummaryResponse` (items carry `categoryId`, `hasReceipt`) |
+| POST   | `/api/loans`                  | `createLoanSchema` (supports `installments`, `categoryId`, `receipt`) |
+| PUT    | `/api/loans/:id`              | `updateLoanSchema` — marking `paid` mirrors a transaction in the category |
 | DELETE | `/api/loans/:id`              | —                               |
+| GET    | `/api/loans/:id/receipt`      | streams decoded base64          |
 
 ### Dashboard
 | Method | Path                                       | Schema                                    |

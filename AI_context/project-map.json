@@ -7,8 +7,8 @@
   "infra": {
     "postgres": {
       "container": "awlsrvDB_postgres",
-      "database": "postgres",
-      "schema": "moneyapp",
+      "database": "moneyapp",
+      "schema": "public",
       "user": "admin_root",
       "passwordEscape": "Wrap the DATABASE_URL in single quotes — the password contains '$$' which the shell and docker-compose would otherwise expand."
     },
@@ -23,12 +23,12 @@
     "apps/frontend": {
       "stack": ["Vue 3 <script setup>", "Vite", "Pinia", "TailwindCSS", "VitePWA"],
       "entry": "src/main.ts",
-      "routes": ["/", "/transacoes", "/recorrentes", "/contas", "/categorias", "/investimentos", "/emprestimos"]
+      "routes": ["/", "/transacoes", "/recorrentes", "/contas", "/categorias", "/investimentos", "/cartoes", "/emprestimos/:type", "/configuracoes"]
     },
     "apps/backend": {
       "stack": ["Express", "TypeScript", "Drizzle ORM", "node-postgres", "JWT", "argon2", "Zod"],
       "entry": "src/server.ts",
-      "schema": "packages/shared/src/db/schema.ts",
+      "schema": "packages/db/src/schema.ts",
       "routesRoot": "src/routes"
     },
     "packages/db": {
@@ -51,10 +51,10 @@
   "entities": {
     "users":        ["id", "name", "email", "passwordHash", "createdAt"],
     "categories":   ["id", "userId", "name", "type", "color"],
-    "accounts":     ["id", "userId", "name", "type", "currentBalance", "bankCode"],
+    "accounts":     ["id", "userId", "name", "type", "currentBalance", "freezeBalance", "bankCode"],
     "transactions": [
       "id", "userId", "description", "amount", "type", "occurredAt",
-      "categoryId", "accountId", "subscriptionId", "investmentId", "isRecurring", "isInvestment",
+      "categoryId", "accountId", "subscriptionId", "investmentId", "loanId", "isRecurring", "isInvestment",
       "receiptBase64", "receiptMimeType"
     ],
     "subscriptions": [
@@ -66,7 +66,7 @@
       "currentPrice", "buyDate", "goalAmount", "yieldRate", "yieldIndex"
     ],
     "loans": [
-      "id", "userId", "accountId", "description", "amount", "date", "type", "status",
+      "id", "userId", "accountId", "categoryId", "description", "amount", "date", "type", "status",
       "receiptBase64", "receiptMimeType"
     ]
   },
@@ -78,7 +78,9 @@
     "month-over-month comparisons use UTC calendar months",
     "subscriptions are distinct entities linking to generated transactions",
     "investments update tracking with current_price and map to transactions",
-    "loans are distinct entities for tracking money given, received or fgts"
+    "loans are distinct entities for tracking money given, received or fgts",
+    "marking a loan paid requires category + receipt and mirrors a transaction (transactions.loanId) in that category",
+    "accounts.freezeBalance=true freezes the balance: paid items don't mutate it and it's excluded from the dashboard total"
   ],
   "documents": {
     "architecture": "AI_context/architecture.md",

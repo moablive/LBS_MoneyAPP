@@ -11,7 +11,7 @@ flowchart LR
   subgraph awl_network[Docker network: awl_network]
     NGINX[(nginx<br/>moneyapp_frontend:80)]
     API[(Express + Drizzle<br/>moneyapp_backend:3000)]
-    PG[(awlsrvDB_postgres:5432<br/>schema "moneyapp")]
+    PG[(awlsrvDB_postgres:5432<br/>database "moneyapp")]
   end
 
   PWA -- HTTPS --> NGINX
@@ -23,8 +23,9 @@ flowchart LR
 - `nginx` reverse-proxies `/api/` to `moneyapp_backend` via internal DNS.
 - The backend connects to the **existing shared Postgres** container
   `awlsrvDB_postgres` via the external Docker network `awl_network`.
-- All MoneyAPP tables live in a dedicated Postgres schema named `moneyapp`
-  so they don't collide with other apps on the same database.
+- MoneyAPP uses its own dedicated Postgres **database** named `moneyapp`
+  (tables in the `public` schema) on the shared `awlsrvDB_postgres` instance,
+  so they don't collide with other apps.
 
 ## Workspaces
 
@@ -67,12 +68,12 @@ moneyapp/
 
 | Layer        | Choice                  | Reason                                              |
 | ------------ | ----------------------- | --------------------------------------------------- |
-| Validation   | **Zod in `shared`**     | Single source of truth for both client and server.  |
+| Validation   | **Zod in `packages/models`** | Single source of truth for both client and server. |
 | ORM          | **Drizzle**             | SQL-first; works well with raw aggregations.        |
 | Auth         | **JWT (bearer)**        | Stateless, fits a single-user-per-deploy PWA.       |
 | Hashing      | **argon2**              | Memory-hard; preferred over bcrypt for new builds.  |
 | File uploads | **Inline base64 / TEXT**| User's explicit choice — no S3, no disk footprint.  |
-| PWA shell    | **VitePWA + Workbox**   | NetworkFirst for `/api`, precache for static.       |
+| PWA shell    | **VitePWA (`selfDestroying`)** | Service worker disabled — it pinned clients to stale builds; the app needs live data. nginx serves `sw.js`/`index.html` as `no-store`, hashed `/assets/*` as `immutable`. |
 | Charts       | **ApexCharts**          | Donut + line charts with smooth transitions.        |
 | Icons        | **Lucide**              | Consistent, tree-shakeable icon set.                |
 | Logging      | **Pino + pino-http**    | Fast JSON-structured logging.                       |

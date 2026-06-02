@@ -38,8 +38,11 @@ Keep entries short. Long-form belongs in the codebase or PR descriptions.
 
 - **Transactions** — CRUD, signed amounts, receipts, filters
 - **Categories** — per-user, typed (expense/income), emoji support
-- **Accounts** — bank registry, denormalized balance
+- **Accounts** — bank registry, denormalized balance, `freeze_balance` for
+  historical/closed accounts (excluded from totals, never mutated)
 - **Subscriptions** — standalone entities, status, billing_day
 - **Investments** — stocks, crypto, fixed income, funds, goals, yields
-- **Loans (Empréstimos)** — tracking for money given, received and FGTS
+- **Loans (Empréstimos)** — money given, received and FGTS; marking `paid`
+  (category + receipt required) mirrors a transaction into the Livro Caixa
 - **Dashboard** — summary, ranking, spending evolution, monthly projection
+- **Settings** — global `requireReceipts`; per-account "affects balance" toggle

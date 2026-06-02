@@ -78,10 +78,10 @@ Visão geral do mês com resumo financeiro, ranking de categorias por gasto, gr�
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).
 
 ### 🏦 Contas
-Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente.
+Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total.
 
 ### 🤝 Empréstimos
-Controle de empréstimos concedidos, recebidos e FGTS, com controle de status (ativo, pago) e comprovantes.
+Controle de empréstimos concedidos, recebidos e FGTS, com status (ativo/pago), parcelas e comprovantes. Marcar como **pago** exige categoria + comprovante e **espelha** o lançamento no Livro Caixa (transação vinculada via `loanId`); o empréstimo pago sai do atalho de empréstimos.
 
 </td>
 <td width="50%">
@@ -184,7 +184,7 @@ flowchart LR
   subgraph awl_network["🐳 Docker · awl_network"]
     NGINX["nginx<br/>moneyapp_frontend:80"]
     API["Express + Drizzle<br/>moneyapp_backend:3000"]
-    PG["PostgreSQL 16<br/>awlsrvDB_postgres:5432<br/>schema 'moneyapp'"]
+    PG["PostgreSQL<br/>awlsrvDB_postgres:5432<br/>database 'moneyapp'"]
   end
 
   PWA -- "HTTPS" --> NGINX
@@ -193,7 +193,7 @@ flowchart LR
 ```
 
 > [!NOTE]
-> O PostgreSQL é um **container externo compartilhado** (`awlsrvDB_postgres`). Todas as tabelas vivem no schema dedicado `moneyapp` para isolar de outras aplicações no mesmo banco.
+> O PostgreSQL é um **container externo compartilhado** (`awlsrvDB_postgres`). O MoneyAPP usa um **database dedicado** `moneyapp` (tabelas no schema `public`) para isolar de outras aplicações na mesma instância.
 
 ---
 
@@ -209,12 +209,14 @@ erDiagram
   users ||--o{ loans         : owns
   categories ||--o{ transactions  : classifies
   categories ||--o{ subscriptions : classifies
+  categories ||--o{ loans         : classifies
   accounts ||--o{ transactions  : funds
   accounts ||--o{ subscriptions : funds
   accounts ||--o{ investments   : custodies
   accounts ||--o{ loans         : custodies
   subscriptions ||--o{ transactions : generates
   investments ||--o{ transactions   : generates
+  loans ||--o{ transactions          : generates
 ```
 
 <table>
@@ -225,15 +227,15 @@ erDiagram
 | -------- | ------------ |
 | **users** | `id`, `name`, `email`, `passwordHash` |
 | **categories** | `id`, `userId`, `name`, `type`, `color` |
-| **accounts** | `id`, `userId`, `name`, `type`, `currentBalance`, `bankCode` |
-| **loans** | `id`, `amount`, `type`, `status`, `accountId` |
+| **accounts** | `id`, `userId`, `name`, `type`, `currentBalance`, `freezeBalance`, `bankCode` |
+| **loans** | `id`, `amount`, `type`, `status`, `accountId`, `categoryId` |
 
 </td>
 <td>
 
 | Entidade | Campos-chave |
 | -------- | ------------ |
-| **transactions** | `id`, `amount` (signed), `type`, `occurredAt`, `categoryId`, `accountId` |
+| **transactions** | `id`, `amount` (signed), `type`, `occurredAt`, `categoryId`, `accountId`, `loanId` |
 | **subscriptions** | `id`, `description`, `amount`, `status`, `billingDay` |
 | **investments** | `id`, `name`, `type`, `quantity`, `buyPrice`, `currentPrice`, `goalAmount` |
 
@@ -263,8 +265,10 @@ erDiagram
 <tr><td><code>POST</code></td><td><code>/api/categories</code></td><td><code>createCategorySchema</code></td></tr>
 <tr><td><code>PATCH</code></td><td><code>/api/categories/:id</code></td><td><code>updateCategorySchema</code></td></tr>
 <tr><td><code>DELETE</code></td><td><code>/api/categories/:id</code></td><td>—</td></tr>
-<tr><td rowspan="2">🏦 <strong>Accounts</strong></td><td><code>GET</code></td><td><code>/api/accounts</code></td><td>—</td></tr>
-<tr><td><code>POST</code></td><td><code>/api/accounts</code></td><td><code>createAccountSchema</code></td></tr>
+<tr><td rowspan="4">🏦 <strong>Accounts</strong></td><td><code>GET</code></td><td><code>/api/accounts</code></td><td>—</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/accounts</code></td><td><code>createAccountSchema</code> (inclui <code>freezeBalance</code>)</td></tr>
+<tr><td><code>PATCH</code></td><td><code>/api/accounts/:id</code></td><td><code>updateAccountSchema</code></td></tr>
+<tr><td><code>DELETE</code></td><td><code>/api/accounts/:id</code></td><td>—</td></tr>
 <tr><td rowspan="5">💳 <strong>Transactions</strong></td><td><code>GET</code></td><td><code>/api/transactions</code></td><td>query: <code>transactionFiltersSchema</code></td></tr>
 <tr><td><code>POST</code></td><td><code>/api/transactions</code></td><td><code>createTransactionSchema</code></td></tr>
 <tr><td><code>PATCH</code></td><td><code>/api/transactions/:id</code></td><td><code>updateTransactionSchema</code></td></tr>
@@ -278,11 +282,11 @@ erDiagram
 <tr><td><code>POST</code></td><td><code>/api/investments</code></td><td><code>createInvestmentSchema</code></td></tr>
 <tr><td><code>PATCH</code></td><td><code>/api/investments/:id</code></td><td><code>updateInvestmentSchema</code></td></tr>
 <tr><td><code>DELETE</code></td><td><code>/api/investments/:id</code></td><td>—</td></tr>
-<tr><td rowspan="5">🤝 <strong>Loans</strong></td><td><code>GET</code></td><td><code>/api/loans</code></td><td>—</td></tr>
-<tr><td><code>GET</code></td><td><code>/api/loans/summary</code></td><td>retorna <code>LoanSummaryResponse</code></td></tr>
-<tr><td><code>POST</code></td><td><code>/api/loans</code></td><td><code>createLoanSchema</code></td></tr>
-<tr><td><code>PATCH</code></td><td><code>/api/loans/:id</code></td><td><code>updateLoanSchema</code></td></tr>
+<tr><td rowspan="5">🤝 <strong>Loans</strong></td><td><code>GET</code></td><td><code>/api/loans/summary</code></td><td>retorna <code>LoanSummaryResponse</code></td></tr>
+<tr><td><code>POST</code></td><td><code>/api/loans</code></td><td><code>createLoanSchema</code> (parcelas, categoria, comprovante)</td></tr>
+<tr><td><code>PUT</code></td><td><code>/api/loans/:id</code></td><td><code>updateLoanSchema</code> — ao pagar, espelha transação</td></tr>
 <tr><td><code>DELETE</code></td><td><code>/api/loans/:id</code></td><td>—</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/loans/:id/receipt</code></td><td>streams decoded base64</td></tr>
 <tr><td rowspan="4">📊 <strong>Dashboard</strong></td><td><code>GET</code></td><td><code>/api/dashboard/summary</code></td><td>query: <code>?month=YYYY-MM</code></td></tr>
 <tr><td><code>GET</code></td><td><code>/api/dashboard/categories/ranking</code></td><td><code>categoryRankingQuerySchema</code></td></tr>
 <tr><td><code>GET</code></td><td><code>/api/dashboard/spending-evolution</code></td><td>cumulative line series</td></tr>
@@ -319,7 +323,7 @@ pnpm install
 
 # 4️⃣  Gere e aplique as migrations
 pnpm db:generate          # gera SQL a partir do schema Drizzle
-pnpm db:migrate           # aplica no PostgreSQL (schema "moneyapp")
+pnpm db:migrate           # aplica no PostgreSQL (database "moneyapp")
 
 # 5️⃣  Inicie o dev server
 pnpm dev                  # backend :3000 + frontend :5173
@@ -353,7 +357,7 @@ docker compose --env-file .env up -d --build
 
 | Container | Base | Porta | Função |
 | --------- | ---- | ----- | ------ |
-| `moneyapp_backend` | Node 20 | `3000` (interno) | API REST + migrations on start + healthcheck |
+| `moneyapp_backend` | Node 20 | `3000` (interno) | API REST + healthcheck (migrations via `pnpm db:migrate`, não no boot) |
 | `moneyapp_frontend` | nginx | `80` (interno) | Static assets + reverse proxy `/api/` → backend |
 
 > [!IMPORTANT]
@@ -396,8 +400,10 @@ docker compose --env-file .env up -d --build
 | 5 | **Assinaturas** | Entidades independentes com `subscription_id` nas transações geradas |
 | 6 | **Investimentos** | Rastreiam `buy_price` → `current_price`, vinculam transações via `investment_id` |
 | 7 | **Empréstimos** | Entidades próprias com `type` (given, received, fgts) que podem opcionalmente vincular a `accountId` |
-| 8 | **Meses UTC** | Comparações month-over-month usam meses de calendário UTC (day 1, 00:00:00Z) |
-| 9 | **Projeção** | Combina gastos do mês corrente com recorrências ativas para prever totais |
+| 8 | **Empréstimo pago** | Marcar como `paid` exige `categoryId` + comprovante; o backend espelha uma transação na categoria (vínculo `transactions.loanId`) e ajusta o saldo. Pago **com** categoria sai do atalho de empréstimos |
+| 9 | **Conta histórica** | `accounts.freezeBalance = true` congela o saldo: pagamentos não o alteram e ele fica **fora** do "Saldo Atual" do dashboard. Na UI o switch é "Afeta o saldo" (marcado = `false`) |
+| 10 | **Meses UTC** | Comparações month-over-month usam meses de calendário UTC (day 1, 00:00:00Z) |
+| 11 | **Projeção** | Combina gastos do mês corrente com recorrências ativas para prever totais |
 
 ---
 
@@ -454,8 +460,10 @@ docker compose --env-file .env up -d --build
 | `/recorrentes` | `RecurrentsView` | 🔄 Gerenciamento de assinaturas |
 | `/contas` | `AccountsView` | 🏦 Gerenciamento de contas |
 | `/categorias` | `CategoriesView` | 🏷️ Gerenciamento de categorias |
+| `/cartoes` | `CreditCardsView` | 💳 Faturas e cartões de crédito |
 | `/investimentos` | `InvestmentsView` | 📈 Portfólio de investimentos |
-| `/emprestimos` | `LoansView` | 🤝 Controle de empréstimos e FGTS |
+| `/emprestimos/:type` | `LoansView` | 🤝 Empréstimos por tipo (`receber` / `pagar` / `fgts`) |
+| `/configuracoes` | `SettingsView` | ⚙️ Preferências: comprovantes, saldo por conta |
 
 ---
 
