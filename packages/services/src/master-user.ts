@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
 const { users } = schema;
 import { env } from './config/env';
@@ -60,6 +60,8 @@ export async function bootstrapMasterUser(): Promise<void> {
       await db.delete(users).where(eq(users.id, dbUser.id));
       // eslint-disable-next-line no-console
       console.log(`[bootstrap] removed user no longer in .env: ${dbUser.email}`);
+    } else {
+      await ensureDefaultCategories(dbUser.id);
     }
   }
 }
@@ -94,3 +96,56 @@ async function bootstrapSingleUser(email: string, name: string, password: string
   // eslint-disable-next-line no-console
   console.log(`[bootstrap] master user password rotated id=${existing.id} email=${email}`);
 }
+
+async function ensureDefaultCategories(userId: string): Promise<void> {
+  const DEFAULT_CATEGORIES = [
+    { name: 'Controle 📊', type: 'expense' },
+    { name: 'Alimentação 🍔|/🍽️', type: 'expense' },
+    { name: 'Assinaturas 📺', type: 'expense' },
+    { name: 'Barbearia & Estética 💈', type: 'expense' },
+    { name: 'CARRO 🛻', type: 'expense' },
+    { name: 'Casa 🏠', type: 'expense' },
+    { name: 'Comunicação 📶', type: 'expense' },
+    { name: 'Empréstimos 🧾', type: 'expense' },
+    { name: 'Estacionamento 🅿️', type: 'expense' },
+    { name: 'Estudos 📚', type: 'expense' },
+    { name: 'Farmácia 💊', type: 'expense' },
+    { name: 'FATURAS 💳', type: 'expense' },
+    { name: 'Impostos 📄', type: 'expense' },
+    { name: 'Investimentos 📈', type: 'expense' },
+    { name: 'Lazer 🍻', type: 'expense' },
+    { name: 'Locações 📦', type: 'expense' },
+    { name: 'Mercado 🛒', type: 'expense' },
+    { name: 'Salário 💵', type: 'income' },
+    { name: 'Saúde 🩺', type: 'expense' },
+    { name: 'TI 🤖', type: 'expense' },
+    { name: 'Transporte 🚕', type: 'expense' },
+    { name: 'Vestuário 👕', type: 'expense' },
+    { name: 'Viagens 🎒', type: 'expense' }
+  ] as const;
+
+  const PRESET_COLORS = [
+    '#ef4444', '#f97316', '#eab308', '#22c55e',
+    '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'
+  ];
+
+  for (const [i, cat] of DEFAULT_CATEGORIES.entries()) {
+    const existing = await db.query.categories.findFirst({
+      where: and(
+        eq(schema.categories.userId, userId),
+        eq(schema.categories.name, cat.name),
+        eq(schema.categories.type, cat.type as 'expense' | 'income')
+      )
+    });
+
+    if (!existing) {
+      await db.insert(schema.categories).values({
+        userId,
+        name: cat.name,
+        type: cat.type as 'expense' | 'income',
+        color: PRESET_COLORS[i % PRESET_COLORS.length]
+      });
+    }
+  }
+}
+
