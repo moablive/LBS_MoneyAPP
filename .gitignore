@@ -19,3 +19,5 @@ coverage/
 !.vscode/settings.json
 
 apps/backend/drizzle/_journal/
+*.db
+*.sqlite
