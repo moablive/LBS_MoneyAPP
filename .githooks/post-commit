@@ -1,0 +1,30 @@
+#!/bin/sh
+# post-commit — Lembrete de drift do AI_context (MoneyApp).
+# Detecta em quais áreas o commit mexeu e avisa QUAL doc revisar.
+# NÃO altera nada — só lembra. Ativar: git config core.hooksPath .githooks
+#
+# Teste manual (sem commitar): ./.githooks/post-commit HEAD
+
+REF="${1:-HEAD}"
+changed=$(git diff-tree --no-commit-id --name-only -r "$REF" 2>/dev/null)
+[ -z "$changed" ] && exit 0
+
+Y='\033[1;33m'; C='\033[0;36m'; N='\033[0m'
+avisos=""
+
+add() { avisos="${avisos}  ${C}$1${N} → revise ${Y}AI_context/$2${N}\n"; }
+
+# Mapeia área alterada -> doc do AI_context
+echo "$changed" | grep -qiE 'backend/src/routes|controller|app\.ts|server\.ts' && add "rotas/endpoints do backend" "api-contracts.md"
+echo "$changed" | grep -qiE 'schema|drizzle|migration|/db|data-?model|/models' && add "schema / banco de dados" "data-model.md"
+echo "$changed" | grep -qiE 'frontend/src/router' && add "rotas do frontend" "project-map.json (routes)"
+echo "$changed" | grep -qiE 'package\.json|pnpm-lock|vite\.config|tsconfig|docker-compose' && add "deps / build / infra" "project-map.json + architecture.md"
+echo "$changed" | grep -qiE 'backend/src/(services|use-?cases|domain|business)' && add "regras de negócio" "business-rules.md"
+echo "$changed" | grep -qiE '\.vue$|\.css$|tailwind|components|/views|/ui' && add "UI / componentes / estilo" "ui-guidelines.md"
+
+if [ -n "$avisos" ]; then
+  printf "\n${Y}📝 AI_context — possível drift neste commit:${N}\n"
+  printf "$avisos"
+  printf "  ${C}(revise/atualize o(s) doc(s) acima se a mudança alterou o contrato/comportamento)${N}\n\n"
+fi
+exit 0

@@ -175,7 +175,17 @@ async function submit() {
 
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
-  receiptFile.value = input.files?.[0] ?? null;
+  const file = input.files?.[0] ?? null;
+  
+  if (file && file.size > 5 * 1024 * 1024) {
+    error.value = 'O comprovante excede o tamanho máximo de 5MB.';
+    input.value = '';
+    receiptFile.value = null;
+    return;
+  }
+  
+  error.value = null;
+  receiptFile.value = file;
 }
 </script>
 
