@@ -76,6 +76,7 @@ const totalUpcoming = computed(() => {
           <div class="min-w-0 flex flex-col justify-center">
             <span class="font-medium text-sm text-white/90 truncate flex items-center gap-1.5">
               <img v-if="t.isCreditCard && t.account?.customIconUrl" :src="t.account.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
+              <img v-else-if="t.isSubscription && t.customIconUrl" :src="t.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
               <svg v-else-if="t.isCreditCard" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
               {{ t.description }}
             </span>
@@ -87,6 +88,9 @@ const totalUpcoming = computed(() => {
                 </template>
                 <template v-if="t.isLoan">
                   {{ t.loanType === 'received' ? 'Empréstimo a pagar' : t.loanType === 'fgts' ? 'FGTS a receber' : 'Empréstimo a receber' }}
+                </template>
+                <template v-else-if="t.isSubscription">
+                  Assinatura
                 </template>
                 <template v-else-if="t.isCreditCard">
                   Fatura de Cartão

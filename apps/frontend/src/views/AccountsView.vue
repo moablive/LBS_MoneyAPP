@@ -40,7 +40,7 @@ const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const totalBalance = computed(() =>
-  items.value.reduce((acc, a) => acc + Number(a.currentBalance), 0),
+  items.value.reduce((acc, a) => a.freezeBalance ? acc : acc + Number(a.currentBalance), 0),
 );
 
 const typeLabels: Record<AccountType, string> = {

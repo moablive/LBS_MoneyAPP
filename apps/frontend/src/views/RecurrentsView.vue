@@ -56,6 +56,21 @@ function openEditModal(item: SubscriptionItem) {
   subscriptionToEdit.value = item;
   showModal.value = true;
 }
+
+async function toggleStatus(item: SubscriptionItem) {
+  const newStatus = item.status === 'active' ? 'inactive' : 'active';
+  const oldStatus = item.status;
+  item.status = newStatus;
+  try {
+    await api.put(`/subscriptions/${item.id}`, {
+      status: newStatus
+    });
+    loadData();
+  } catch (e) {
+    console.error(e);
+    item.status = oldStatus;
+  }
+}
 </script>
 
 <template>
@@ -142,7 +157,7 @@ function openEditModal(item: SubscriptionItem) {
         <article
           v-for="item in filteredItems"
           :key="item.id"
-          class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_1fr] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
+          class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
           @click="openEditModal(item)"
         >
           <!-- Icon & Info -->
@@ -184,19 +199,43 @@ function openEditModal(item: SubscriptionItem) {
             </div>
           </div>
 
-          <!-- Value -->
-          <div class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate" :class="item.type === 'expense' ? 'text-expense' : 'text-income'">
-            {{ brl(item.amount) }}
+          <!-- Value & Toggle -->
+          <div class="hidden sm:flex items-center justify-end gap-4 min-w-0">
+            <div class="tabular-nums font-semibold text-sm text-right truncate" :class="item.type === 'expense' ? 'text-expense' : 'text-income'">
+              {{ brl(item.amount) }}
+            </div>
+            <button
+              @click.stop="toggleStatus(item)"
+              class="w-8 h-4 rounded-full transition-colors relative shrink-0"
+              :class="item.status === 'active' ? 'bg-accent' : 'bg-surface-border'"
+              title="Ativar/Desativar no Dashboard"
+            >
+              <div
+                class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+                :class="item.status === 'active' ? 'translate-x-4' : 'translate-x-0'"
+              ></div>
+            </button>
           </div>
 
           <!-- Mobile view right side -->
-          <div class="flex sm:hidden items-center justify-end min-w-0 shrink-0">
+          <div class="flex sm:hidden items-center justify-end min-w-0 shrink-0 gap-3">
             <div
               class="tabular-nums font-semibold text-sm text-right"
               :class="item.type === 'expense' ? 'text-expense' : 'text-income'"
             >
               {{ brl(item.amount) }}
             </div>
+            <button
+              @click.stop="toggleStatus(item)"
+              class="w-8 h-4 rounded-full transition-colors relative shrink-0"
+              :class="item.status === 'active' ? 'bg-accent' : 'bg-surface-border'"
+              title="Ativar/Desativar no Dashboard"
+            >
+              <div
+                class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform"
+                :class="item.status === 'active' ? 'translate-x-4' : 'translate-x-0'"
+              ></div>
+            </button>
           </div>
         </article>
       </section>
@@ -204,9 +243,8 @@ function openEditModal(item: SubscriptionItem) {
 
     <!-- Modal -->
     <SubscriptionModal
-      :show="showModal"
+      v-model:show="showModal"
       :subscription-to-edit="subscriptionToEdit"
-      @close="showModal = false"
       @saved="loadData"
       @deleted="loadData"
     />

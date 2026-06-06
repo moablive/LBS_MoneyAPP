@@ -84,10 +84,11 @@ const loadAccounts = async () => {
 const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, toDate: Date) => {
   loadingUpcoming.value = true;
   try {
-    const [transactionsRes, categoriesRes, loansRes] = await Promise.all([
+    const [transactionsRes, categoriesRes, loansRes, subscriptionsRes] = await Promise.all([
       api.get<any[]>(`/transactions?status=pending&sort=date_asc&limit=100&from=${fromParam}&to=${toParam}`),
       api.get<any[]>('/categories'),
       api.get<any>('/loans/summary'),
+      api.get<any>('/subscriptions/summary'),
     ]);
     
     categories.value = categoriesRes;
@@ -136,7 +137,30 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
          const d = new Date(cc.occurredAt);
          return d >= fromDate && d <= toDate;
       });
-    upcomingTransactions.value = [...transactionsRes, ...upcomingLoans, ...creditCardInvoices].sort((a, b) => {
+    const upcomingSubscriptions = (subscriptionsRes?.items || []).filter((sub: any) => {
+      if (sub.status !== 'active') return false;
+      return true;
+    }).map((sub: any) => {
+      let subDate = new Date(today.getFullYear(), today.getMonth(), sub.billingDay || 1, 12, 0, 0);
+      if (subDate < today) {
+         subDate.setMonth(subDate.getMonth() + 1);
+      }
+      return {
+        id: `sub-${sub.id}`,
+        description: sub.description,
+        amount: sub.type === 'expense' ? -Math.abs(Number(sub.amount)) : Math.abs(Number(sub.amount)),
+        type: sub.type || 'expense',
+        occurredAt: subDate.toISOString(),
+        categoryId: sub.categoryId,
+        isSubscription: true,
+        customIconUrl: sub.customIconUrl ?? '/banks/generic.svg'
+      };
+    }).filter((sub: any) => {
+       const d = new Date(sub.occurredAt);
+       return d >= fromDate && d <= toDate;
+    });
+
+    upcomingTransactions.value = [...transactionsRes, ...upcomingLoans, ...creditCardInvoices, ...upcomingSubscriptions].sort((a, b) => {
       const dayA = Number(a.occurredAt.slice(8, 10));
       const dayB = Number(b.occurredAt.slice(8, 10));
       if (dayA !== dayB) return dayA - dayB;

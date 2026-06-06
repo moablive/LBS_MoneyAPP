@@ -21,6 +21,11 @@ is the contract — this document is a map, not a duplicate.
 | ------ | --------------------- | --------------------- | ---------------------- |
 | POST   | `/api/auth/login`     | `loginSchema`         | returns `{ token }`    |
 
+### Users
+| Method | Path                       | Body                       | Notes                                            |
+| ------ | -------------------------- | -------------------------- | ------------------------------------------------ |
+| PATCH  | `/api/users/me/settings`   | `{ requireReceipts: bool }`| Merge nas `users.settings`; retorna o objeto novo (auth) |
+
 ### Categories
 | Method | Path                       | Schema                 |
 | ------ | -------------------------- | ---------------------- |

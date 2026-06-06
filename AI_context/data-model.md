@@ -29,7 +29,9 @@ erDiagram
     varchar name
     varchar email UK
     text password_hash
+    jsonb settings "{ requireReceipts: bool }"
     timestamptz created_at
+    timestamptz updated_at
   }
 
   categories {
@@ -45,8 +47,13 @@ erDiagram
     uuid user_id FK
     varchar name
     enum type "checking | savings | credit_card | wallet | investment | other"
+    varchar bank_code "id no registry de bancos (itau, nubank...); null p/ wallet/other"
+    text custom_icon_url "ícone custom quando o banco não está no registry"
     numeric current_balance
     bool freeze_balance "historical/closed account — excluded from totals & not mutated"
+    numeric credit_limit "cartão de crédito"
+    numeric closing_day "cartão: fechamento (1-31)"
+    numeric due_day "cartão: vencimento (1-31)"
   }
 
   transactions {
@@ -61,8 +68,7 @@ erDiagram
     uuid subscription_id FK "nullable"
     uuid investment_id FK "nullable"
     uuid loan_id FK "nullable"
-    bool is_recurring
-    bool is_investment
+    enum status "paid | pending"
     text receipt_base64 "nullable"
     varchar receipt_mime_type "nullable"
   }
