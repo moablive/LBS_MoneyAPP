@@ -8,6 +8,7 @@ import { transactionsRouter } from './transactions';
 import { subscriptionsRouter } from './subscriptions';
 import { investmentsRouter } from './investments';
 import { loansRouter } from './loans';
+import { sharesRouter } from './shares';
 
 export const apiRouter = Router();
 
@@ -20,3 +21,4 @@ apiRouter.use('/subscriptions', subscriptionsRouter);
 apiRouter.use('/investments', investmentsRouter);
 apiRouter.use('/loans', loansRouter);
 apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/shares', sharesRouter);

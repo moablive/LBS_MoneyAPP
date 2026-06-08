@@ -4,7 +4,8 @@ import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewTransactionModal from '../components/NewTransactionModal.vue';
 import TransactionDetailsModal from '../components/TransactionDetailsModal.vue';
-import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip } from '@heroicons/vue/24/outline';
+import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip, ShareIcon } from '@heroicons/vue/24/outline';
+import { sharesClient } from '@moneyapp/api-client';
 import type { TransactionType, Transaction, Account, Category } from '@moneyapp/models';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
@@ -21,6 +22,30 @@ const filterCategory = ref<string>('all');
 const filterPeriod = ref<'current_month' | 'next_month' | 'all'>('current_month');
 const selectedRow = ref<Transaction | null>(null);
 const editingRow = ref<Transaction | null>(null);
+
+const shareModalOpen = ref(false);
+const shareLink = ref('');
+const sharePassword = ref('');
+
+async function handleShare() {
+  loading.value = true;
+  try {
+    const res = await sharesClient.createShareLink(filterCategory.value === 'all' ? null : filterCategory.value);
+    shareLink.value = `${window.location.origin}/share/${res.token}`;
+    sharePassword.value = res.password;
+    shareModalOpen.value = true;
+  } catch (err) {
+    console.error('Failed to create share link', err);
+    await alert('Erro ao gerar link de compartilhamento.');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function copyShareInfo() {
+  await navigator.clipboard.writeText(`Link: ${shareLink.value}\nSenha: ${sharePassword.value}`);
+  await alert('Copiado para a área de transferência!');
+}
 
 async function reload() {
   loading.value = true;
@@ -176,6 +201,13 @@ async function handleDelete(t: Transaction | null) {
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="showCreate = true; createType = 'income'"
             >+ Receita</button>
+            <button
+              class="flex items-center justify-center sm:flex-none px-3 py-2 rounded-xl bg-surface-overlay text-muted border border-surface-border text-sm font-bold shadow-lg hover:text-white transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              @click="handleShare"
+              title="Compartilhar"
+            >
+              <ShareIcon class="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
@@ -300,5 +332,45 @@ async function handleDelete(t: Transaction | null) {
       @edit="editingRow = selectedRow; selectedRow = null; showCreate = true"
       @delete="handleDelete(selectedRow)"
     />
+
+    <!-- Share Modal -->
+    <div v-if="shareModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
+        <div>
+          <h3 class="text-xl font-bold text-white mb-2">Link Compartilhado Criado!</h3>
+          <p class="text-sm text-muted">Este link será válido por apenas 24 horas. Guarde a senha gerada, pois ela não será exibida novamente.</p>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">URL</label>
+            <div class="flex items-center bg-surface-overlay border border-surface-border rounded-xl px-3 py-2">
+              <input type="text" readonly :value="shareLink" class="bg-transparent text-white text-sm w-full outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">Senha</label>
+            <div class="flex items-center bg-surface-overlay border border-surface-border rounded-xl px-3 py-2">
+              <input type="text" readonly :value="sharePassword" class="bg-transparent text-white text-sm w-full outline-none font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-surface-border/50">
+          <button 
+            @click="shareModalOpen = false" 
+            class="px-5 py-2.5 rounded-xl border border-surface-border font-semibold text-white shadow-sm hover:bg-surface-overlay transition-colors text-sm"
+          >
+            Fechar
+          </button>
+          <button 
+            @click="copyShareInfo" 
+            class="px-5 py-2.5 rounded-xl bg-accent text-white font-bold shadow-lg hover:bg-accent/90 transition-colors text-sm"
+          >
+            Copiar Info
+          </button>
+        </div>
+      </div>
+    </div>
   </AppShell>
 </template>

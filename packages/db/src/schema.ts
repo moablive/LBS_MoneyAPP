@@ -186,6 +186,26 @@ export const loans = pgTable(
   }),
 );
 
+// -------- shared links -----------------------------------------------------
+export const sharedLinks = pgTable(
+  'shared_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    token: varchar('token', { length: 128 }).notNull().unique(),
+    passwordHash: text('password_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index('shared_links_user_idx').on(t.userId),
+    tokenIdx: uniqueIndex('shared_links_token_idx').on(t.token),
+  }),
+);
+
 // -------- relations ----------------------------------------------------------
 
 // -------- investments --------------------------------------------------------
@@ -222,6 +242,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   subscriptions: many(subscriptions),
   investments: many(investments),
   loans: many(loans),
+  sharedLinks: many(sharedLinks),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -229,6 +250,7 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   transactions: many(transactions),
   subscriptions: many(subscriptions),
   loans: many(loans),
+  sharedLinks: many(sharedLinks),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
@@ -267,6 +289,11 @@ export const loansRelations = relations(loans, ({ one }) => ({
   category: one(categories, { fields: [loans.categoryId], references: [categories.id] }),
 }));
 
+export const sharedLinksRelations = relations(sharedLinks, ({ one }) => ({
+  user: one(users, { fields: [sharedLinks.userId], references: [users.id] }),
+  category: one(categories, { fields: [sharedLinks.categoryId], references: [categories.id] }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Category = typeof categories.$inferSelect;
@@ -279,3 +306,5 @@ export type Investment = typeof investments.$inferSelect;
 export type NewInvestment = typeof investments.$inferInsert;
 export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
+export type SharedLink = typeof sharedLinks.$inferSelect;
+export type NewSharedLink = typeof sharedLinks.$inferInsert;
