@@ -55,6 +55,14 @@ is the contract — this document is a map, not a duplicate.
 | DELETE | `/api/transactions/:id`       | —                               |
 | GET    | `/api/transactions/:id/receipt` | streams decoded base64        |
 
+### Shares (Public Access)
+| Method | Path                                          | Schema                          |
+| ------ | --------------------------------------------- | ------------------------------- |
+| POST   | `/api/shares`                                 | `{ categoryId?: string }`       |
+| POST   | `/api/shares/:token/verify`                   | `{ password: string }`          |
+| GET    | `/api/shares/:token/transactions`             | `Bearer <sessionToken>`         |
+| GET    | `/api/shares/:token/transactions/:id/receipt` | `Bearer <sessionToken>`, stream |
+
 ### Subscriptions
 | Method | Path                          | Schema                          |
 | ------ | ----------------------------- | ------------------------------- |
