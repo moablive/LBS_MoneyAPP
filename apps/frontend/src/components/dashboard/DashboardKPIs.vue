@@ -12,6 +12,7 @@ const brl = (n: number | string) =>
 
 const kpis = [
   { key: 'closingBalance', label: 'Saldo Atual', tone: '' as const, icon: '💰' },
+  { key: 'creditCardBalance', label: 'Cartões', tone: 'expense' as const, icon: '💳' },
   { key: 'income',         label: 'Receitas',      tone: 'income' as const, icon: '📈' },
   { key: 'expense',        label: 'Despesas',      tone: 'expense' as const, icon: '📉' },
   { key: 'fixedCosts',     label: 'Custo Fixo',    tone: 'expense' as const, icon: '🔄' },
@@ -30,7 +31,7 @@ function formatKpi(s: DashboardSummaryResponse, key: typeof kpis[number]['key'])
 </script>
 
 <template>
-  <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <section class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6">
     <div v-for="(k, idx) in kpis" :key="k.key" 
          class="card relative overflow-hidden group animate-fade-in-up"
          :style="{ animationDelay: `${idx * 100}ms` }">

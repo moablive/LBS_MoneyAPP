@@ -225,8 +225,14 @@ async function submit() {
       <!-- Afeta o saldo? (desmarcado = conta histórica/encerrada) -->
       <section class="flex items-start justify-between gap-3 rounded-xl border border-surface-border bg-surface-overlay/40 px-3 py-3">
         <div class="min-w-0">
-          <div class="text-sm font-medium">Afeta o saldo total</div>
-          <p class="text-xs text-muted mt-0.5">
+          <div class="text-sm font-medium">
+            {{ type === 'credit_card' ? 'Afeta a soma de Cartões' : 'Afeta o saldo total' }}
+          </div>
+          <p v-if="type === 'credit_card'" class="text-xs text-muted mt-0.5">
+            <strong>Marcado:</strong> a fatura entra no cálculo do painel "Cartões" e é atualizada pelos lançamentos.
+            <strong>Desmarcado:</strong> cartão inativo/encerrado — fica fora da soma das faturas e congela como referência.
+          </p>
+          <p v-else class="text-xs text-muted mt-0.5">
             <strong>Marcado:</strong> a conta entra no saldo total e é alterada pelos pagamentos.
             <strong>Desmarcado:</strong> conta histórica/encerrada — fica fora do saldo total e o
             valor congela como referência.

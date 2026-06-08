@@ -145,16 +145,16 @@ dashboardRouter.get(
 
       const [bal] = await db
         .select({
-          total: sql<string>`coalesce(sum(${accounts.currentBalance}), 0)`.as('total'),
+          total: sql<string>`coalesce(sum(case when ${accounts.freezeBalance} = false and ${accounts.type} != 'credit_card' then ${accounts.currentBalance} else 0 end), 0)`.as('total'),
+          creditCardTotal: sql<string>`coalesce(sum(case when ${accounts.freezeBalance} = false and ${accounts.type} = 'credit_card' then abs(${accounts.currentBalance}) else 0 end), 0)`.as('creditCardTotal'),
         })
         .from(accounts)
-        // Frozen accounts (freezeBalance = true) are historical and do NOT
-        // count toward the current total balance.
-        .where(and(eq(accounts.userId, userId), eq(accounts.freezeBalance, false)));
+        .where(eq(accounts.userId, userId));
 
       const income = Number(agg!.income);
       const expense = Number(agg!.expense);
       const closingBalance = Number(bal!.total);
+      const creditCardBalance = Number(bal!.creditCardTotal);
       // openingBalance is closing minus this month's net movement — accurate
       // enough for the KPI card without a full historical reconstruction.
       const openingBalance = closingBalance - (income - expense);
@@ -167,6 +167,7 @@ dashboardRouter.get(
         expense,
         savingsPct,
         closingBalance,
+        creditCardBalance,
       };
       res.json(body);
     } catch (err) {

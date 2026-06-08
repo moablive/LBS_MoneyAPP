@@ -34,7 +34,7 @@ regardless of how clean it looks.
    reference. The `applyBalanceDelta` helper (in `loans.ts` and
    `transactions.ts`) adds `freeze_balance = false` to its `WHERE`, so balance
    mutations silently skip frozen accounts. The dashboard "Saldo Atual" total
-   also excludes them. The UI switch is phrased as "Afeta o saldo" — checked
+   also excludes them. For credit cards, they are **always** excluded from the "Saldo Atual", but their `freeze_balance = false` toggle determines if they are included in the separate "Cartões" invoice total on the dashboard. The UI switch is phrased as "Afeta o saldo total" (or "Afeta a soma de Cartões") — checked
    means `freeze_balance = false`.
 
 ## Receipts
@@ -85,7 +85,7 @@ regardless of how clean it looks.
 
 21. All dashboard aggregations include all transactions within the selected period.
 21a. The dashboard **"Saldo Atual"** (sum of `accounts.current_balance`) excludes
-    frozen accounts (`freeze_balance = true`). Income/expense aggregations are
+    frozen accounts (`freeze_balance = true`) AND completely excludes credit cards (`type = 'credit_card'`). Credit cards debts are summed separately into a **"Cartões"** KPI, and only if they are not frozen (`freeze_balance = false`). Income/expense aggregations are
     transaction-based and are not affected by this flag.
 22. Month-over-month comparisons use **calendar months in UTC**, anchored
     on day 1 at 00:00:00Z. We never use rolling 30-day windows.

@@ -44,6 +44,7 @@ export const dashboardSummaryResponseSchema = z.object({
   expense: z.number(),        // absolute value
   savingsPct: z.number(),     // (income - expense) / income * 100; null-safe -> 0
   closingBalance: z.number(),
+  creditCardBalance: z.number(),
 });
 export type DashboardSummaryResponse = z.infer<typeof dashboardSummaryResponseSchema>;
 

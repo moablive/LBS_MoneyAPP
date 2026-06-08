@@ -72,13 +72,13 @@
 <td width="50%">
 
 ### 📊 Dashboard
-Visão geral do mês com resumo financeiro, ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências.
+Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências.
 
 ### 💳 Transações
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).
 
 ### 🏦 Contas
-Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total.
+Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total. Cartões de crédito têm suas faturas isoladas no painel "Cartões", separadas do "Saldo Atual" geral, garantindo que dívidas não se misturem com o dinheiro disponível.
 
 ### 🤝 Empréstimos
 Controle de empréstimos concedidos, recebidos e FGTS, com status (ativo/pago), parcelas e comprovantes. Marcar como **pago** exige categoria + comprovante e **espelha** o lançamento no Livro Caixa (transação vinculada via `loanId`); o empréstimo pago sai do atalho de empréstimos.
@@ -401,7 +401,7 @@ docker compose --env-file .env up -d --build
 | 6 | **Investimentos** | Rastreiam `buy_price` → `current_price`, vinculam transações via `investment_id` |
 | 7 | **Empréstimos** | Entidades próprias com `type` (given, received, fgts) que podem opcionalmente vincular a `accountId` |
 | 8 | **Empréstimo pago** | Marcar como `paid` exige `categoryId` + comprovante; o backend espelha uma transação na categoria (vínculo `transactions.loanId`) e ajusta o saldo. Pago **com** categoria sai do atalho de empréstimos |
-| 9 | **Conta histórica** | `accounts.freezeBalance = true` congela o saldo: pagamentos não o alteram e ele fica **fora** do "Saldo Atual" do dashboard. Na UI o switch é "Afeta o saldo" (marcado = `false`) |
+| 9 | **Conta histórica** | `accounts.freezeBalance = true` congela o saldo: pagamentos não o alteram e ele fica **fora** do "Saldo Atual" do dashboard. Cartões de crédito são sempre excluídos do "Saldo Atual", e a flag `freezeBalance` (na UI: "Afeta a soma de Cartões") dita se a fatura entra no total de Cartões. |
 | 10 | **Meses UTC** | Comparações month-over-month usam meses de calendário UTC (day 1, 00:00:00Z) |
 | 11 | **Projeção** | Combina gastos do mês corrente com recorrências ativas para prever totais |
 
