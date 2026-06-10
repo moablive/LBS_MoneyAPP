@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql, isNull } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
 import type { TxType } from './categories.js';
 
@@ -117,4 +117,25 @@ export async function getAllSummaries(userId: string): Promise<AllSummaryRow[]> 
     .orderBy(desc(categories.type), desc(sql`abs(sum(${transactions.amount}))`));
 
   return rows.map((r) => ({ name: r.name, type: r.type, total: Number(r.total) }));
+}
+
+export async function getRecentTransactionsWithoutReceipt(userId: string, limitCount = 5) {
+  return await db
+    .select({
+      id: transactions.id,
+      description: transactions.description,
+      amount: transactions.amount,
+      occurredAt: transactions.occurredAt,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), isNull(transactions.receiptBase64)))
+    .orderBy(desc(transactions.occurredAt))
+    .limit(limitCount);
+}
+
+export async function attachReceipt(userId: string, txId: string, base64: string, mimeType: string) {
+  await db
+    .update(transactions)
+    .set({ receiptBase64: base64, receiptMimeType: mimeType, updatedAt: new Date() })
+    .where(and(eq(transactions.id, txId), eq(transactions.userId, userId)));
 }

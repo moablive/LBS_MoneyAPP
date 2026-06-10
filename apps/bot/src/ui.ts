@@ -1,11 +1,11 @@
 import { Markup } from 'telegraf';
 import type { InlineKeyboardButton } from 'telegraf/types';
 
-/** Teclado principal (ReplyKeyboard) mostrado após o /start. */
 export function mainMenuKeyboard() {
   return Markup.keyboard([
-    ['📝 Registrar Novo', '🔍 Ver Categoria'],
-    ['📊 Ver Relatórios', '📄 Relatório Geral'],
+    ['📝 Registrar Novo', '📎 Anexar Comprovante'],
+    ['🔍 Ver Categoria', '📊 Ver Relatórios'],
+    ['📄 Relatório Geral'],
   ]).resize();
 }
 

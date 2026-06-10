@@ -4,6 +4,7 @@ import type { BotContext } from './context.js';
 import { auth } from './auth.js';
 import { registerScene, REGISTER_SCENE } from './scenes/register.js';
 import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './scenes/viewCategory.js';
+import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './scenes/attachReceipt.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { getDbUserId } from './db/user-cache.js';
@@ -15,7 +16,7 @@ bot.use(session());
 bot.use(auth);
 
 // Fluxos de conversa.
-const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene]);
+const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene]);
 bot.use(stage.middleware());
 
 // Menu principal.
@@ -25,6 +26,8 @@ bot.start(sendMainMenu);
 bot.hears('📝 Registrar Novo', (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.command('registrar', (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.hears('🔍 Ver Categoria', (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
+bot.hears('📎 Anexar Comprovante', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
+bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 
 // Relatórios.
 bot.hears('📊 Ver Relatórios', showReports);

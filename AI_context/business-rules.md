@@ -97,7 +97,8 @@ regardless of how clean it looks.
     `@moneyapp/db` (no HTTP, it bypasses the backend). It must uphold the
     transaction invariants by hand: signed amount (#1), `type` matching the
     sign (#2), and `numeric(14,2)` written as a 2-decimal string. See
-    `addTransaction` in `apps/bot/src/db/transactions.ts`.
+    `addTransaction` in `apps/bot/src/db/transactions.ts`. It also supports
+    attaching base64 inline receipts to existing transactions via the `attachReceipt` flow.
 25. **Bot transactions carry no account and are always `paid`.**
     `addTransaction` sets `status = 'paid'`, `occurred_at = now()` and leaves
     `account_id` null — so they never mutate any `current_balance` (consistent
