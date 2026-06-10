@@ -18,6 +18,8 @@ export async function addTransaction(
   amount: number,
   type: TxType,
   categoryId: string,
+  receiptBase64?: string,
+  receiptMimeType?: string,
 ): Promise<void> {
   const signed = type === 'expense' ? -Math.abs(amount) : Math.abs(amount);
   await db.insert(transactions).values({
@@ -28,6 +30,8 @@ export async function addTransaction(
     status: 'paid',
     occurredAt: new Date(),
     categoryId,
+    receiptBase64,
+    receiptMimeType,
   });
 }
 

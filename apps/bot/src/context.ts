@@ -11,4 +11,6 @@ export interface RegisterState {
   tipo?: 'income' | 'expense';
   desc?: string;
   valor?: number;
+  receiptBase64?: string;
+  receiptMimeType?: string;
 }

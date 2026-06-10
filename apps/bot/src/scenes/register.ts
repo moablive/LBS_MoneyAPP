@@ -30,7 +30,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 1 — recebe o tipo e pede descrição.
+  // Passo 1 — recebe o tipo e pede o comprovante (ou pular).
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
@@ -41,13 +41,67 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     (ctx.wizard.state as RegisterState).tipo = data;
     const label = data === 'income' ? 'Receita' : 'Despesa';
     await ctx.editMessageText(
-      `Tipo escolhido: ${label}\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: \`Mercado\``,
-      { parse_mode: 'Markdown' },
+      `Tipo escolhido: ${label}\n\nEnvie a **FOTO/PDF** do comprovante ou clique no botão abaixo para pular:`,
+      Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]),
     );
     return ctx.wizard.next();
   },
 
-  // Passo 2 — recebe Descrição e pede o Valor.
+  // Passo 2 — recebe o comprovante (ou pula) e pede a descrição.
+  async (ctx) => {
+    const message = ctx.message;
+    const cq = ctx.callbackQuery;
+
+    if (cq && 'data' in cq && cq.data === 'skip_receipt') {
+      await ctx.answerCbQuery();
+    } else if (message) {
+      let fileId: string | undefined;
+      let mimeType = 'image/jpeg';
+      
+      if ('photo' in message) {
+        const photos = message.photo;
+        if (photos && photos.length > 0) {
+          fileId = photos[photos.length - 1]!.file_id;
+        }
+      } else if ('document' in message) {
+        fileId = message.document.file_id;
+        mimeType = message.document.mime_type || 'application/octet-stream';
+      }
+      
+      if (fileId) {
+        const url = await ctx.telegram.getFileLink(fileId);
+        const res = await fetch(url.href);
+        const arrayBuffer = await res.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        
+        if (base64.length > 5 * 1024 * 1024 * 1.34) {
+          await ctx.reply('Arquivo muito grande! O limite para comprovantes é de 5MB. Envie um arquivo menor ou pule:', Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]));
+          return; // retry step
+        }
+
+        const state = ctx.wizard.state as RegisterState;
+        state.receiptBase64 = base64;
+        state.receiptMimeType = mimeType;
+      } else if ('text' in message && message.text.trim().startsWith('/')) {
+         // handle commands like /cancelar inside wizard
+      } else {
+        await ctx.reply('Por favor, envie uma FOTO/PDF válida ou clique no botão para pular:', Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]));
+        return; // retry step
+      }
+    } else {
+       return;
+    }
+
+    if (cq) {
+      await ctx.editMessageText('Comprovante: Pulado.\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { parse_mode: 'Markdown' });
+    } else {
+      await ctx.reply('Comprovante: Recebido ✅\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { parse_mode: 'Markdown' });
+    }
+    
+    return ctx.wizard.next();
+  },
+
+  // Passo 3 — recebe Descrição e pede o Valor.
   async (ctx) => {
     const message = ctx.message;
     if (!message || !('text' in message)) return;
@@ -68,7 +122,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 3 — recebe o Valor e lista as categorias do tipo.
+  // Passo 4 — recebe o Valor e lista as categorias do tipo.
   async (ctx) => {
     const message = ctx.message;
     if (!message || !('text' in message)) return;
@@ -101,7 +155,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 4 — recebe a categoria e grava a transação.
+  // Passo 5 — recebe a categoria e grava a transação.
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
@@ -115,7 +169,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
 
-    await addTransaction(userId, state.desc!, state.valor!, state.tipo!, categoryId);
+    await addTransaction(userId, state.desc!, state.valor!, state.tipo!, categoryId, state.receiptBase64, state.receiptMimeType);
 
     const label = state.tipo === 'income' ? 'Receita' : 'Despesa';
     await ctx.editMessageText(
