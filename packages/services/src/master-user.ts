@@ -81,6 +81,12 @@ async function bootstrapSingleUser(email: string, name: string, password: string
     return;
   }
 
+  // Se a senha já foi alterada pelo usuário (defaultPassword = false), não sobrescrevemos.
+  // O admin precisa setar defaultPassword = true no BD manualmente para forçar um reset.
+  if (!existing.defaultPassword) {
+    return;
+  }
+
   const stillValid = await verifyPassword(existing.passwordHash, password);
   if (stillValid) {
     // eslint-disable-next-line no-console
