@@ -34,8 +34,9 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
     }
     
     const rows = txs.map(tx => [Markup.button.callback(`${tx.description} - R$ ${Math.abs(Number(tx.amount)).toFixed(2)}`, tx.id)]);
+    rows.push([Markup.button.callback('❌ Cancelar', 'cancel_wizard')]);
     
-    await ctx.reply('Selecione a transação (Controle 📊) para anexar um comprovante (ou digite /cancelar para sair):', Markup.inlineKeyboard(rows));
+    await ctx.reply('Selecione a transação (Controle 📊) para anexar um comprovante:', Markup.inlineKeyboard(rows));
     return ctx.wizard.next();
   },
 
@@ -47,7 +48,10 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
     
     (ctx.wizard.state as AttachReceiptState).txId = txId;
     
-    await ctx.editMessageText('Agora envie a **FOTO** ou **ARQUIVO** (PDF, imagem) do comprovante:', { parse_mode: 'Markdown' });
+    await ctx.editMessageText('Agora envie a **FOTO** ou **ARQUIVO** (PDF, imagem) do comprovante:', { 
+      parse_mode: 'Markdown',
+      reply_markup: Markup.inlineKeyboard([[Markup.button.callback('❌ Cancelar', 'cancel_wizard')]]).reply_markup
+    });
     return ctx.wizard.next();
   },
 
@@ -69,7 +73,9 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
     }
     
     if (!fileId) {
-      await ctx.reply('Formato não suportado. Por favor, envie uma foto ou documento (ex: PDF).');
+      await ctx.reply('Formato não suportado. Por favor, envie uma foto ou documento (ex: PDF):', Markup.inlineKeyboard([
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')]
+      ]));
       return;
     }
     
@@ -102,6 +108,12 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
 
 attachReceiptScene.command('cancelar', async (ctx) => {
   await ctx.reply('Operação cancelada.', mainMenuKeyboard());
+  return ctx.scene.leave();
+});
+attachReceiptScene.action('cancel_wizard', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.editMessageText('Operação cancelada.');
+  await sendMainMenu(ctx);
   return ctx.scene.leave();
 });
 attachReceiptScene.command('start', async (ctx) => {

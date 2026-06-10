@@ -25,6 +25,7 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
           Markup.button.callback('🟢 Receitas', 'income'),
           Markup.button.callback('🔴 Despesas', 'expense'),
         ],
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')],
       ]),
     );
     return ctx.wizard.next();
@@ -51,9 +52,11 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
     }
 
     const label = type === 'income' ? 'Receitas' : 'Despesas';
+    const keyboard = categoryKeyboard(cats);
+    keyboard.reply_markup.inline_keyboard.push([Markup.button.callback('❌ Cancelar', 'cancel_wizard')]);
     await ctx.editMessageText(
       `Mostrando suas categorias de ${label}. Escolha uma para ver os detalhes:`,
-      categoryKeyboard(cats),
+      keyboard,
     );
     return ctx.wizard.next();
   },
@@ -90,6 +93,12 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
 
 viewCategoryScene.command('cancelar', async (ctx) => {
   await ctx.reply('Visualização cancelada.', mainMenuKeyboard());
+  return ctx.scene.leave();
+});
+viewCategoryScene.action('cancel_wizard', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.editMessageText('Operação cancelada.');
+  await sendMainMenu(ctx);
   return ctx.scene.leave();
 });
 viewCategoryScene.command('start', async (ctx) => {
