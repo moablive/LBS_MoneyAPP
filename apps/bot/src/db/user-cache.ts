@@ -1,15 +1,19 @@
-import { env } from '../config.js';
-import { getUserIdByEmail } from './users.js';
+import { getUserIdByTelegramId } from './users.js';
 
-/**
- * O bot atende um único usuário (USER_EMAIL), então o UUID é resolvido uma vez
- * e memoizado. Se a primeira tentativa falhar (banco fora do ar, por exemplo),
- * `cached` continua null e uma nova chamada tenta de novo.
- */
-let cached: string | null = null;
+const cache = new Map<string, string>();
 
-export async function getDbUserId(): Promise<string | null> {
-  if (cached) return cached;
-  cached = await getUserIdByEmail(env.USER_EMAIL);
-  return cached;
+export async function getDbUserId(telegramId?: number): Promise<string | null> {
+  if (!telegramId) return null;
+  const tid = String(telegramId);
+  
+  if (cache.has(tid)) {
+    return cache.get(tid)!;
+  }
+  
+  const userId = await getUserIdByTelegramId(tid);
+  if (userId) {
+    cache.set(tid, userId);
+  }
+  
+  return userId;
 }

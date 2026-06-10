@@ -1,6 +1,5 @@
 import { Markup } from 'telegraf';
 import type { BotContext } from '../context.js';
-import { env } from '../config.js';
 import { getDbUserId } from '../db/user-cache.js';
 import { getSummaryByCategory, getAllSummaries } from '../db/transactions.js';
 import { renderPieChartPng } from '../utils/pieChart.js';
@@ -21,9 +20,9 @@ export async function showReports(ctx: BotContext): Promise<void> {
 export async function generateReportChart(ctx: BotContext, type: 'income' | 'expense'): Promise<void> {
   await ctx.answerCbQuery();
 
-  const userId = await getDbUserId();
+  const userId = await getDbUserId(ctx.from?.id);
   if (!userId) {
-    await ctx.editMessageText('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+    await ctx.editMessageText('Seu usuário não está vinculado!');
     return;
   }
 
@@ -48,15 +47,15 @@ export async function generateReportChart(ctx: BotContext, type: 'income' | 'exp
 
 /** Relatório textual do mês corrente (receitas, despesas e saldo). */
 export async function generateTextReport(ctx: BotContext): Promise<void> {
-  const userId = await getDbUserId();
+  const userId = await getDbUserId(ctx.from?.id);
   if (!userId) {
-    await ctx.reply('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+    await ctx.reply('Seu usuário não está vinculado!');
     return;
   }
 
   const summaries = await getAllSummaries(userId);
 
-  const header = `👤 <b>Relatório Geral (Mês Atual)</b>\n📧 Usuário: ${escHtml(env.USER_EMAIL)}\n\n`;
+  const header = `👤 <b>Relatório Geral (Mês Atual)</b>\n\n`;
   if (summaries.length === 0) {
     await ctx.reply(`${header}Você não possui movimentações neste mês.`, { parse_mode: 'HTML' });
     return;

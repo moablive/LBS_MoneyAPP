@@ -158,9 +158,9 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     const state = ctx.wizard.state as RegisterState;
     state.valor = valor;
 
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.reply('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+      await ctx.reply('Seu usuário não está vinculado!');
       return ctx.scene.leave();
     }
 
@@ -184,9 +184,9 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     await ctx.answerCbQuery();
 
     const state = ctx.wizard.state as RegisterState;
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.editMessageText('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+      await ctx.editMessageText('Seu usuário não está vinculado!');
       return ctx.scene.leave();
     }
 

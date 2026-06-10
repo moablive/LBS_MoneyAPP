@@ -20,9 +20,9 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
   ATTACH_RECEIPT_SCENE,
 
   async (ctx) => {
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.reply('Usuário não encontrado.', mainMenuKeyboard());
+      await ctx.reply('Seu usuário não está vinculado!', mainMenuKeyboard());
       return ctx.scene.leave();
     }
     
@@ -92,10 +92,10 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
 
     const state = ctx.wizard.state as AttachReceiptState;
     const txId = state.txId!;
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     
     if (!userId) {
-      await ctx.reply('Usuário não encontrado.', mainMenuKeyboard());
+      await ctx.reply('Seu usuário não está vinculado!', mainMenuKeyboard());
       return ctx.scene.leave();
     }
 

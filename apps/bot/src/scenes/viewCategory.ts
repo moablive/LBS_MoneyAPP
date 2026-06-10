@@ -39,9 +39,9 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
     if (type !== 'income' && type !== 'expense') return;
 
     await ctx.answerCbQuery();
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.editMessageText('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+      await ctx.editMessageText('Seu usuário não está vinculado!');
       return ctx.scene.leave();
     }
 
@@ -68,9 +68,9 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
     const categoryId = cq.data;
     await ctx.answerCbQuery();
 
-    const userId = await getDbUserId();
+    const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.editMessageText('Seu email não foi encontrado no banco de dados do MoneyAPP!');
+      await ctx.editMessageText('Seu usuário não está vinculado!');
       return ctx.scene.leave();
     }
 
