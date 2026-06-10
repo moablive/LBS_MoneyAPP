@@ -10,8 +10,8 @@ import { brl } from '../utils/format.js';
 export const REGISTER_SCENE = 'register';
 
 /**
- * Fluxo de registro (Receita/Despesa → Descrição+Valor → Categoria → Salvar),
- * equivalente ao ConversationHandler de 3 estados do bot Python.
+ * Fluxo de registro (Receita/Despesa → Descrição → Valor → Categoria → Salvar),
+ * antes equivalente ao ConversationHandler de 3 estados do bot Python.
  */
 export const registerScene = new Scenes.WizardScene<BotContext>(
   REGISTER_SCENE,
@@ -30,7 +30,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 1 — recebe o tipo e pede descrição + valor.
+  // Passo 1 — recebe o tipo e pede descrição.
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
@@ -41,37 +41,48 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     (ctx.wizard.state as RegisterState).tipo = data;
     const label = data === 'income' ? 'Receita' : 'Despesa';
     await ctx.editMessageText(
-      `Tipo escolhido: ${label}\n\nAgora digite uma DESCRIÇÃO e o VALOR separados por hífen.\nExemplo: \`Mercado - 150.50\``,
+      `Tipo escolhido: ${label}\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: \`Mercado\``,
       { parse_mode: 'Markdown' },
     );
     return ctx.wizard.next();
   },
 
-  // Passo 2 — recebe "Descrição - Valor" e lista as categorias do tipo.
+  // Passo 2 — recebe Descrição e pede o Valor.
   async (ctx) => {
     const message = ctx.message;
     if (!message || !('text' in message)) return;
-    const text = message.text;
+    const text = message.text.trim();
 
-    if (!text.includes('-')) {
-      await ctx.reply('Formato inválido! Por favor, use: `Descrição - Valor` (ex: Mercado - 50.50).', {
-        parse_mode: 'Markdown',
-      });
+    if (!text) {
+      await ctx.reply('Descrição inválida! Por favor, digite uma descrição.');
       return;
     }
 
-    const parts = text.split('-');
-    const desc = parts.slice(0, -1).join('-').trim();
-    const valor = Number(parts[parts.length - 1]!.trim().replace(',', '.'));
-    if (!desc || !Number.isFinite(valor) || valor <= 0) {
-      await ctx.reply('Valor inválido! Por favor, digite no formato: `Descrição - Valor`.', {
+    const state = ctx.wizard.state as RegisterState;
+    state.desc = text;
+
+    await ctx.reply(
+      `Descrição: ${text}\n\nAgora digite o **VALOR**.\nExemplo: \`150.50\``,
+      { parse_mode: 'Markdown' },
+    );
+    return ctx.wizard.next();
+  },
+
+  // Passo 3 — recebe o Valor e lista as categorias do tipo.
+  async (ctx) => {
+    const message = ctx.message;
+    if (!message || !('text' in message)) return;
+    
+    // allow parsing with comma or dot
+    const valor = Number(message.text.trim().replace(',', '.'));
+    if (!Number.isFinite(valor) || valor <= 0) {
+      await ctx.reply('Valor inválido! Por favor, digite um número maior que zero.\nExemplo: `150.50`', {
         parse_mode: 'Markdown',
       });
       return;
     }
 
     const state = ctx.wizard.state as RegisterState;
-    state.desc = desc;
     state.valor = valor;
 
     const userId = await getDbUserId();
@@ -90,7 +101,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 3 — recebe a categoria e grava a transação.
+  // Passo 4 — recebe a categoria e grava a transação.
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
