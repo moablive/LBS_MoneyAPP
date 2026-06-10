@@ -335,7 +335,7 @@ Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios
 
 **Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` (Drizzle + `pg`) · `sharp` (gráfico de pizza SVG→PNG, sem chamada externa) · `zod` (validação de env).
 
-**Comandos:** `/login <email> <senha>` (necessário para autenticar no banco) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu.
+**Comandos:** `/login` (fluxo interativo para autenticar no banco passo a passo) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu.
 
 **Variáveis de ambiente** (no `.env` único da raiz, junto com o backend):
 
