@@ -104,7 +104,4 @@ regardless of how clean it looks.
     `account_id` null — so they never mutate any `current_balance` (consistent
     with #7/#8) and surface only in income/expense aggregations, not in
     per-account balances.
-26. **Single tenant by config.** The bot only answers the Telegram id in
-    `ALLOWED_USER_ID` and maps every write to the MoneyAPP user resolved from
-    `USER_EMAIL` (cached after the first lookup). It never reads a userId from
-    the incoming message.
+26. **Multi-tenant via Telegram Login.** Any user who has a valid email and password in the MoneyAPP database can use the bot by sending `/login <email> <password>`. The bot links their `telegram_id` to their DB user, and subsequent actions are automatically routed to their specific profile.

@@ -67,7 +67,7 @@ moneyapp/
 │   └── bot/                 # Telegram bot (Telegraf) — reaproveita @moneyapp/db
 │       └── src/
 │           ├── config.ts     # env validado com zod
-│           ├── auth.ts       # middleware: só ALLOWED_USER_ID
+│           ├── auth.ts       # middleware: checa se ctx.from.id tem vínculo com email/senha no banco
 │           ├── db/           # camada sobre @moneyapp/db
 │           ├── scenes/       # wizard flows (register, viewCategory)
 │           ├── handlers/     # start, reports
