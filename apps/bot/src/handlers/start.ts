@@ -7,7 +7,7 @@ import { mainMenuKeyboard } from '../ui.js';
  * Usado tanto pelo /start quanto pela "saída de emergência" dentro das cenas.
  */
 export async function sendMainMenu(ctx: BotContext): Promise<void> {
-  const userId = await getDbUserId();
+  const userId = await getDbUserId(ctx.from?.id);
   if (!userId) {
     await ctx.reply('Seu email não foi encontrado no banco de dados do MoneyAPP!');
     return;
