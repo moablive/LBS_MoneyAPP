@@ -39,6 +39,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   telegramId: varchar('telegram_id', { length: 50 }).unique(),
+  defaultPassword: boolean('default_password').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   settings: jsonb('settings').default({ requireReceipts: true }).notNull(),

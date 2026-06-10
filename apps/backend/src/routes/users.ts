@@ -4,6 +4,8 @@ import { db, schema } from '@moneyapp/db';
 import { requireAuth } from '../middleware/auth.js';
 
 export const usersRouter = Router();
+import { hashPassword } from '@moneyapp/services';
+
 
 usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
   try {
@@ -27,6 +29,31 @@ usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
       .where(eq(schema.users.id, userId));
       
     res.json(newSettings);
+  } catch (err) {
+    next(err);
+  }
+});
+
+usersRouter.post('/me/password', requireAuth, async (req, res, next) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      res.status(400).json({ error: 'password_too_short' });
+      return;
+    }
+    
+    const userId = req.user!.id;
+    const passwordHash = await hashPassword(newPassword);
+    
+    await db.update(schema.users)
+      .set({ 
+        passwordHash, 
+        defaultPassword: false, 
+        updatedAt: new Date() 
+      })
+      .where(eq(schema.users.id, userId));
+      
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

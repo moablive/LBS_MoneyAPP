@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { RouterLink, useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import NewTransactionModal from './NewTransactionModal.vue';
+import ChangePasswordModal from './ChangePasswordModal.vue';
 import GlobalConfirmDialog from './GlobalConfirmDialog.vue';
 
 const router = useRouter();
@@ -235,6 +236,7 @@ function logout() {
       :open="showGlobalCreate" 
       @close="showGlobalCreate = false" 
     />
+    <ChangePasswordModal />
     <GlobalConfirmDialog />
   </div>
 </template>

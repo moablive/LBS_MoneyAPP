@@ -17,6 +17,7 @@ export interface User {
   name: string;
   email: string;
   settings: UserSettings;
+  defaultPassword?: boolean;
 }
 
 export interface AuthResponse {

@@ -28,6 +28,7 @@ is the contract — this document is a map, not a duplicate.
 | Method | Path                       | Body                       | Notes                                            |
 | ------ | -------------------------- | -------------------------- | ------------------------------------------------ |
 | PATCH  | `/api/users/me/settings`   | `{ requireReceipts: bool }`| Merge nas `users.settings`; retorna o objeto novo (auth) |
+| POST   | `/api/users/me/password`   | `{ newPassword: string }` | Atualiza a senha e marca `defaultPassword` como false |
 
 ### Categories
 | Method | Path                       | Schema                 |

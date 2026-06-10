@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue';
 
-const props = defineProps<{ open: boolean; title?: string }>();
+const props = defineProps<{ 
+  open: boolean; 
+  title?: string;
+  disableClickOutside?: boolean;
+  hideCloseBtn?: boolean;
+}>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.open) emit('close');
+  if (e.key === 'Escape' && props.open && !props.disableClickOutside) emit('close');
 }
 onMounted(() => window.addEventListener('keydown', onKey));
 onUnmounted(() => window.removeEventListener('keydown', onKey));
@@ -14,7 +19,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 <template>
   <Teleport to="body">
     <transition name="modal" appear>
-      <div v-if="open" class="modal-shell" @click.self="emit('close')">
+      <div v-if="open" class="modal-shell" @click.self="!props.disableClickOutside && emit('close')">
         <div
           class="modal-panel"
           role="dialog"
@@ -26,11 +31,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
               <h2 class="text-lg font-semibold tracking-tight">{{ title }}</h2>
             </slot>
             <button
+              v-if="!hideCloseBtn"
               type="button"
               class="text-muted hover:text-slate-100 transition-colors"
-              aria-label="Fechar"
               @click="emit('close')"
-            >×</button>
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </header>
           <slot />
         </div>

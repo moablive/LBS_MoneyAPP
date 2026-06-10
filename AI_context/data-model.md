@@ -29,6 +29,7 @@ erDiagram
     varchar name
     varchar email UK
     text password_hash
+    boolean default_password
     jsonb settings "{ requireReceipts: bool }"
     timestamptz created_at
     timestamptz updated_at

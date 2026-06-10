@@ -91,7 +91,7 @@ async function bootstrapSingleUser(email: string, name: string, password: string
   const passwordHash = await hashPassword(password);
   await db
     .update(users)
-    .set({ passwordHash, name, updatedAt: new Date() })
+    .set({ passwordHash, name, defaultPassword: true, updatedAt: new Date() })
     .where(eq(users.id, existing.id));
   // eslint-disable-next-line no-console
   console.log(`[bootstrap] master user password rotated id=${existing.id} email=${email}`);
