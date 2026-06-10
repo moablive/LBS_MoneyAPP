@@ -15,7 +15,7 @@ export async function getUserIdByEmail(email: string): Promise<string | null> {
 
 export async function getUserByEmailWithPassword(email: string) {
   const [user] = await db
-    .select({ id: users.id, passwordHash: users.passwordHash })
+    .select({ id: users.id, passwordHash: users.passwordHash, defaultPassword: users.defaultPassword })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);

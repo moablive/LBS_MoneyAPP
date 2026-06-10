@@ -40,6 +40,10 @@ bot.command('login', async (ctx) => {
   if (!user) {
     return ctx.reply('Email não encontrado.');
   }
+
+  if (user.defaultPassword) {
+    return ctx.reply('🔒 Por motivos de segurança, você deve realizar o seu primeiro login pelo Painel Web e cadastrar uma nova senha antes de usar o bot do Telegram.');
+  }
   
   const argon2 = (await import('argon2')).default;
   const valid = await argon2.verify(user.passwordHash, password);
