@@ -90,3 +90,20 @@ regardless of how clean it looks.
 22. Month-over-month comparisons use **calendar months in UTC**, anchored
     on day 1 at 00:00:00Z. We never use rolling 30-day windows.
 23. **Monthly projections** take the current month's expenses and combine them with recurring future expenses (from active Subscriptions) to predict end-of-month balances and spendings.
+
+## Telegram bot (`apps/bot`)
+
+24. **The bot is a second writer of transactions**, inserting directly via
+    `@moneyapp/db` (no HTTP, it bypasses the backend). It must uphold the
+    transaction invariants by hand: signed amount (#1), `type` matching the
+    sign (#2), and `numeric(14,2)` written as a 2-decimal string. See
+    `addTransaction` in `apps/bot/src/db/transactions.ts`.
+25. **Bot transactions carry no account and are always `paid`.**
+    `addTransaction` sets `status = 'paid'`, `occurred_at = now()` and leaves
+    `account_id` null — so they never mutate any `current_balance` (consistent
+    with #7/#8) and surface only in income/expense aggregations, not in
+    per-account balances.
+26. **Single tenant by config.** The bot only answers the Telegram id in
+    `ALLOWED_USER_ID` and maps every write to the MoneyAPP user resolved from
+    `USER_EMAIL` (cached after the first lookup). It never reads a userId from
+    the incoming message.

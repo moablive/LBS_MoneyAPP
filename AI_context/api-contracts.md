@@ -4,6 +4,9 @@ All endpoints are under `/api`. Request and response bodies match the Zod
 schemas exported from `@moneyapp/models`. Wherever a Zod schema exists, it
 is the contract — this document is a map, not a duplicate.
 
+> The Telegram bot (`apps/bot`) does **not** use this API — it reads and writes
+> the database directly via `@moneyapp/db`. These contracts cover the web app only.
+
 ## Conventions
 
 - **Auth:** `Authorization: Bearer <jwt>`.

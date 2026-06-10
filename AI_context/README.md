@@ -18,7 +18,7 @@ read **before** doing non-trivial work on MoneyAPP. Everything in here is the
 | --------------------- | ----------------------------------------------------- |
 | `project-map.json`    | Structured index: infra, packages, entities, routes, invariants |
 | `architecture.md`     | Topology diagram, workspace tree, tech choices, deployment |
-| `business-rules.md`   | 20+ numbered invariants (transactions, subscriptions, investments, loans, auth, aggregations) |
+| `business-rules.md`   | 20+ numbered invariants (transactions, subscriptions, investments, loans, auth, aggregations, bot) |
 | `data-model.md`       | ER diagram (7 entities), indexes, column conventions   |
 | `api-contracts.md`    | 30+ endpoints (auth, CRUD, loans, dashboard), Zod schemas, conventions |
 | `ui-guidelines.md`    | Visual tokens, typography, motion, modals, charts, dashboard patterns |
@@ -46,3 +46,6 @@ Keep entries short. Long-form belongs in the codebase or PR descriptions.
   (category + receipt required) mirrors a transaction into the Livro Caixa
 - **Dashboard** — summary, ranking, spending evolution, monthly projection
 - **Settings** — global `requireReceipts`; per-account "affects balance" toggle
+- **Telegram Bot (`apps/bot`)** — Telegraf bot, single authorized user; registers
+  paid transactions (no account link) and renders pie-chart / text reports
+  straight from the shared DB via `@moneyapp/db` (no HTTP)
