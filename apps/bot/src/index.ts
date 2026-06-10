@@ -28,7 +28,8 @@ bot.start(sendMainMenu);
 
 // Login
 bot.command('login', async (ctx) => {
-  const parts = ctx.message.text.split(' ');
+  const text = ctx.message.text.trim();
+  const parts = text.split(/\s+/);
   if (parts.length !== 3) {
     return ctx.reply('Uso: /login <seu_email> <sua_senha>');
   }
