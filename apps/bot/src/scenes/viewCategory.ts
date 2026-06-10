@@ -86,7 +86,12 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
       msg += 'Nenhuma transação nesta categoria neste mês.';
     }
 
-    await ctx.editMessageText(msg, { parse_mode: 'HTML' });
+    await ctx.editMessageText(msg, { 
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('🔗 Compartilhar Categoria', `share_${categoryId}`)]
+      ]).reply_markup
+    });
     return ctx.scene.leave();
   },
 );

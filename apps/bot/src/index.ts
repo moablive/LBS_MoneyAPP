@@ -8,6 +8,8 @@ import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './scenes/attachReceipt
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { getDbUserId } from './db/user-cache.js';
+import { createShareLink } from './db/shares.js';
+import { Markup } from 'telegraf';
 
 const bot = new Telegraf<BotContext>(env.TELEGRAM_BOT_TOKEN);
 
@@ -36,6 +38,32 @@ bot.action(/^REL_(income|expense)$/, (ctx) =>
   generateReportChart(ctx, ctx.match[1] as 'income' | 'expense'),
 );
 bot.hears('📄 Relatório Geral', generateTextReport);
+
+bot.action(/^share_(.+)$/, async (ctx) => {
+  try {
+    const categoryId = ctx.match[1];
+    const userId = await getDbUserId();
+    if (!userId || !categoryId) return;
+    
+    await ctx.answerCbQuery();
+    const { token, password } = await createShareLink(userId, categoryId);
+    
+    const link = `https://money.astralwavelabel.com/share/${token}`;
+    const text = `Confira as movimentações desta categoria no MoneyAPP:\n\n🔗 ${link}\n🔑 Senha: ${password}`;
+    
+    const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    
+    await ctx.reply(
+      `✅ Link de compartilhamento gerado com sucesso!\n\n${text}\n\nO link expira em 24 horas.`,
+      Markup.inlineKeyboard([
+        [Markup.button.url('🟢 Compartilhar no WhatsApp', waLink)]
+      ])
+    );
+  } catch (err) {
+    console.error('Erro ao gerar link de compartilhamento:', err);
+    await ctx.reply('Ocorreu um erro ao gerar o link de compartilhamento.');
+  }
+});
 
 bot.catch((err, ctx) => {
   console.error(`[bot] erro ao processar update ${ctx.updateType}:`, err);

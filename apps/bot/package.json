@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@moneyapp/db": "workspace:*",
+    "argon2": "^0.40.3",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.33.0",
     "sharp": "^0.33.5",
