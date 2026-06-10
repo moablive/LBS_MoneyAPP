@@ -313,6 +313,8 @@ erDiagram
 
 ## 🤖 Telegram Bot (`apps/bot`)
 
+🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
+
 Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios direto pelo chat. **Porte em Node/TypeScript** do antigo bot em Python, agora **dentro do monorepo** reaproveitando o pacote `@moneyapp/db` (mesmo schema Drizzle e mesma conexão Postgres do backend). Não tem banco próprio: conecta no mesmo PostgreSQL via `awl_network`.
 
 > [!NOTE]
@@ -320,15 +322,15 @@ Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios
 
 **Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` (Drizzle + `pg`) · `sharp` (gráfico de pizza SVG→PNG, sem chamada externa) · `zod` (validação de env).
 
-**Comandos:** `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu.
+**Comandos:** `/login <email> <senha>` (necessário para autenticar no banco) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu.
 
 **Variáveis de ambiente** (no `.env` único da raiz, junto com o backend):
 
 | Var | Descrição |
 | --- | --------- |
 | `TELEGRAM_BOT_TOKEN` | Token do bot (via BotFather) |
-| `ALLOWED_USER_ID` | Telegram user ID autorizado — o bot ignora os demais |
-| `USER_EMAIL` | E-mail do usuário MoneyAPP dono das transações |
+| `ALLOWED_USER_ID` | *(Opcional)* Telegram user ID restrito antigamente |
+| `USER_EMAIL` | *(Opcional)* E-mail padrão herdado do backend |
 | `DATABASE_URL` | Reaproveitado da config do backend |
 
 ```bash
