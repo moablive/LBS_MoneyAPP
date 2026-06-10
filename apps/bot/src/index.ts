@@ -5,13 +5,12 @@ import { auth } from './auth.js';
 import { registerScene, REGISTER_SCENE } from './scenes/register.js';
 import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './scenes/viewCategory.js';
 import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './scenes/attachReceipt.js';
+import { loginScene, LOGIN_SCENE } from './scenes/login.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { getDbUserId } from './db/user-cache.js';
-import { getUserByEmailWithPassword, updateUserTelegramId } from './db/users.js';
 import { createShareLink } from './db/shares.js';
 import { Markup } from 'telegraf';
-import { mainMenuKeyboard } from './ui.js';
 
 const bot = new Telegraf<BotContext>(env.TELEGRAM_BOT_TOKEN);
 
@@ -20,42 +19,14 @@ bot.use(session());
 bot.use(auth);
 
 // Fluxos de conversa.
-const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene]);
+const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, loginScene]);
 bot.use(stage.middleware());
 
 // Menu principal.
 bot.start(sendMainMenu);
 
 // Login
-bot.command('login', async (ctx) => {
-  const text = ctx.message.text.trim();
-  const parts = text.split(/\s+/);
-  if (parts.length !== 3) {
-    return ctx.reply('Uso: /login <seu_email> <sua_senha>');
-  }
-  
-  const email = parts[1]!;
-  const password = parts[2]!;
-  
-  const user = await getUserByEmailWithPassword(email);
-  if (!user) {
-    return ctx.reply('Email não encontrado.');
-  }
-
-  if (user.defaultPassword) {
-    return ctx.reply('🔒 Por motivos de segurança, você deve realizar o seu primeiro login pelo Painel Web e cadastrar uma nova senha antes de usar o bot do Telegram.');
-  }
-  
-  const argon2 = (await import('argon2')).default;
-  const valid = await argon2.verify(user.passwordHash, password);
-  
-  if (!valid) {
-    return ctx.reply('Senha incorreta.');
-  }
-  
-  await updateUserTelegramId(user.id, String(ctx.from?.id));
-  await ctx.reply('✅ Conta vinculada com sucesso! Bem-vindo ao MoneyAPP Telegram Bot.', mainMenuKeyboard());
-});
+bot.command('login', (ctx) => ctx.scene.enter(LOGIN_SCENE));
 
 // Entradas dos fluxos.
 bot.hears('📝 Registrar Novo', (ctx) => ctx.scene.enter(REGISTER_SCENE));

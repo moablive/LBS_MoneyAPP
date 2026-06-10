@@ -9,7 +9,16 @@ import { getUserIdByTelegramId } from './db/users.js';
  */
 export const auth: MiddlewareFn<BotContext> = async (ctx, next) => {
   const text = ('text' in (ctx.message || {})) ? (ctx.message as any).text : '';
-  if (text && text.startsWith('/login')) {
+  const isLoginCommand = text && text.startsWith('/login');
+  const isLoginScene = ctx.session?.__scenes?.current === 'loginScene';
+  const isCallback = ctx.updateType === 'callback_query'; // Also allow callbacks like 'cancel_wizard'
+
+  if (isLoginCommand || isLoginScene) {
+    return next();
+  }
+
+  // Se for um callback no meio de uma scene, permitimos que passe para o stage lidar
+  if (isCallback && isLoginScene) {
     return next();
   }
 
@@ -18,8 +27,8 @@ export const auth: MiddlewareFn<BotContext> = async (ctx, next) => {
 
   const userId = await getUserIdByTelegramId(String(id));
   if (!userId) {
-    if (ctx.chat?.type === 'private') {
-      await ctx.reply('🔒 Você não está autenticado. Use o comando:\n`/login seu_email sua_senha`\n\nPara vincular sua conta do MoneyAPP ao Telegram.', { parse_mode: 'Markdown' });
+    if (ctx.chat?.type === 'private' && !isCallback) {
+      await ctx.reply('🔒 Você não está autenticado. Use o comando:\n`/login` para iniciar o fluxo de acesso e vincular sua conta do MoneyAPP ao Telegram.', { parse_mode: 'Markdown' });
     }
     return;
   }
