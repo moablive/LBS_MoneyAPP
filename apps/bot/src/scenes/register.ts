@@ -25,6 +25,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
           Markup.button.callback('🟢 Receita', 'income'),
           Markup.button.callback('🔴 Despesa', 'expense'),
         ],
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')],
       ]),
     );
     return ctx.wizard.next();
@@ -42,7 +43,10 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     const label = data === 'income' ? 'Receita' : 'Despesa';
     await ctx.editMessageText(
       `Tipo escolhido: ${label}\n\nEnvie a **FOTO/PDF** do comprovante ou clique no botão abaixo para pular:`,
-      Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]),
+      Markup.inlineKeyboard([
+        [Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')],
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')],
+      ]),
     );
     return ctx.wizard.next();
   },
@@ -75,27 +79,39 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         
         if (base64.length > 5 * 1024 * 1024 * 1.34) {
-          await ctx.reply('Arquivo muito grande! O limite para comprovantes é de 5MB. Envie um arquivo menor ou pule:', Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]));
+          await ctx.reply('Arquivo muito grande! O limite para comprovantes é de 5MB. Envie um arquivo menor ou pule:', Markup.inlineKeyboard([
+            [Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')],
+            [Markup.button.callback('❌ Cancelar', 'cancel_wizard')]
+          ]));
           return; // retry step
         }
 
-        const state = ctx.wizard.state as RegisterState;
-        state.receiptBase64 = base64;
-        state.receiptMimeType = mimeType;
-      } else if ('text' in message && message.text.trim().startsWith('/')) {
-         // handle commands like /cancelar inside wizard
-      } else {
-        await ctx.reply('Por favor, envie uma FOTO/PDF válida ou clique no botão para pular:', Markup.inlineKeyboard([[Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')]]));
-        return; // retry step
-      }
+      const state = ctx.wizard.state as RegisterState;
+      state.receiptBase64 = base64;
+      state.receiptMimeType = mimeType;
+    } else if ('text' in message && message.text.trim().startsWith('/')) {
+       // handle commands like /cancelar inside wizard
+    } else {
+      await ctx.reply('Por favor, envie uma FOTO/PDF válida ou clique no botão para pular:', Markup.inlineKeyboard([
+        [Markup.button.callback('⏭ Pular Comprovante', 'skip_receipt')],
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')]
+      ]));
+      return; // retry step
+    }
     } else {
        return;
     }
 
     if (cq) {
-      await ctx.editMessageText('Comprovante: Pulado.\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { parse_mode: 'Markdown' });
+      await ctx.editMessageText('Comprovante: Pulado.\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { 
+        parse_mode: 'Markdown',
+        reply_markup: Markup.inlineKeyboard([[Markup.button.callback('❌ Cancelar', 'cancel_wizard')]]).reply_markup
+      });
     } else {
-      await ctx.reply('Comprovante: Recebido ✅\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { parse_mode: 'Markdown' });
+      await ctx.reply('Comprovante: Recebido ✅\n\nAgora digite a **DESCRIÇÃO** da transação.\nExemplo: `Mercado`', { 
+        parse_mode: 'Markdown',
+        reply_markup: Markup.inlineKeyboard([[Markup.button.callback('❌ Cancelar', 'cancel_wizard')]]).reply_markup
+      });
     }
     
     return ctx.wizard.next();
@@ -117,7 +133,10 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
 
     await ctx.reply(
       `Descrição: ${text}\n\nAgora digite o **VALOR**.\nExemplo: \`150.50\``,
-      { parse_mode: 'Markdown' },
+      { 
+        parse_mode: 'Markdown',
+        reply_markup: Markup.inlineKeyboard([[Markup.button.callback('❌ Cancelar', 'cancel_wizard')]]).reply_markup
+      },
     );
     return ctx.wizard.next();
   },
@@ -151,7 +170,9 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
 
-    await ctx.reply('Escolha a categoria:', categoryKeyboard(cats));
+    const keyboard = categoryKeyboard(cats);
+    keyboard.reply_markup.inline_keyboard.push([Markup.button.callback('❌ Cancelar', 'cancel_wizard')]);
+    await ctx.reply('Escolha a categoria:', keyboard);
     return ctx.wizard.next();
   },
 
@@ -182,6 +203,12 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
 // Saídas: /cancelar (como no Python) e /start (volta ao menu).
 registerScene.command('cancelar', async (ctx) => {
   await ctx.reply('Operação cancelada.', mainMenuKeyboard());
+  return ctx.scene.leave();
+});
+registerScene.action('cancel_wizard', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.editMessageText('Operação cancelada.');
+  await sendMainMenu(ctx);
   return ctx.scene.leave();
 });
 registerScene.command('start', async (ctx) => {
