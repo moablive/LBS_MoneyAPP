@@ -26,16 +26,16 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
     
-    // Lista até 10 transações sem comprovante
+    // Lista até 10 transações sem comprovante (apenas categoria Controle 📊)
     const txs = await getRecentTransactionsWithoutReceipt(userId, 10);
     if (txs.length === 0) {
-      await ctx.reply('Nenhuma transação recente sem comprovante encontrada.', mainMenuKeyboard());
+      await ctx.reply('Nenhuma transação recente da categoria Controle 📊 sem comprovante foi encontrada.', mainMenuKeyboard());
       return ctx.scene.leave();
     }
     
     const rows = txs.map(tx => [Markup.button.callback(`${tx.description} - R$ ${Math.abs(Number(tx.amount)).toFixed(2)}`, tx.id)]);
     
-    await ctx.reply('Selecione a transação para anexar um comprovante (ou digite /cancelar para sair):', Markup.inlineKeyboard(rows));
+    await ctx.reply('Selecione a transação (Controle 📊) para anexar um comprovante (ou digite /cancelar para sair):', Markup.inlineKeyboard(rows));
     return ctx.wizard.next();
   },
 

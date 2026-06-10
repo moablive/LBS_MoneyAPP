@@ -128,7 +128,14 @@ export async function getRecentTransactionsWithoutReceipt(userId: string, limitC
       occurredAt: transactions.occurredAt,
     })
     .from(transactions)
-    .where(and(eq(transactions.userId, userId), isNull(transactions.receiptBase64)))
+    .innerJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        isNull(transactions.receiptBase64),
+        sql`${categories.name} ILIKE '%controle%'`
+      )
+    )
     .orderBy(desc(transactions.occurredAt))
     .limit(limitCount);
 }
