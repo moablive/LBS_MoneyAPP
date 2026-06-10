@@ -311,6 +311,19 @@ erDiagram
 
 ---
 
+## 🔐 Autenticação, Senhas e Convites
+
+O MoneyAPP possui uma regra estrita de segurança para o **primeiro acesso** e convites, garantindo que usuários recém-criados ou contas mestras configuradas via `.env` alterem suas senhas imediatamente.
+
+- **Senha Padrão / Convite**: Ao criar um usuário (ou ao processar o `MASTER_USER_PASSWORD` no boot via `.env`), a conta é salva no banco de dados com a flag `default_password = true`.
+- **Mudança Obrigatória**: Ao realizar o login no painel web com uma senha padrão (onde `default_password` é `true`), o usuário será interceptado por uma tela obrigatória de alteração de senha que não pode ser fechada ou burlada.
+- **Senha Personalizada**: Ao redefinir a senha, a flag no banco muda para `default_password = false`. A partir desse momento, a senha é considerada forte e gerenciada pelo usuário. Alterações posteriores da senha no `.env` do servidor **não sobrescreverão** a senha de usuários que já personalizaram seu acesso.
+- **Bloqueio no Telegram**: É **expressamente bloqueado** autenticar e utilizar o bot do Telegram enquanto o `default_password` for `true`. O sistema exige que a conta seja validada primeiro pela web.
+
+Para **forçar o reset de uma senha perdida** via infraestrutura, o administrador do servidor deve alterar o banco de dados e setar `default_password = true` (ou `1`). No próximo reinício, o backend identificará isso e copiará a senha configurada no arquivo `.env` para a conta do usuário novamente, obrigando-o a modificá-la no próximo acesso.
+
+---
+
 ## 🤖 Telegram Bot (`apps/bot`)
 
 🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
