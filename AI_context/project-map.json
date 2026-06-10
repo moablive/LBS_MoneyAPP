@@ -17,7 +17,7 @@
       "external": true,
       "notes": "Brief originally called it 'awlsrv_network'; the real name on the host is 'awl_network' (verified via docker inspect)."
     },
-    "services": ["moneyapp_backend (Express)", "moneyapp_frontend (nginx)"]
+    "services": ["moneyapp_backend (Express)", "moneyapp_frontend (nginx)", "moneyapp_bot (Telegraf)"]
   },
   "packages": {
     "apps/frontend": {
@@ -30,6 +30,11 @@
       "entry": "src/server.ts",
       "schema": "packages/db/src/schema.ts",
       "routesRoot": "src/routes"
+    },
+    "apps/bot": {
+      "stack": ["Telegraf", "TypeScript", "Drizzle ORM (via @moneyapp/db)", "sharp", "Zod"],
+      "entry": "src/index.ts",
+      "notes": "Telegram bot — long polling, single authorized user (ALLOWED_USER_ID), writes transactions to the shared moneyapp DB via @moneyapp/db. No HTTP server, bypasses the backend."
     },
     "packages/db": {
       "stack": ["Drizzle ORM", "PostgreSQL"],

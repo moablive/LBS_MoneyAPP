@@ -8,15 +8,20 @@ flowchart LR
     PWA[Vue 3 PWA<br/>Vite + Pinia + Tailwind]
   end
 
+  TG[Telegram API]
+
   subgraph awl_network[Docker network: awl_network]
     NGINX[(nginx<br/>moneyapp_frontend:80)]
     API[(Express + Drizzle<br/>moneyapp_backend:3000)]
+    BOT[(Telegraf<br/>moneyapp_bot)]
     PG[(awlsrvDB_postgres:5432<br/>database "moneyapp")]
   end
 
   PWA -- HTTPS --> NGINX
   NGINX -- /api/ --> API
   API -- pg --> PG
+  TG -- long polling --> BOT
+  BOT -- pg --> PG
 ```
 
 - The PWA is served as static assets by `nginx` inside `moneyapp_frontend`.
@@ -26,6 +31,9 @@ flowchart LR
 - MoneyAPP uses its own dedicated Postgres **database** named `moneyapp`
   (tables in the `public` schema) on the shared `awlsrvDB_postgres` instance,
   so they don't collide with other apps.
+- `moneyapp_bot` is a Telegram bot (Telegraf) that talks to Telegram via long
+  polling and writes to the same `moneyapp` database through `@moneyapp/db` —
+  no HTTP, it bypasses the backend and reuses the Drizzle schema.
 
 ## Workspaces
 
@@ -46,16 +54,25 @@ moneyapp/
 │   │       ├── App.vue       # Root + route transitions
 │   │       ├── main.ts       # Entrypoint
 │   │       └── router.ts     # Vue Router + auth guard
-│   └── backend/             # Express + TypeScript + Drizzle + JWT
+│   ├── backend/             # Express + TypeScript + Drizzle + JWT
+│   │   └── src/
+│   │       ├── bootstrap/    # Inicialização (master user upsert)
+│   │       ├── config/       # Variáveis de ambiente tipadas
+│   │       ├── middleware/   # Auth, error handler, helmet
+│   │       ├── routes/       # auth, accounts, categories, transactions,
+│   │       │                 #   subscriptions, investments, loans, dashboard
+│   │       ├── services/     # Lógica de negócio
+│   │       ├── app.ts        # Express app setup
+│   │       └── server.ts     # HTTP server entrypoint
+│   └── bot/                 # Telegram bot (Telegraf) — reaproveita @moneyapp/db
 │       └── src/
-│           ├── bootstrap/    # Inicialização (master user upsert)
-│           ├── config/       # Variáveis de ambiente tipadas
-│           ├── middleware/   # Auth, error handler, helmet
-│           ├── routes/       # auth, accounts, categories, transactions,
-│           │                 #   subscriptions, investments, loans, dashboard
-│           ├── services/     # Lógica de negócio
-│           ├── app.ts        # Express app setup
-│           └── server.ts     # HTTP server entrypoint
+│           ├── config.ts     # env validado com zod
+│           ├── auth.ts       # middleware: só ALLOWED_USER_ID
+│           ├── db/           # camada sobre @moneyapp/db
+│           ├── scenes/       # wizard flows (register, viewCategory)
+│           ├── handlers/     # start, reports
+│           ├── utils/        # format + pieChart (SVG→PNG via sharp)
+│           └── index.ts      # bootstrap: middleware, scenes, rotas
 ├── packages/
 │   ├── api-client/          # Cliente HTTP e tipagens de rotas
 │   ├── db/                  # Drizzle ORM schemas e automação de migrations
@@ -81,10 +98,11 @@ moneyapp/
 
 ## Deployment
 
-The monorepo ships as exactly **two** containers via `docker-compose.yml`:
+The monorepo ships as **three** containers via `docker-compose.yml`:
 
 - `moneyapp_backend` (Node 20)
 - `moneyapp_frontend` (nginx serving Vite build output)
+- `moneyapp_bot` (Node 20, Telegraf — long polling, no exposed port)
 
 No Postgres container is defined — we attach to `awl_network` which already
 hosts `awlsrvDB_postgres`.
