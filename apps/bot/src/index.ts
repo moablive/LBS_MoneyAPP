@@ -8,6 +8,7 @@ import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './scenes/attachReceipt
 import { loginScene, LOGIN_SCENE } from './scenes/login.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
+import { showDashboard, showCards } from './handlers/dashboard.js';
 import { getDbUserId } from './db/user-cache.js';
 import { createShareLink } from './db/shares.js';
 import { Markup } from 'telegraf';
@@ -34,6 +35,10 @@ bot.command('registrar', (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.hears('🔍 Ver Categoria', (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
 bot.hears('📎 Anexar Comprovante', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
+
+// Dashboard e Cartões
+bot.hears('🌐 Dashboard', showDashboard);
+bot.hears('💳 Cartões', showCards);
 
 // Relatórios.
 bot.hears('📊 Ver Relatórios', showReports);
