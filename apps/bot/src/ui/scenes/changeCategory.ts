@@ -48,8 +48,9 @@ export const changeCategoryScene = new Scenes.WizardScene<BotContext>(
       const day = new Date(t.occurredAt).getDate().toString().padStart(2, '0');
       const text = `[${day}] ${t.description} - ${brl(Number(t.amount))}`;
       const label = text.length > 60 ? text.substring(0, 57) + '...' : text;
-      // Use 1 button per row because the text is wide
-      buttons.push([Markup.button.callback(label, `CHCAT_${t.id}_${t.type}`)]);
+      // Encode hasReceipt as 1 or 0
+      const hasReceipt = t.hasReceipt ? '1' : '0';
+      buttons.push([Markup.button.callback(label, `CHCAT_${t.id}_${t.type}_${hasReceipt}`)]);
     }
     
     buttons.push([Markup.button.callback('❌ Cancelar', 'cancel_wizard')]);
@@ -65,20 +66,26 @@ export const changeCategoryScene = new Scenes.WizardScene<BotContext>(
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
-    const data = cq.data;
-    
-    if (data === 'cancel_wizard') {
+
+    if (cq.data === 'cancel_wizard') {
       await ctx.answerCbQuery();
       await ctx.editMessageText('Operação cancelada.');
       await sendMainMenu(ctx);
       return ctx.scene.leave();
     }
 
-    if (!data.startsWith('CHCAT_')) return;
-    const parts = data.replace('CHCAT_', '').split('_');
+    if (!cq.data.startsWith('CHCAT_')) return;
+    const parts = cq.data.replace('CHCAT_', '').split('_');
     const txId = parts[0];
     const txType = parts[1];
+    const hasReceipt = parts[2];
     await ctx.answerCbQuery();
+
+    if (hasReceipt === '0') {
+      await ctx.editMessageText('⚠️ Este lançamento não possui comprovante!\n\nPara manter a organização, não é possível trocar a categoria de um lançamento sem comprovante. Use o botão "📎 Anexar Comprovante" primeiro!');
+      await sendMainMenu(ctx);
+      return ctx.scene.leave();
+    }
 
     const userId = await getDbUserId(ctx.from?.id);
     if (!userId) return ctx.scene.leave();
