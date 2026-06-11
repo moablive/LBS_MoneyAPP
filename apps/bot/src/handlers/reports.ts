@@ -2,7 +2,7 @@ import { Markup } from 'telegraf';
 import type { BotContext } from '../context.js';
 import { getDbUserId } from '../db/user-cache.js';
 import { getSummaryByCategory, getAllSummaries } from '../db/transactions.js';
-import { renderPieChartPng } from '../utils/pieChart.js';
+import { renderChartPng } from '../utils/chart.js';
 import { brl, escHtml } from '../utils/format.js';
 
 /** Menu de relatórios visuais (receitas/despesas). */
@@ -16,7 +16,7 @@ export async function showReports(ctx: BotContext): Promise<void> {
   );
 }
 
-/** Gera e envia o gráfico de pizza (receitas ou despesas). */
+/** Gera e envia o gráfico (receitas ou despesas). */
 export async function generateReportChart(ctx: BotContext, type: 'income' | 'expense'): Promise<void> {
   await ctx.answerCbQuery();
 
@@ -33,7 +33,7 @@ export async function generateReportChart(ctx: BotContext, type: 'income' | 'exp
     return;
   }
 
-  const png = await renderPieChartPng(
+  const png = await renderChartPng(
     data.map((d) => ({ name: d.name, value: d.total, color: d.color })),
     `Relatório de ${label}`,
   );

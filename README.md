@@ -333,9 +333,9 @@ Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios
 > [!NOTE]
 > Como está no monorepo, as queries do bot usam o schema **tipado** de `@moneyapp/db`. Se o schema mudar, o bot quebra em tempo de compilação (`pnpm --filter @moneyapp/bot typecheck`), não em produção.
 
-**Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` (Drizzle + `pg`) · `sharp` (gráfico de pizza SVG→PNG, sem chamada externa) · `zod` (validação de env).
+**Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` (Drizzle + `pg`) · `sharp` (gráfico de barras SVG→PNG, sem chamada externa) · `zod` (validação de env).
 
-**Comandos:** `/login` (fluxo interativo para autenticar no banco passo a passo) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu.
+**Comandos:** `/login` (fluxo interativo para autenticar no banco passo a passo) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu (incluindo acesso rápido via WebApp ao Dashboard e Cartões).
 
 **Variáveis de ambiente** (no `.env` único da raiz, junto com o backend):
 

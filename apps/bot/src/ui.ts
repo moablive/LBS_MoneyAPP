@@ -3,6 +3,10 @@ import type { InlineKeyboardButton } from 'telegraf/types';
 
 export function mainMenuKeyboard() {
   return Markup.keyboard([
+    [
+      Markup.button.webApp('🌐 Dashboard', 'https://money.astralwavelabel.com/'),
+      Markup.button.webApp('💳 Cartões', 'https://money.astralwavelabel.com/cartoes'),
+    ],
     ['📝 Registrar Novo', '📎 Anexar Comprovante'],
     ['🔍 Ver Categoria', '📊 Ver Relatórios'],
     ['📄 Relatório Geral'],
