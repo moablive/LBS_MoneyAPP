@@ -7,9 +7,10 @@ export function mainMenuKeyboard() {
   return Markup.keyboard([
     [`${Icons.Dashboard} Dashboard`, `${Icons.Cards} Cartões`],
     [`${Icons.NewRecord} Registrar Novo`, `${Icons.Receipt} Anexar Comprovante`],
-    [`${Icons.Category} Ver Categoria`, `${Icons.Reports} Ver Relatórios`],
-    [`${Icons.GeneralReport} Relatório Geral`, `${Icons.Balances} Saldos das Contas`],
-    [`${Icons.Upcoming} Próximos Lançamentos`, `${Icons.Loans} Empréstimos`],
+    [`${Icons.Category} Ver Categoria`, `${Icons.ChangeCategory} Trocar Categoria`],
+    [`${Icons.Reports} Ver Relatórios`, `${Icons.GeneralReport} Relatório Geral`],
+    [`${Icons.Balances} Saldos das Contas`, `${Icons.Upcoming} Próximos Lançamentos`],
+    [`${Icons.Loans} Empréstimos`],
   ]).resize();
 }
 

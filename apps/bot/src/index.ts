@@ -7,6 +7,7 @@ import { registerScene, REGISTER_SCENE } from './ui/scenes/register.js';
 import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './ui/scenes/viewCategory.js';
 import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './ui/scenes/attachReceipt.js';
 import { loginScene, LOGIN_SCENE } from './ui/scenes/login.js';
+import { changeCategoryScene, CHANGE_CATEGORY_SCENE } from './ui/scenes/changeCategory.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { showDashboard, showCards, showBalances } from './handlers/dashboard.js';
@@ -31,7 +32,7 @@ bot.use(auth);
 startNotificationsCron(bot);
 
 // Fluxos de conversa.
-const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, loginScene]);
+const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, loginScene, changeCategoryScene]);
 bot.use(stage.middleware());
 
 // Menu principal.
@@ -44,6 +45,7 @@ bot.command('login', (ctx) => ctx.scene.enter(LOGIN_SCENE));
 bot.hears(`${Icons.NewRecord} Registrar Novo`, (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.command('registrar', (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.hears(`${Icons.Category} Ver Categoria`, (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
+bot.hears(`${Icons.ChangeCategory} Trocar Categoria`, (ctx) => ctx.scene.enter(CHANGE_CATEGORY_SCENE));
 bot.hears(`${Icons.Receipt} Anexar Comprovante`, (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 

@@ -10,6 +10,7 @@ export const Icons = {
   Balances: '💰',
   Upcoming: '🗓',
   Loans: '💵',
+  ChangeCategory: '🔄',
 
   // Calendars / Dates
   CalendarTitle: '🗓',
