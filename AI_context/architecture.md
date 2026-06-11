@@ -22,6 +22,7 @@ flowchart LR
   API -- pg --> PG
   TG -- long polling --> BOT
   BOT -- pg --> PG
+  BOT -- /api/ --> API
 ```
 
 - The PWA is served as static assets by `nginx` inside `moneyapp_frontend`.
@@ -32,12 +33,11 @@ flowchart LR
   (tables in the `public` schema) on the shared `awlsrvDB_postgres` instance,
   so they don't collide with other apps.
 - `moneyapp_bot` is a Telegram bot (Telegraf) that talks to Telegram via long
-  polling and writes to the same `moneyapp` database through `@moneyapp/db` —
-  no HTTP, it bypasses the backend and reuses the Drizzle schema.
+  polling. It accesses data primarily through the backend API using `@moneyapp/api-client`, but also connects directly to `@moneyapp/db` for user authentication and cron jobs.
 
 ## Workspaces
 
-```
+```text
 moneyapp/
 ├── apps/
 │   ├── frontend/            # Vue 3 PWA (Vite, Pinia, Tailwind, VitePWA)
@@ -84,18 +84,18 @@ moneyapp/
 
 ## Tech choices and why
 
-| Layer        | Choice                  | Reason                                              |
-| ------------ | ----------------------- | --------------------------------------------------- |
-| Validation   | **Zod in `packages/models`** | Single source of truth for both client and server. |
-| ORM          | **Drizzle**             | SQL-first; works well with raw aggregations.        |
-| Auth         | **JWT (bearer)**        | Stateless, fits a single-user-per-deploy PWA.       |
-| Hashing      | **argon2**              | Memory-hard; preferred over bcrypt for new builds.  |
-| File uploads | **Inline base64 / TEXT**| User's explicit choice — no S3, no disk footprint.  |
-| PWA shell    | **VitePWA (`selfDestroying`)** | Service worker disabled — it pinned clients to stale builds; the app needs live data. nginx serves `sw.js`/`index.html` as `no-store`, hashed `/assets/*` as `immutable`. |
-| Charts       | **ApexCharts**          | Donut + line charts with smooth transitions.        |
-| Icons        | **Lucide**              | Consistent, tree-shakeable icon set.                |
-| Logging      | **Pino + pino-http**    | Fast JSON-structured logging.                       |
-| Security     | **Helmet**              | Secure HTTP headers out of the box.                 |
+| Layer        | Choice                         | Reason                                                                                                                                  |
+| ------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Validation   | **Zod in `packages/models`**   | Single source of truth for both client and server.                                                                                      |
+| ORM          | **Drizzle**                    | SQL-first; works well with raw aggregations.                                                                                            |
+| Auth         | **JWT (bearer)**               | Stateless, fits a single-user-per-deploy PWA.                                                                                           |
+| Hashing      | **argon2**                     | Memory-hard; preferred over bcrypt for new builds.                                                                                      |
+| File uploads | **Inline base64 / TEXT**       | User's explicit choice — no S3, no disk footprint.                                                                                      |
+| PWA shell    | **VitePWA (`selfDestroying`)** | Service worker disabled — it pinned clients to stale builds; the app needs live data. nginx serves `sw.js`/`index.html` as `no-store`.  |
+| Charts       | **ApexCharts**                 | Donut + line charts with smooth transitions.                                                                                            |
+| Icons        | **Lucide**                     | Consistent, tree-shakeable icon set.                                                                                                    |
+| Logging      | **Pino + pino-http**           | Fast JSON-structured logging.                                                                                                           |
+| Security     | **Helmet**                     | Secure HTTP headers out of the box.                                                                                                     |
 
 ## Deployment
 
@@ -114,6 +114,7 @@ Production ingress goes through a **Cloudflare Tunnel** container on
 ## Cron & Background Jobs
 
 The Telegram bot (`moneyapp_bot`) also acts as the background worker for the system.
+
 - It uses `node-cron` to schedule background jobs.
 - It handles daily notifications for "Próximos Lançamentos" (upcoming transactions).
 - It uses `nodemailer` to dispatch email alerts to the user alongside Telegram messages.
