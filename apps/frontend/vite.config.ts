@@ -21,9 +21,9 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         icons: [
-          { src: '/logo/LOGO.png', sizes: '192x192', type: 'image/png' },
-          { src: '/logo/LOGO.png', sizes: '512x512', type: 'image/png' },
-          { src: '/logo/LOGO.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/logo/MONEYAPP.png', sizes: '192x192', type: 'image/png' },
+          { src: '/logo/MONEYAPP.png', sizes: '512x512', type: 'image/png' },
+          { src: '/logo/MONEYAPP.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
