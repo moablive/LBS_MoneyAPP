@@ -346,9 +346,9 @@ Para **forçar o reset de uma senha perdida** via infraestrutura, o administrado
 Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios direto pelo chat. **Porte em Node/TypeScript** do antigo bot em Python, agora **dentro do monorepo** reaproveitando o pacote `@moneyapp/db` (mesmo schema Drizzle e mesma conexão Postgres do backend). Não tem banco próprio: conecta no mesmo PostgreSQL via `awl_network`.
 
 > [!NOTE]
-> Como está no monorepo, as queries do bot usam o schema **tipado** de `@moneyapp/db`. Se o schema mudar, o bot quebra em tempo de compilação (`pnpm --filter @moneyapp/bot typecheck`), não em produção.
+> Como está no monorepo, as queries diretas do bot usam o schema **tipado** de `@moneyapp/db`. Para relatórios e dados agregados complexos (como Empréstimos), o bot consome a própria API via `@moneyapp/api-client`. O design visual das mensagens do bot é centralizado em `ui/icons.ts` para garantir consistência.
 
-**Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` (Drizzle + `pg`) · `sharp` (gráfico de barras SVG→PNG, sem chamada externa) · `zod` (validação de env).
+**Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` + `@moneyapp/api-client` · `sharp` (gráfico de pizza SVG→PNG) · `zod` (validação de env).
 
 **Comandos:** `/login` (fluxo interativo para autenticar no banco passo a passo) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu (incluindo acesso rápido via WebApp ao Dashboard e Cartões).
 

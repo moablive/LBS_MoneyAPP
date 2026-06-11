@@ -114,6 +114,19 @@ export const botApi = {
     if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
     return await res.json() as { token: string; password: string };
   },
+
+  getLoansSummary: async (userId: string): Promise<{
+    totalActiveAmountGiven: number;
+    totalActiveAmountReceived: number;
+    totalActiveAmountFGTS: number;
+    items: any[];
+  }> => {
+    const res = await fetch(`${apiOptions.baseUrl}/bot/loans/summary?userId=${userId}`, {
+      headers: { 'Authorization': `Bearer ${apiOptions.getToken() || ''}` },
+    });
+    if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
+    return await res.json();
+  },
 };
 
 

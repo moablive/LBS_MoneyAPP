@@ -11,8 +11,10 @@ import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { showDashboard, showCards, showBalances } from './handlers/dashboard.js';
 import { showUpcoming } from './handlers/upcoming.js';
+import { showLoans, showLoanList } from './handlers/loans.js';
 import { startNotificationsCron } from './cron/notifications.js';
 import { getDbUserId } from './utils/user-cache.js';
+import { Icons } from './ui/icons.js';
 import { setupApi, botApi } from '@moneyapp/api-client';
 import { Markup } from 'telegraf';
 
@@ -39,26 +41,32 @@ bot.start(sendMainMenu);
 bot.command('login', (ctx) => ctx.scene.enter(LOGIN_SCENE));
 
 // Entradas dos fluxos.
-bot.hears('📝 Registrar Novo', (ctx) => ctx.scene.enter(REGISTER_SCENE));
+bot.hears(`${Icons.NewRecord} Registrar Novo`, (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.command('registrar', (ctx) => ctx.scene.enter(REGISTER_SCENE));
-bot.hears('🔍 Ver Categoria', (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
-bot.hears('📎 Anexar Comprovante', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
+bot.hears(`${Icons.Category} Ver Categoria`, (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
+bot.hears(`${Icons.Receipt} Anexar Comprovante`, (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 
 // Dashboard e Cartões
-bot.hears('🌐 Dashboard', showDashboard);
-bot.hears('💳 Cartões', showCards);
-bot.hears('💰 Saldos das Contas', showBalances);
-bot.hears('🗓 Próximos Lançamentos', showUpcoming);
+bot.hears(`${Icons.Dashboard} Dashboard`, showDashboard);
+bot.hears(`${Icons.Cards} Cartões`, showCards);
+bot.hears(`${Icons.Balances} Saldos das Contas`, showBalances);
+bot.hears(`${Icons.Upcoming} Próximos Lançamentos`, showUpcoming);
 
 // Relatórios.
-bot.hears('📊 Ver Relatórios', showReports);
+bot.hears(`${Icons.Reports} Ver Relatórios`, showReports);
+bot.hears(`${Icons.Loans} Empréstimos`, showLoans);
+
+bot.action(/^LOANS_(given|received)$/, (ctx) => showLoanList(ctx, ctx.match[1] as 'given' | 'received'));
+
 bot.command('relatorios', showReports);
 bot.action(/^REL_(income|expense)$/, (ctx) =>
   generateReportChart(ctx, ctx.match[1] as 'income' | 'expense'),
 );
-bot.hears('📄 Relatório Geral', generateTextReport);
+// Relatório Geral
+bot.hears(`${Icons.GeneralReport} Relatório Geral`, generateTextReport);
 
+// Compartilhar
 bot.action(/^share_(.+)$/, async (ctx) => {
   try {
     const categoryId = ctx.match[1];

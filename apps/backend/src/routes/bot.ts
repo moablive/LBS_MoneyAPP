@@ -5,7 +5,7 @@ import argon2 from 'argon2';
 
 import { requireAuth } from '../middleware/auth.js';
 
-const { users, transactions, categories, accounts } = schema;
+const { users, transactions, categories, accounts, loans } = schema;
 
 export const botRouter = Router();
 
@@ -351,6 +351,48 @@ botRouter.post('/shares', async (req, res, next) => {
       .returning();
 
     res.json({ token: row!.token, password });
+  } catch (err) {
+    next(err);
+  }
+});
+// 10. Resumo de Empréstimos
+botRouter.get('/loans/summary', async (req, res, next) => {
+  try {
+    const userId = req.query.userId as string;
+    if (!userId) {
+      res.status(400).json({ error: 'missing_userId' });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        id: loans.id,
+        amount: loans.amount,
+        type: loans.type,
+        status: loans.status,
+        date: loans.date,
+        description: loans.description,
+      })
+      .from(loans)
+      .where(eq(loans.userId, userId))
+      .orderBy(desc(loans.date));
+
+    const activeItems = rows.filter((i) => i.status === 'active').map(i => ({
+      ...i,
+      amount: Number(i.amount),
+      date: i.date.toISOString(),
+    }));
+    
+    const totalActiveAmountGiven = activeItems.filter((i) => i.type === 'given').reduce((acc, i) => acc + i.amount, 0);
+    const totalActiveAmountReceived = activeItems.filter((i) => i.type === 'received').reduce((acc, i) => acc + i.amount, 0);
+    const totalActiveAmountFGTS = activeItems.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + i.amount, 0);
+
+    res.json({
+      totalActiveAmountGiven,
+      totalActiveAmountReceived,
+      totalActiveAmountFGTS,
+      items: activeItems,
+    });
   } catch (err) {
     next(err);
   }

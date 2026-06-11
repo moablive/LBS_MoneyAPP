@@ -46,6 +46,6 @@ Keep entries short. Long-form belongs in the codebase or PR descriptions.
   (category + receipt required) mirrors a transaction into the Livro Caixa
 - **Dashboard** — summary, ranking, spending evolution, monthly projection
 - **Settings** — global `requireReceipts`; per-account "affects balance" toggle
-- **Telegram Bot (`apps/bot`)** — Telegraf bot, single authorized user; registers
+- **Telegram Bot (`apps/bot`)** — Telegraf bot, multi-tenant (login via email/password); registers
   paid transactions (no account link) and renders pie-chart / text reports
-  straight from the shared DB via `@moneyapp/db` (no HTTP)
+  straight from the shared DB via `@moneyapp/db`. Uses a centralized `icons.ts` for UI consistency.

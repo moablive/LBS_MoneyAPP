@@ -62,6 +62,12 @@ CRUD flows happen in **overlay modals**, never on separate pages:
 - Always include the actual numeric value next to the chart label —
   legends alone are not enough for an at-a-glance read.
 
+## Bot Icons (`apps/bot`)
+
+- All emojis/icons used by the Telegram bot must be centralized in `apps/bot/src/ui/icons.ts`.
+- Day numbers are mapped dynamically via the `Days` category to enforce consistent formatting.
+- Do not hardcode raw emojis (`📅`, `🏦`, etc.) inside handler logic or messages.
+
 ## PWA & Favicons
 
 - **Browser Tab (Favicon):** Uses a transparent background icon (`MONEYAPP.png`) to blend naturally with the browser UI.

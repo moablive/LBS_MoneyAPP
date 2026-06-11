@@ -1,13 +1,15 @@
 import { Markup } from 'telegraf';
 import type { InlineKeyboardButton } from 'telegraf/types';
 
+import { Icons } from './icons.js';
+
 export function mainMenuKeyboard() {
   return Markup.keyboard([
-    ['🌐 Dashboard', '💳 Cartões'],
-    ['📝 Registrar Novo', '📎 Anexar Comprovante'],
-    ['🔍 Ver Categoria', '📊 Ver Relatórios'],
-    ['📄 Relatório Geral', '💰 Saldos das Contas'],
-    ['🗓 Próximos Lançamentos'],
+    [`${Icons.Dashboard} Dashboard`, `${Icons.Cards} Cartões`],
+    [`${Icons.NewRecord} Registrar Novo`, `${Icons.Receipt} Anexar Comprovante`],
+    [`${Icons.Category} Ver Categoria`, `${Icons.Reports} Ver Relatórios`],
+    [`${Icons.GeneralReport} Relatório Geral`, `${Icons.Balances} Saldos das Contas`],
+    [`${Icons.Upcoming} Próximos Lançamentos`, `${Icons.Loans} Empréstimos`],
   ]).resize();
 }
 

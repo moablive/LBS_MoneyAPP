@@ -93,12 +93,7 @@ regardless of how clean it looks.
 
 ## Telegram bot (`apps/bot`)
 
-24. **The bot is a second writer of transactions**, inserting directly via
-    `@moneyapp/db` (no HTTP, it bypasses the backend). It must uphold the
-    transaction invariants by hand: signed amount (#1), `type` matching the
-    sign (#2), and `numeric(14,2)` written as a 2-decimal string. See
-    `addTransaction` in `apps/bot/src/db/transactions.ts`. It also supports
-    attaching base64 inline receipts to existing transactions via the `attachReceipt` flow.
+24. **The bot acts as both a direct DB writer and an API client**. For transactions, it inserts directly via `@moneyapp/db` (no HTTP, bypassing the backend) and must uphold transaction invariants by hand: signed amount (#1), `type` matching the sign (#2), and `numeric(14,2)` written as a 2-decimal string. For complex reports like Loans, it fetches aggregated data via `@moneyapp/api-client`. It also supports attaching base64 inline receipts to existing transactions via the `attachReceipt` flow.
 25. **Bot transactions carry no account and are always `paid`.**
     `addTransaction` sets `status = 'paid'`, `occurred_at = now()` and leaves
     `account_id` null — so they never mutate any `current_balance` (consistent
