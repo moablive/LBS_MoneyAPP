@@ -313,12 +313,27 @@ erDiagram
 
 ## 🔐 Autenticação, Senhas e Convites
 
-O MoneyAPP possui uma regra estrita de segurança para o **primeiro acesso** e convites, garantindo que usuários recém-criados ou contas mestras configuradas via `.env` alterem suas senhas imediatamente.
+O MoneyAPP possui uma regra estrita de segurança para o **primeiro acesso** e convites, garantindo que usuários recém-criados ou contas configuradas via `.env` alterem suas senhas imediatamente antes de usarem a API ou o Bot do Telegram.
 
-- **Senha Padrão / Convite**: Ao criar um usuário (ou ao processar o `MASTER_USER_PASSWORD` no boot via `.env`), a conta é salva no banco de dados com a flag `default_password = true`.
-- **Mudança Obrigatória**: Ao realizar o login no painel web com uma senha padrão (onde `default_password` é `true`), o usuário será interceptado por uma tela obrigatória de alteração de senha que não pode ser fechada ou burlada.
-- **Senha Personalizada**: Ao redefinir a senha, a flag no banco muda para `default_password = false`. A partir desse momento, a senha é considerada forte e gerenciada pelo usuário. Alterações posteriores da senha no `.env` do servidor **não sobrescreverão** a senha de usuários que já personalizaram seu acesso.
-- **Bloqueio no Telegram**: É **expressamente bloqueado** autenticar e utilizar o bot do Telegram enquanto o `default_password` for `true`. O sistema exige que a conta seja validada primeiro pela web.
+### Como Convidar Novos Usuários
+
+Para convidar uma esposa, sócio ou membro da família para usar a mesma instância do MoneyAPP, você deve configurar o `.env` do servidor para criar a conta inicial deles:
+
+1. Abra o arquivo `.env` do servidor.
+2. Adicione credenciais numeradas usando o prefixo `MASTER_USER_N_` (ex: `1`, `2`, `3`). O usuário principal não tem número (`MASTER_USER_EMAIL`). Exemplo para o usuário 1:
+```env
+MASTER_USER_1_NAME="Maria"
+MASTER_USER_1_EMAIL="maria@exemplo.com"
+MASTER_USER_1_PASSWORD="SenhaTemporariaSegura123!"
+```
+3. Reinicie o backend (`docker compose up -d --build backend`).
+4. O MoneyAPP vai automaticamente criar o banco de dados desse usuário isolado, e marcar a senha como uma "Senha Padrão / Temporária" (`default_password = true`).
+
+### Obrigatoriedade de Troca de Senha e Telegram
+
+- **Mudança Obrigatória**: Ao realizar o login no **painel web** com uma senha padrão, o usuário será interceptado por uma tela obrigatória de alteração de senha.
+- **Senha Personalizada**: Ao redefinir a senha, a flag no banco muda para `default_password = false`. A partir desse momento, a senha é considerada forte e gerenciada exclusivamente pelo usuário. Alterações posteriores da senha no `.env` do servidor **não sobrescreverão** a senha de usuários que já personalizaram seu acesso.
+- **Vínculo com o Bot do Telegram**: É **expressamente bloqueado** usar o bot do Telegram enquanto o `default_password` for `true`. O usuário convidado DEVE acessar o painel web primeiro, mudar a senha e, só então, ir até o Telegram (`/login`) usando o email e a **nova senha personalizada**. O bot registrará o `telegramId` e liberará os relatórios e notificações automáticas.
 
 Para **forçar o reset de uma senha perdida** via infraestrutura, o administrador do servidor deve alterar o banco de dados e setar `default_password = true` (ou `1`). No próximo reinício, o backend identificará isso e copiará a senha configurada no arquivo `.env` para a conta do usuário novamente, obrigando-o a modificá-la no próximo acesso.
 

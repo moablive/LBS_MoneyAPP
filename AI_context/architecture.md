@@ -109,3 +109,10 @@ hosts `awlsrvDB_postgres`.
 
 Production ingress goes through a **Cloudflare Tunnel** container on
 `awl_network` directly to `moneyapp_frontend:80`. No host ports are exposed.
+
+## Cron & Background Jobs
+
+The Telegram bot (`moneyapp_bot`) also acts as the background worker for the system.
+- It uses `node-cron` to schedule background jobs.
+- It handles daily notifications for "Próximos Lançamentos" (upcoming transactions).
+- It uses `nodemailer` to dispatch email alerts to the user alongside Telegram messages.

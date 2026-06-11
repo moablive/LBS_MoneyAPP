@@ -32,9 +32,9 @@
       "routesRoot": "src/routes"
     },
     "apps/bot": {
-      "stack": ["Telegraf", "TypeScript", "Drizzle ORM (via @moneyapp/db)", "sharp", "Zod"],
+      "stack": ["Telegraf", "TypeScript", "Drizzle ORM (via @moneyapp/db)", "sharp", "Zod", "node-cron", "nodemailer"],
       "entry": "src/index.ts",
-      "notes": "Telegram bot — long polling, single authorized user (ALLOWED_USER_ID), writes transactions to the shared moneyapp DB via @moneyapp/db. No HTTP server, bypasses the backend."
+      "notes": "Telegram bot — long polling. Handles multi-tenant logins via /login. Writes transactions directly via @moneyapp/db. Serves as the background worker running daily cron jobs for upcoming transaction notifications via Telegram and Email."
     },
     "packages/db": {
       "stack": ["Drizzle ORM", "PostgreSQL"],
@@ -54,7 +54,7 @@
     }
   },
   "entities": {
-    "users":        ["id", "name", "email", "passwordHash", "settings", "createdAt", "updatedAt"],
+    "users":        ["id", "name", "email", "passwordHash", "defaultPassword", "telegramId", "settings", "createdAt", "updatedAt"],
     "categories":   ["id", "userId", "name", "type", "color", "createdAt"],
     "accounts":     ["id", "userId", "name", "type", "bankCode", "customIconUrl", "currentBalance", "freezeBalance", "creditLimit", "closingDay", "dueDay", "createdAt"],
     "transactions": [
@@ -96,7 +96,8 @@
     "investments update tracking with current_price and map to transactions",
     "loans are distinct entities for tracking money given, received or fgts",
     "marking a loan paid requires category + receipt and mirrors a transaction (transactions.loanId) in that category",
-    "accounts.freezeBalance=true freezes the balance: paid items don't mutate it and it's excluded from the dashboard total"
+    "accounts.freezeBalance=true freezes the balance: paid items don't mutate it and it's excluded from the dashboard total",
+    "the telegram bot also acts as the background worker running node-cron to dispatch notifications"
   ],
   "documents": {
     "architecture": "AI_context/architecture.md",

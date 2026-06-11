@@ -30,6 +30,7 @@ erDiagram
     varchar email UK
     text password_hash
     boolean default_password
+    varchar telegram_id "nullable, set by the bot"
     jsonb settings "{ requireReceipts: bool }"
     timestamptz created_at
     timestamptz updated_at

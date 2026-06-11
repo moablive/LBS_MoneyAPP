@@ -100,6 +100,12 @@ is the contract — this document is a map, not a duplicate.
 | GET    | `/api/dashboard/spending-evolution`        | cumulative line series (current vs prev)  |
 | GET    | `/api/dashboard/projection`                | projections based on recurrent spendings  |
 
+### Bot (Internal)
+| Method | Path                                       | Schema                                    | Notes                                            |
+| ------ | ------------------------------------------ | ----------------------------------------- | ------------------------------------------------ |
+| POST   | `/api/bot/login`                           | `{ email, password, telegramId }`         | Validates credentials and links telegram_id. Verifies `default_password == false` |
+| GET    | `/api/bot/users/all`                       | —                                         | Returns all users with non-null `telegramId` for notification dispatch |
+
 ## The ranking endpoint (reference implementation)
 
 See `apps/backend/src/routes/dashboard.ts`. It returns

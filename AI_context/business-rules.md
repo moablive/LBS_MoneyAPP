@@ -51,12 +51,12 @@ regardless of how clean it looks.
 12. Every endpoint except `/health` and `/api/auth/login` requires a valid JWT.
 13. `userId` is taken **only** from `req.user.id` — never from the body
     or query string, even for "admin" tools. There is no admin role yet.
-14. **Master user bootstrap.** On every backend startup, if
-    `MASTER_USER_EMAIL` is set, the user is upsert-ed against the DB
-    with an argon2 hash of `MASTER_USER_PASSWORD`. The plaintext value
-    must never leave env memory — never log it, never echo it, never
-    expose it in an endpoint. To rotate the master password, change
-    the env var and restart the container; the next boot re-hashes.
+14. **Master user bootstrap and invites.** On every backend startup, if
+    `MASTER_USER_EMAIL` or `MASTER_USER_N_EMAIL` (1, 2, 3...) are set, the users are upsert-ed against the DB
+    with an argon2 hash of their passwords and flagged with `default_password = true`.
+    The plaintext value must never leave env memory. To rotate the master password, change
+    the env var, set the DB flag to true manually, and restart the container; the next boot re-hashes.
+14b. **Default Password Block.** A user with `default_password = true` MUST change their password upon their first web UI login. Using the Telegram bot is blocked until the password is changed.
 
 ## Investments
 
@@ -104,4 +104,5 @@ regardless of how clean it looks.
     `account_id` null — so they never mutate any `current_balance` (consistent
     with #7/#8) and surface only in income/expense aggregations, not in
     per-account balances.
-26. **Multi-tenant via Telegram Login.** Any user who has a valid email and password in the MoneyAPP database can use the bot by sending `/login <email> <password>`. The bot links their `telegram_id` to their DB user, and subsequent actions are automatically routed to their specific profile.
+26. **Multi-tenant via Telegram Login.** Any user who has a valid email and password in the MoneyAPP database can use the bot by sending `/login <email> <password>`. The bot links their `telegram_id` to their DB user, and subsequent actions are automatically routed to their specific profile. The user MUST have `default_password = false` to login.
+27. **Background Notifications (Cron).** The bot executes a daily check at 08:00 AM. It fetches all users with a registered `telegram_id` and checks for "Próximos Lançamentos" that are due in exactly 7 days. If matches are found, it sends a Telegram alert, and also an email if the user has a registered email and SMTP is configured.
