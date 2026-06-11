@@ -37,6 +37,7 @@ async function submit() {
     // Update local state so it doesn't prompt again
     if (authStore.user) {
       authStore.user.defaultPassword = false;
+      authStore.persist();
     }
     open.value = false;
   } catch (err: any) {
