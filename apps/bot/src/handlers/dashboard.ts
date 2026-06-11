@@ -61,3 +61,32 @@ export async function showCards(ctx: BotContext): Promise<void> {
 
   await ctx.reply(msg, { parse_mode: 'HTML' });
 }
+
+import { renderChartPng } from '../utils/chart.js';
+
+export async function showBalances(ctx: BotContext): Promise<void> {
+  const userId = await getDbUserId(ctx.from?.id);
+  if (!userId) {
+    await ctx.reply('Seu usuário não está vinculado!');
+    return;
+  }
+
+  const accounts = await botApi.getAccountsSummary(userId);
+
+  if (accounts.length === 0) {
+    await ctx.reply('Você não possui contas cadastradas.');
+    return;
+  }
+
+  const png = await renderChartPng(
+    accounts.map((acc: any) => ({ name: acc.name, value: acc.currentBalance })),
+    'Saldos das Contas'
+  );
+
+  if (!png) {
+    await ctx.reply('Nenhuma conta com saldo positivo ou zerado para exibir no momento.');
+    return;
+  }
+
+  await ctx.replyWithPhoto({ source: png }, { caption: `Aqui estão os saldos das suas contas.` });
+}

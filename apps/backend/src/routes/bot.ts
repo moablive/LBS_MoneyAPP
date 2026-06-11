@@ -258,6 +258,38 @@ botRouter.get('/dashboard/summary', async (req, res, next) => {
   }
 });
 
+// 7.5. Resumo de contas (Saldos)
+botRouter.get('/dashboard/accounts', async (req, res, next) => {
+  try {
+    const userId = req.query.userId as string;
+    if (!userId) {
+      res.status(400).json({ error: 'missing_userId' });
+      return;
+    }
+
+    const rows = await db
+      .select({
+        name: accounts.name,
+        currentBalance: accounts.currentBalance,
+      })
+      .from(accounts)
+      .where(
+        and(
+          eq(accounts.userId, userId),
+          sql`${accounts.type} != 'credit_card'`
+        )
+      )
+      .orderBy(desc(accounts.currentBalance));
+
+    res.json(rows.map(r => ({
+      name: r.name,
+      currentBalance: Number(r.currentBalance),
+    })));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 8. Resumo de cartões de crédito
 botRouter.get('/dashboard/cards', async (req, res, next) => {
   try {

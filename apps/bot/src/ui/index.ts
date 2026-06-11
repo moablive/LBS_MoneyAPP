@@ -6,7 +6,8 @@ export function mainMenuKeyboard() {
     ['🌐 Dashboard', '💳 Cartões'],
     ['📝 Registrar Novo', '📎 Anexar Comprovante'],
     ['🔍 Ver Categoria', '📊 Ver Relatórios'],
-    ['📄 Relatório Geral', '🗓 Próximos Lançamentos'],
+    ['📄 Relatório Geral', '💰 Saldos das Contas'],
+    ['🗓 Próximos Lançamentos'],
   ]).resize();
 }
 

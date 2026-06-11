@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { CheckCircleIcon as CheckCircle2, ClockIcon as Clock, BuildingLibraryIcon as Landmark, CalendarIcon as Calendar, CurrencyDollarIcon as DollarSign, DocumentTextIcon as FileText } from '@heroicons/vue/24/outline';
 import Modal from './Modal.vue';
 import { useAuthStore } from '../../stores/auth';
@@ -23,6 +23,15 @@ const receiptBlobUrl = ref<string | null>(null);
 const loadingReceipt = ref(false);
 const isPdf = ref(false);
 const showFullscreenReceipt = ref(false);
+
+const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && showFullscreenReceipt.value) {
+    showFullscreenReceipt.value = false;
+  }
+};
+
+onMounted(() => window.addEventListener('keydown', onKey));
+onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -67,7 +76,7 @@ watch(() => props.transaction, async (t) => {
 </script>
 
 <template>
-  <Modal :open="open" @close="open = false">
+  <Modal :open="open" @close="open = false" :disableClickOutside="showFullscreenReceipt">
     <div v-if="transaction" class="p-6 space-y-6">
       <header>
         <h2 class="text-2xl font-bold tracking-tight text-white">Detalhes da Transação</h2>
@@ -127,26 +136,24 @@ watch(() => props.transaction, async (t) => {
           </div>
         </div>
 
-        <div class="bg-surface-raised p-4 rounded-xl border border-surface-border space-y-3">
-          <p class="text-sm text-zinc-400 flex items-center gap-1"><FileText class="w-4 h-4" /> Comprovante</p>
+        <div class="bg-surface-raised p-4 rounded-xl border border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <FileText class="w-4 h-4" :class="transaction.hasReceipt ? 'text-income' : 'text-zinc-400'" />
+            <p class="text-sm font-medium" :class="transaction.hasReceipt ? 'text-income' : 'text-zinc-400'">Comprovante</p>
+          </div>
           
-          <div v-if="!transaction.hasReceipt" class="text-sm text-muted py-2">
-            Nenhum comprovante anexado.
+          <div v-if="!transaction.hasReceipt" class="text-sm text-zinc-500">
+            Nenhum anexado
           </div>
-          <div v-else-if="loadingReceipt" class="animate-pulse flex space-x-4">
-            <div class="rounded bg-surface-border h-32 w-full"></div>
+          <div v-else-if="loadingReceipt" class="text-sm text-zinc-400 animate-pulse">
+            Carregando...
           </div>
-          <div v-else-if="receiptBlobUrl" class="flex justify-center bg-surface-base rounded-lg p-2 overflow-hidden max-h-64">
-            <img 
-              v-if="!isPdf" 
-              :src="receiptBlobUrl" 
-              class="max-w-full max-h-full object-contain rounded cursor-pointer hover:opacity-90 transition-opacity" 
-              @click="showFullscreenReceipt = true"
-            />
-            <a v-else :href="receiptBlobUrl" target="_blank" class="px-4 py-3 bg-accent rounded-xl text-white font-medium text-sm hover:bg-accent/90 transition-colors">Abrir PDF Anexado</a>
+          <div v-else-if="receiptBlobUrl">
+            <button v-if="!isPdf" @click="showFullscreenReceipt = true" class="px-3 py-1.5 bg-surface-base border border-surface-border text-white hover:bg-income/10 hover:text-income hover:border-income/30 rounded-lg text-sm font-medium transition-all">Ver Comprovante</button>
+            <a v-else :href="receiptBlobUrl" target="_blank" class="px-3 py-1.5 bg-surface-base border border-surface-border text-white hover:bg-income/10 hover:text-income hover:border-income/30 rounded-lg text-sm font-medium transition-all inline-block">Abrir PDF</a>
           </div>
-          <div v-else class="text-sm text-muted py-2">
-            Não foi possível carregar o comprovante.
+          <div v-else class="text-sm text-expense">
+            Erro ao carregar
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './ui/scenes/attachRece
 import { loginScene, LOGIN_SCENE } from './ui/scenes/login.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
-import { showDashboard, showCards } from './handlers/dashboard.js';
+import { showDashboard, showCards, showBalances } from './handlers/dashboard.js';
 import { showUpcoming } from './handlers/upcoming.js';
 import { startNotificationsCron } from './cron/notifications.js';
 import { getDbUserId } from './utils/user-cache.js';
@@ -48,6 +48,7 @@ bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 // Dashboard e Cartões
 bot.hears('🌐 Dashboard', showDashboard);
 bot.hears('💳 Cartões', showCards);
+bot.hears('💰 Saldos das Contas', showBalances);
 bot.hears('🗓 Próximos Lançamentos', showUpcoming);
 
 // Relatórios.

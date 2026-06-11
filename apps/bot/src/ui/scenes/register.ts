@@ -238,17 +238,24 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     }
 
     try {
-      await userApi.post('/transactions', userId, {
+      const payload: any = {
         description: state.desc,
         amount: state.tipo === 'expense' ? -state.valor! : state.valor!,
         type: state.tipo,
         categoryId: state.categoryId,
         accountId: accountId,
-        receiptBase64: state.receiptBase64,
-        receiptMimeType: state.receiptMimeType,
         occurredAt: new Date().toISOString(),
         status: 'paid',
-      });
+      };
+      
+      if (state.receiptBase64 && state.receiptMimeType) {
+        payload.receipt = {
+          base64: state.receiptBase64,
+          mimeType: state.receiptMimeType,
+        };
+      }
+
+      await userApi.post('/transactions', userId, payload);
 
       const label = state.tipo === 'income' ? 'Receita' : 'Despesa';
       await ctx.editMessageText(
@@ -258,6 +265,8 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
       console.error(e);
       await ctx.editMessageText('Ocorreu um erro ao registrar a transação.');
     }
+    
+    await sendMainMenu(ctx);
     return ctx.scene.leave();
   }
 );

@@ -86,6 +86,14 @@ export const botApi = {
     return await res.json();
   },
 
+  getAccountsSummary: async (userId: string): Promise<{ name: string; currentBalance: number }[]> => {
+    const res = await fetch(`${apiOptions.baseUrl}/bot/dashboard/accounts?userId=${userId}`, {
+      headers: { 'Authorization': `Bearer ${apiOptions.getToken() || ''}` },
+    });
+    if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
+    return await res.json();
+  },
+
   getCreditCardsSummary: async (userId: string): Promise<{ name: string; currentBalance: number; creditLimit: number | null }[]> => {
     const res = await fetch(`${apiOptions.baseUrl}/bot/dashboard/cards?userId=${userId}`, {
       headers: { 'Authorization': `Bearer ${apiOptions.getToken() || ''}` },

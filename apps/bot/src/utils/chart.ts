@@ -24,7 +24,7 @@ function escapeXml(s: string): string {
  * privado, como na versão Python. Retorna null se não houver dados.
  */
 export async function renderChartPng(slices: Slice[], title: string): Promise<Buffer | null> {
-  const data = slices.filter((s) => s.value > 0);
+  const data = slices.filter((s) => s.value >= 0);
   if (data.length === 0) return null;
 
   const total = data.reduce((acc, s) => acc + s.value, 0);
@@ -49,13 +49,16 @@ export async function renderChartPng(slices: Slice[], title: string): Promise<Bu
   
   let currentY = marginTop;
   data.forEach((s, i) => {
-    const pct = ((s.value / total) * 100).toFixed(1);
-    const barW = (s.value / maxVal) * plotW;
+    // Para Saldos, 'total' pode ser zero se todas as contas estiverem zeradas
+    const pct = total > 0 ? ((s.value / total) * 100).toFixed(1) + '%' : '';
+    const pctText = pct ? ` (${pct})` : '';
+    // Se o maxVal for 0, desenha pelo menos uma barrinha mínima
+    const barW = maxVal > 0 ? (s.value / maxVal) * plotW : 0;
     const fill = colorOf(s, i);
 
     // Label above the bar
     elements.push(
-      `<text x="${marginLeft}" y="${currentY - 8}" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#222222" font-weight="bold">${escapeXml(s.name)} — R$ ${s.value.toFixed(2)} (${pct}%)</text>`
+      `<text x="${marginLeft}" y="${currentY - 8}" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#222222" font-weight="bold">${escapeXml(s.name)} — R$ ${s.value.toFixed(2).replace('.', ',')}${pctText}</text>`
     );
 
     // Bar
