@@ -46,7 +46,7 @@ export const changeCategoryScene = new Scenes.WizardScene<BotContext>(
     const buttons: any[] = [];
     for (const t of transactions) {
       const day = new Date(t.occurredAt).getDate().toString().padStart(2, '0');
-      const text = `[${day}] ${t.description} - ${brl(t.amount)}`;
+      const text = `[${day}] ${t.description} - ${brl(Number(t.amount))}`;
       const label = text.length > 60 ? text.substring(0, 57) + '...' : text;
       // Use 1 button per row because the text is wide
       buttons.push([Markup.button.callback(label, `CHCAT_${t.id}_${t.type}`)]);
