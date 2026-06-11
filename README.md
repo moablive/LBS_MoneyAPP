@@ -165,11 +165,12 @@ moneyapp/
 │       ├── 📂 src/
 │       │   ├── index.ts          # bootstrap: middleware, scenes e rotas
 │       │   ├── config.ts         # env validado com zod
-│       │   ├── auth.ts           # middleware: só responde ao ALLOWED_USER_ID
-│       │   ├── 📂 db/            # camada de dados sobre @moneyapp/db
-│       │   ├── 📂 scenes/        # wizard flows (registrar, ver categoria)
-│       │   ├── 📂 handlers/      # /start + relatórios
-│       │   └── 📂 utils/         # format + gráfico de pizza (SVG→PNG via sharp)
+│       │   ├── auth.ts           # middleware: valida usuário no banco
+│       │   ├── context.ts        # Tipagem estendida do Telegraf
+│       │   ├── 📂 ui/            # Telas do bot, cenas (wizards) e ícones globais
+│       │   ├── 📂 handlers/      # Controladores de ações principais (/start, etc)
+│       │   ├── 📂 cron/          # Trabalhos agendados (notificações)
+│       │   └── 📂 utils/         # Funções utilitárias e geração de gráficos
 │       └── Dockerfile
 │
 ├── 📂 packages/

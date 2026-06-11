@@ -69,10 +69,11 @@ moneyapp/
 │       └── src/
 │           ├── config.ts     # env validado com zod
 │           ├── auth.ts       # middleware: checa se ctx.from.id tem vínculo com email/senha no banco
-│           ├── db/           # camada sobre @moneyapp/db
-│           ├── scenes/       # wizard flows (register, viewCategory)
-│           ├── handlers/     # start, reports
-│           ├── utils/        # format + pieChart (SVG→PNG via sharp)
+│           ├── context.ts    # Tipagem estendida do Telegraf
+│           ├── ui/           # Telas do bot, cenas (wizards) e ícones globais
+│           ├── handlers/     # Controladores de ações principais (/start, etc)
+│           ├── cron/         # Trabalhos agendados (notificações)
+│           ├── utils/        # Funções utilitárias e geração de gráficos
 │           └── index.ts      # bootstrap: middleware, scenes, rotas
 ├── packages/
 │   ├── api-client/          # Cliente HTTP e tipagens de rotas
