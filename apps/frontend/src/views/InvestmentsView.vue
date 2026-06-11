@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import AppShell from '../components/AppShell.vue';
-import InvestmentModal from '../components/InvestmentModal.vue';
+import InvestmentModal from '../components/modals/InvestmentModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
 import { defineAsyncComponent } from 'vue';
-const PiggyBankDetails = defineAsyncComponent(() => import('../components/PiggyBankDetails.vue'));
+const PiggyBankDetails = defineAsyncComponent(() => import('../components/modals/PiggyBankDetails.vue'));
 import { useInvestmentsStore } from '../stores/investments';
 import { PlusIcon as Plus, ArrowTrendingUpIcon as TrendingUp, ArrowTrendingDownIcon as TrendingDown, WalletIcon as Wallet, PencilSquareIcon as Edit2, TrashIcon as Trash2 } from '@heroicons/vue/24/outline';
 

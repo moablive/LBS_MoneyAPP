@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
-import SubscriptionModal from '../components/SubscriptionModal.vue';
+import SubscriptionModal from '../components/modals/SubscriptionModal.vue';
 import type { SubscriptionSummaryResponse, SubscriptionItem } from '@moneyapp/models';
 
 const data = ref<SubscriptionSummaryResponse | null>(null);

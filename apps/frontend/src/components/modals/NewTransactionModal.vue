@@ -5,7 +5,7 @@ import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
 
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../../stores/auth';
 import type { Transaction } from '@moneyapp/models';
 
 const authStore = useAuthStore();

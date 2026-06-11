@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, shallowRef } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
-import NewCategoryModal from '../components/NewCategoryModal.vue';
+import NewCategoryModal from '../components/modals/NewCategoryModal.vue';
 import EmptyState from '../components/EmptyState.vue';
 import type { Category } from '@moneyapp/models';
 

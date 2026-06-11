@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { api } from '@moneyapp/api-client';
-import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import type { CreateSubscriptionInput, SubscriptionItem, UpdateSubscriptionInput, Account } from '@moneyapp/models';
 
 const { confirm } = useConfirmDialog();

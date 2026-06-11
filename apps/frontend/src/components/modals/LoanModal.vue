@@ -2,8 +2,8 @@
 import { ref, watch } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { LoanItem, Account, Category } from '@moneyapp/models';
-import { useAuthStore } from '../stores/auth';
-import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useAuthStore } from '../../stores/auth';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 
 const { confirm, alert } = useConfirmDialog();
 

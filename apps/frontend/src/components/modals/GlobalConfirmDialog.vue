@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import Modal from './Modal.vue';
 
 const { isOpen, options, close } = useConfirmDialog();

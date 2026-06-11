@@ -62,6 +62,11 @@ CRUD flows happen in **overlay modals**, never on separate pages:
 - Always include the actual numeric value next to the chart label —
   legends alone are not enough for an at-a-glance read.
 
+## PWA & Favicons
+
+- **Browser Tab (Favicon):** Uses a transparent background icon (`MONEYAPP.png`) to blend naturally with the browser UI.
+- **PWA & Apple Touch Icons:** Uses a solid dark background (`#0b0f17`) perfectly squared icon (`pwa-192x192.png` and `pwa-512x512.png`) to ensure macOS and iOS clip the "squircle" shape cleanly without transparency artifacts.
+
 ## Modern Dashboard Patterns
 
 - **Quick Actions**: Prominent, easily accessible buttons (often floating or at the top of the feed) to perform common tasks like adding a transaction or navigating to investments.

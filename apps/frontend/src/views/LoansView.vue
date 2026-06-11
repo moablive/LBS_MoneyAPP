@@ -4,7 +4,7 @@ import { refDebounced } from '@vueuse/core';
 import { useRoute } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
-import LoanModal from '../components/LoanModal.vue';
+import LoanModal from '../components/modals/LoanModal.vue';
 import { PaperClipIcon as Paperclip } from '@heroicons/vue/24/outline';
 import type { LoanSummaryResponse, LoanItem } from '@moneyapp/models';
 

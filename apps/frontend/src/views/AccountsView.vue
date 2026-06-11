@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, shallowRef } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
-import NewAccountModal from '../components/NewAccountModal.vue';
+import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();

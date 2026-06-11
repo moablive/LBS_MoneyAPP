@@ -2,8 +2,8 @@
 import { computed, onMounted, ref, shallowRef, triggerRef } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
-import NewTransactionModal from '../components/NewTransactionModal.vue';
-import TransactionDetailsModal from '../components/TransactionDetailsModal.vue';
+import NewTransactionModal from '../components/modals/NewTransactionModal.vue';
+import TransactionDetailsModal from '../components/modals/TransactionDetailsModal.vue';
 import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip, ShareIcon } from '@heroicons/vue/24/outline';
 import { sharesClient } from '@moneyapp/api-client';
 import type { TransactionType, Transaction, Account, Category } from '@moneyapp/models';

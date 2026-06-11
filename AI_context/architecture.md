@@ -43,7 +43,8 @@ moneyapp/
 │   ├── frontend/            # Vue 3 PWA (Vite, Pinia, Tailwind, VitePWA)
 │   │   └── src/
 │   │       ├── api/          # HTTP fetch wrappers
-│   │       ├── components/   # AppShell, EmptyState, Modal, modais de CRUD
+│   │       ├── components/   # AppShell, EmptyState, Modal
+│   │       │   └── modals/   # Modais de CRUD isolados (ex: NewTransactionModal)
 │   │       ├── data/         # Dados estáticos (registry de bancos, etc.)
 │   │       ├── stores/       # Pinia: auth, accounts, categories, transactions,
 │   │       │                 #        subscriptions, investments, loans, dashboard

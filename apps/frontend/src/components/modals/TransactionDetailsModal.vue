@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { CheckCircleIcon as CheckCircle2, ClockIcon as Clock, BuildingLibraryIcon as Landmark, CalendarIcon as Calendar, CurrencyDollarIcon as DollarSign, DocumentTextIcon as FileText } from '@heroicons/vue/24/outline';
 import Modal from './Modal.vue';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../../stores/auth';
 
 import type { Transaction } from '@moneyapp/models';
 

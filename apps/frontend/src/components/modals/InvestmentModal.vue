@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { XMarkIcon as X, CheckIcon as Save } from '@heroicons/vue/24/outline';
 import Modal from './Modal.vue';
 import { api } from '@moneyapp/api-client';
-import { useInvestmentsStore } from '../stores/investments';
+import { useInvestmentsStore } from '../../stores/investments';
 
 const props = defineProps<{
   investment?: any;

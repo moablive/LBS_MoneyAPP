@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { api } from '@moneyapp/api-client';
 import type { CreateCategoryInput, CategoryType, Category } from '@moneyapp/models';
 import Modal from './Modal.vue';
-import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useConfirmDialog } from '../../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
 

@@ -10,7 +10,7 @@ import DashboardUpcoming from '../components/dashboard/DashboardUpcoming.vue';
 import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyapp/models';
 
 // Lazy-load the modal so it's not in the initial bundle
-const NewAccountModal = defineAsyncComponent(() => import('../components/NewAccountModal.vue'));
+const NewAccountModal = defineAsyncComponent(() => import('../components/modals/NewAccountModal.vue'));
 
 const summary = ref<DashboardSummaryResponse | null>(null);
 const ranking = ref<CategoryRankingResponse | null>(null);
@@ -266,7 +266,7 @@ onUnmounted(() => {
 </template>
 
 <script lang="ts">
-import NewTransactionModal from '../components/NewTransactionModal.vue';
+import NewTransactionModal from '../components/modals/NewTransactionModal.vue';
 export default {
   components: { NewTransactionModal }
 }

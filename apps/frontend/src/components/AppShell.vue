@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import { RouterLink, useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import NewTransactionModal from './NewTransactionModal.vue';
-import ChangePasswordModal from './ChangePasswordModal.vue';
-import GlobalConfirmDialog from './GlobalConfirmDialog.vue';
+import NewTransactionModal from './modals/NewTransactionModal.vue';
+import ChangePasswordModal from './modals/ChangePasswordModal.vue';
+import GlobalConfirmDialog from './modals/GlobalConfirmDialog.vue';
 
 const router = useRouter();
 const route = useRoute();

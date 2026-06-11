@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { api } from '@moneyapp/api-client';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../../stores/auth';
 import Modal from './Modal.vue';
 
 const authStore = useAuthStore();
