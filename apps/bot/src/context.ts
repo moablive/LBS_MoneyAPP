@@ -5,12 +5,3 @@ import type { Scenes } from 'telegraf';
  * carries `session`, `scene` and `wizard`) is all we need.
  */
 export type BotContext = Scenes.WizardContext;
-
-/** Per-conversation state for the "Registrar Novo" wizard. */
-export interface RegisterState {
-  tipo?: 'income' | 'expense';
-  desc?: string;
-  valor?: number;
-  receiptBase64?: string;
-  receiptMimeType?: string;
-}

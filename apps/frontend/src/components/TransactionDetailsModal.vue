@@ -22,6 +22,7 @@ const emit = defineEmits<{
 const receiptBlobUrl = ref<string | null>(null);
 const loadingReceipt = ref(false);
 const isPdf = ref(false);
+const showFullscreenReceipt = ref(false);
 
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -136,7 +137,12 @@ watch(() => props.transaction, async (t) => {
             <div class="rounded bg-surface-border h-32 w-full"></div>
           </div>
           <div v-else-if="receiptBlobUrl" class="flex justify-center bg-surface-base rounded-lg p-2 overflow-hidden max-h-64">
-            <img v-if="!isPdf" :src="receiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
+            <img 
+              v-if="!isPdf" 
+              :src="receiptBlobUrl" 
+              class="max-w-full max-h-full object-contain rounded cursor-pointer hover:opacity-90 transition-opacity" 
+              @click="showFullscreenReceipt = true"
+            />
             <a v-else :href="receiptBlobUrl" target="_blank" class="px-4 py-3 bg-accent rounded-xl text-white font-medium text-sm hover:bg-accent/90 transition-colors">Abrir PDF Anexado</a>
           </div>
           <div v-else class="text-sm text-muted py-2">
@@ -167,4 +173,29 @@ watch(() => props.transaction, async (t) => {
       </div>
     </div>
   </Modal>
+
+  <Teleport to="body">
+    <transition name="modal">
+      <div 
+        v-if="showFullscreenReceipt && receiptBlobUrl" 
+        class="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 cursor-zoom-out"
+        style="z-index: 9999;"
+        @click="showFullscreenReceipt = false"
+      >
+        <img 
+          :src="receiptBlobUrl" 
+          class="max-w-full max-h-full object-contain rounded-xl shadow-2xl" 
+        />
+        <button 
+          @click.stop="showFullscreenReceipt = false"
+          class="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 hover:bg-black/80 p-2 rounded-full transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </transition>
+  </Teleport>
 </template>

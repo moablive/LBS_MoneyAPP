@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 import type { BotContext } from '../context.js';
-import { getDbUserId } from '../db/user-cache.js';
-import { getSummaryByCategory, getAllSummaries } from '../db/transactions.js';
+import { getDbUserId } from '../utils/user-cache.js';
+import { botApi } from '@moneyapp/api-client';
 import { renderChartPng } from '../utils/chart.js';
 import { brl, escHtml } from '../utils/format.js';
 
@@ -27,14 +27,14 @@ export async function generateReportChart(ctx: BotContext, type: 'income' | 'exp
   }
 
   const label = type === 'income' ? 'Receita' : 'Despesa';
-  const data = await getSummaryByCategory(userId, type);
+  const data = await botApi.getSummaryByCategory(userId, type);
   if (data.length === 0) {
     await ctx.editMessageText(`Não há ${label.toLowerCase()}s registradas ainda.`);
     return;
   }
 
   const png = await renderChartPng(
-    data.map((d) => ({ name: d.name, value: d.total, color: d.color })),
+    data.map((d: any) => ({ name: d.name, value: d.total, color: d.color })),
     `Relatório de ${label}`,
   );
   if (!png) {
@@ -53,7 +53,7 @@ export async function generateTextReport(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const summaries = await getAllSummaries(userId);
+  const summaries = await botApi.getAllSummaries(userId);
 
   const header = `👤 <b>Relatório Geral (Mês Atual)</b>\n\n`;
   if (summaries.length === 0) {

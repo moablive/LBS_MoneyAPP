@@ -64,6 +64,7 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      BACKEND_URL: http://backend:3000/api
     networks:
       - awl_network
     restart: unless-stopped

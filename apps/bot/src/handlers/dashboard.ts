@@ -1,7 +1,6 @@
 import type { BotContext } from '../context.js';
-import { getDbUserId } from '../db/user-cache.js';
-import { getDashboardSummary, getCreditCardsSummary } from '../db/dashboard.js';
-import { getAllSummaries } from '../db/transactions.js';
+import { getDbUserId } from '../utils/user-cache.js';
+import { botApi } from '@moneyapp/api-client';
 import { brl } from '../utils/format.js';
 
 export async function showDashboard(ctx: BotContext): Promise<void> {
@@ -11,8 +10,8 @@ export async function showDashboard(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const summaries = await getAllSummaries(userId);
-  const dashboard = await getDashboardSummary(userId);
+  const summaries = await botApi.getAllSummaries(userId);
+  const dashboard = await botApi.getDashboardSummary(userId);
 
   let totalReceitas = 0;
   let totalDespesas = 0;
@@ -41,7 +40,7 @@ export async function showCards(ctx: BotContext): Promise<void> {
     return;
   }
 
-  const cards = await getCreditCardsSummary(userId);
+  const cards = await botApi.getCreditCardsSummary(userId);
 
   if (cards.length === 0) {
     await ctx.reply('Você não possui cartões de crédito cadastrados.');

@@ -12,6 +12,7 @@ const envSchema = z.object({
     if (val === '*') return val;
     return val.split(',').map(s => s.trim());
   }),
+  // BOT_API_SECRET removed as bot now uses JWT for auth
   MAX_RECEIPT_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   // Master user — set MASTER_USER_EMAIL='' to disable the startup bootstrap.
   MASTER_USER_EMAIL: z

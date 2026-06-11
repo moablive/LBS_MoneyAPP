@@ -9,6 +9,7 @@ import { subscriptionsRouter } from './subscriptions';
 import { investmentsRouter } from './investments';
 import { loansRouter } from './loans';
 import { sharesRouter } from './shares';
+import { botRouter } from './bot';
 
 export const apiRouter = Router();
 
@@ -22,3 +23,4 @@ apiRouter.use('/investments', investmentsRouter);
 apiRouter.use('/loans', loansRouter);
 apiRouter.use('/dashboard', dashboardRouter);
 apiRouter.use('/shares', sharesRouter);
+apiRouter.use('/bot', botRouter);

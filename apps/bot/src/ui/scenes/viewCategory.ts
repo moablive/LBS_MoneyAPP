@@ -1,11 +1,11 @@
 import { Markup, Scenes } from 'telegraf';
-import type { BotContext } from '../context.js';
-import { getDbUserId } from '../db/user-cache.js';
-import { getUserCategories } from '../db/categories.js';
-import { getTransactionsByCategory } from '../db/transactions.js';
-import { categoryKeyboard, mainMenuKeyboard } from '../ui.js';
-import { sendMainMenu } from '../handlers/start.js';
-import { brl, dmy, escHtml } from '../utils/format.js';
+import type { BotContext } from '../../context.js';
+import { getDbUserId } from '../../utils/user-cache.js';
+import { botApi } from '@moneyapp/api-client';
+import { userApi } from '../../utils/api.js';
+import { categoryKeyboard, mainMenuKeyboard } from '../index.js';
+import { sendMainMenu } from '../../handlers/start.js';
+import { brl, dmy, escHtml } from '../../utils/format.js';
 
 export const VIEW_CATEGORY_SCENE = 'view-category';
 
@@ -45,7 +45,7 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
 
-    const cats = await getUserCategories(userId, type);
+    const cats = await userApi.get<{id: string, name: string}[]>(`/categories?type=${type}`, userId);
     if (cats.length === 0) {
       await ctx.editMessageText('Você ainda não tem categorias cadastradas no MoneyAPP para esse tipo!');
       return ctx.scene.leave();
@@ -74,7 +74,7 @@ export const viewCategoryScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
 
-    const { total, transactions } = await getTransactionsByCategory(userId, categoryId);
+    const { total, transactions } = await botApi.getTransactionsByCategory(userId, categoryId);
 
     let msg = `📊 <b>Resumo da Categoria (Mês Atual)</b>\n\n💰 <b>Total:</b> ${brl(total)}\n\n`;
     if (transactions.length) {

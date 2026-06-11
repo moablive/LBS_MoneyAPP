@@ -1,23 +1,32 @@
 import { Scenes, Telegraf, session } from 'telegraf';
 import { env } from './config.js';
+import jwt from 'jsonwebtoken';
 import type { BotContext } from './context.js';
 import { auth } from './auth.js';
-import { registerScene, REGISTER_SCENE } from './scenes/register.js';
-import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './scenes/viewCategory.js';
-import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './scenes/attachReceipt.js';
-import { loginScene, LOGIN_SCENE } from './scenes/login.js';
+import { registerScene, REGISTER_SCENE } from './ui/scenes/register.js';
+import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './ui/scenes/viewCategory.js';
+import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './ui/scenes/attachReceipt.js';
+import { loginScene, LOGIN_SCENE } from './ui/scenes/login.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
 import { showDashboard, showCards } from './handlers/dashboard.js';
-import { getDbUserId } from './db/user-cache.js';
-import { createShareLink } from './db/shares.js';
+import { showUpcoming } from './handlers/upcoming.js';
+import { startNotificationsCron } from './cron/notifications.js';
+import { getDbUserId } from './utils/user-cache.js';
+import { setupApi, botApi } from '@moneyapp/api-client';
 import { Markup } from 'telegraf';
+
+const botToken = jwt.sign({ sub: 'telegram-bot', email: 'bot@moneyapp' }, env.JWT_SECRET);
+setupApi({ baseUrl: env.BACKEND_URL, getToken: () => botToken });
 
 const bot = new Telegraf<BotContext>(env.TELEGRAM_BOT_TOKEN);
 
 // Sessão (necessária para as wizard scenes) + privacidade (1 único usuário).
 bot.use(session());
 bot.use(auth);
+
+// Inicia os Cron Jobs em Background
+startNotificationsCron(bot);
 
 // Fluxos de conversa.
 const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, loginScene]);
@@ -39,6 +48,7 @@ bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 // Dashboard e Cartões
 bot.hears('🌐 Dashboard', showDashboard);
 bot.hears('💳 Cartões', showCards);
+bot.hears('🗓 Próximos Lançamentos', showUpcoming);
 
 // Relatórios.
 bot.hears('📊 Ver Relatórios', showReports);
@@ -55,7 +65,7 @@ bot.action(/^share_(.+)$/, async (ctx) => {
     if (!userId || !categoryId) return;
     
     await ctx.answerCbQuery();
-    const { token, password } = await createShareLink(userId, categoryId);
+    const { token, password } = await botApi.createShareLink(userId, categoryId);
     
     const link = `https://money.astralwavelabel.com/share/${token}`;
     const text = `Confira as movimentações desta categoria no MoneyAPP:\n\n🔗 ${link}\n🔑 Senha: ${password}`;

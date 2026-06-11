@@ -1,6 +1,6 @@
 import type { BotContext } from '../context.js';
-import { getDbUserId } from '../db/user-cache.js';
-import { mainMenuKeyboard } from '../ui.js';
+import { getDbUserId } from '../utils/user-cache.js';
+import { mainMenuKeyboard } from '../ui/index.js';
 
 /**
  * Valida que o email do usuário existe no MoneyAPP e mostra o menu principal.

@@ -1,7 +1,7 @@
 import type { MiddlewareFn } from 'telegraf';
 import type { BotContext } from './context.js';
 
-import { getUserIdByTelegramId } from './db/users.js';
+import { botApi } from '@moneyapp/api-client';
 
 /**
  * Middleware de autenticação: o bot verifica se o Telegram ID está associado
@@ -25,7 +25,8 @@ export const auth: MiddlewareFn<BotContext> = async (ctx, next) => {
   const id = ctx.from?.id;
   if (!id) return;
 
-  const userId = await getUserIdByTelegramId(String(id));
+  const user = await botApi.getUserIdByTelegramId(String(id));
+  const userId = user?.id;
   if (!userId) {
     if (ctx.chat?.type === 'private' && !isCallback) {
       await ctx.reply('🔒 Você não está autenticado. Use o comando:\n`/login` para iniciar o fluxo de acesso e vincular sua conta do MoneyAPP ao Telegram.', { parse_mode: 'Markdown' });

@@ -7,3 +7,4 @@ export * from './dashboard';
 export * from './subscription';
 export * from './investment';
 export * from './loan';
+export * from './bot';

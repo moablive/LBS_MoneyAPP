@@ -16,6 +16,7 @@ const dateFmt = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
 });
 
-export function dmy(date: Date): string {
-  return dateFmt.format(date);
+export function dmy(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return dateFmt.format(d);
 }

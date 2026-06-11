@@ -1,9 +1,11 @@
 import { Markup, Scenes } from 'telegraf';
-import type { BotContext } from '../context.js';
-import { getDbUserId } from '../db/user-cache.js';
-import { getRecentTransactionsWithoutReceipt, attachReceipt } from '../db/transactions.js';
-import { mainMenuKeyboard } from '../ui.js';
-import { sendMainMenu } from '../handlers/start.js';
+import type { BotContext } from '../../context.js';
+import type { AttachReceiptState } from '@moneyapp/models';
+import { getDbUserId } from '../../utils/user-cache.js';
+import { botApi } from '@moneyapp/api-client';
+import { userApi } from '../../utils/api.js';
+import { mainMenuKeyboard } from '../index.js';
+import { sendMainMenu } from '../../handlers/start.js';
 
 /**
  * Fluxo de anexo de comprovantes.
@@ -11,11 +13,6 @@ import { sendMainMenu } from '../handlers/start.js';
  * selecione uma para adicionar uma foto/PDF.
  */
 export const ATTACH_RECEIPT_SCENE = 'attachReceipt';
-
-export interface AttachReceiptState {
-  txId?: string;
-}
-
 export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
   ATTACH_RECEIPT_SCENE,
 
@@ -27,13 +24,13 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
     }
     
     // Lista até 10 transações sem comprovante (apenas categoria Controle 📊)
-    const txs = await getRecentTransactionsWithoutReceipt(userId, 10);
+    const txs = await botApi.getRecentTransactionsWithoutReceipt(userId, 10);
     if (txs.length === 0) {
       await ctx.reply('Nenhuma transação recente da categoria Controle 📊 sem comprovante foi encontrada.', mainMenuKeyboard());
       return ctx.scene.leave();
     }
     
-    const rows = txs.map(tx => [Markup.button.callback(`${tx.description} - R$ ${Math.abs(Number(tx.amount)).toFixed(2)}`, tx.id)]);
+    const rows = txs.map((tx: any) => [Markup.button.callback(`${tx.description} - R$ ${Math.abs(Number(tx.amount)).toFixed(2)}`, tx.id)]);
     rows.push([Markup.button.callback('❌ Cancelar', 'cancel_wizard')]);
     
     await ctx.reply('Selecione a transação (Controle 📊) para anexar um comprovante:', Markup.inlineKeyboard(rows));
@@ -99,7 +96,9 @@ export const attachReceiptScene = new Scenes.WizardScene<BotContext>(
       return ctx.scene.leave();
     }
 
-    await attachReceipt(userId, txId, base64, mimeType);
+    await userApi.patch(`/transactions/${txId}`, userId, {
+      receipt: { base64, mimeType }
+    });
     
     await ctx.reply('✅ Comprovante anexado com sucesso!', mainMenuKeyboard());
     return ctx.scene.leave();

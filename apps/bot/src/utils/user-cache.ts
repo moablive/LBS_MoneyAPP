@@ -1,4 +1,4 @@
-import { getUserIdByTelegramId } from './users.js';
+import { botApi } from '@moneyapp/api-client';
 
 const cache = new Map<string, string>();
 
@@ -10,10 +10,11 @@ export async function getDbUserId(telegramId?: number): Promise<string | null> {
     return cache.get(tid)!;
   }
   
-  const userId = await getUserIdByTelegramId(tid);
-  if (userId) {
-    cache.set(tid, userId);
+  const user = await botApi.getUserIdByTelegramId(tid);
+  if (user?.id) {
+    cache.set(tid, user.id);
+    return user.id;
   }
   
-  return userId;
+  return null;
 }

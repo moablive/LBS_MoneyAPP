@@ -6,7 +6,7 @@ export function mainMenuKeyboard() {
     ['🌐 Dashboard', '💳 Cartões'],
     ['📝 Registrar Novo', '📎 Anexar Comprovante'],
     ['🔍 Ver Categoria', '📊 Ver Relatórios'],
-    ['📄 Relatório Geral'],
+    ['📄 Relatório Geral', '🗓 Próximos Lançamentos'],
   ]).resize();
 }
 
@@ -19,6 +19,23 @@ export function categoryKeyboard(cats: ReadonlyArray<{ id: string; name: string 
   let row: InlineKeyboardButton[] = [];
   for (const cat of cats) {
     row.push(Markup.button.callback(cat.name, cat.id));
+    if (row.length === 2) {
+      rows.push(row);
+      row = [];
+    }
+  }
+  if (row.length) rows.push(row);
+  return Markup.inlineKeyboard(rows);
+}
+
+/**
+ * Monta um InlineKeyboard com as contas (2 por linha).
+ */
+export function accountKeyboard(accounts: ReadonlyArray<{ id: string; name: string }>) {
+  const rows: InlineKeyboardButton[][] = [];
+  let row: InlineKeyboardButton[] = [];
+  for (const acc of accounts) {
+    row.push(Markup.button.callback(acc.name, acc.id));
     if (row.length === 2) {
       rows.push(row);
       row = [];
