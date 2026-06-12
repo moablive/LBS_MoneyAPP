@@ -82,7 +82,7 @@ export const changeCategoryScene = new Scenes.WizardScene<BotContext>(
     await ctx.answerCbQuery();
 
     if (hasReceipt === '0') {
-      await ctx.editMessageText('⚠️ Este lançamento não possui comprovante!\n\nPara manter a organização, não é possível trocar a categoria de um lançamento sem comprovante. Use o botão "📎 Anexar Comprovante" primeiro!');
+      await ctx.editMessageText('⚠️ Este lançamento não possui comprovante!\n\nPara manter a organização, não é possível trocar a categoria de um lançamento sem comprovante. Use o comando /anexar primeiro!');
       await sendMainMenu(ctx);
       return ctx.scene.leave();
     }

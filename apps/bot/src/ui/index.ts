@@ -6,7 +6,7 @@ import { Icons } from './icons.js';
 export function mainMenuKeyboard() {
   return Markup.keyboard([
     [`${Icons.Dashboard} Dashboard`, `${Icons.Cards} Cartões`],
-    [`${Icons.NewRecord} Registrar Novo`, `${Icons.Receipt} Anexar Comprovante`],
+    [`${Icons.NewRecord} Registrar Novo`],
     [`${Icons.Category} Ver Categoria`, `${Icons.ChangeCategory} Trocar Categoria`],
     [`${Icons.Reports} Ver Relatórios`, `${Icons.GeneralReport} Relatório Geral`],
     [`${Icons.Balances} Saldos das Contas`, `${Icons.Upcoming} Próximos Lançamentos`],

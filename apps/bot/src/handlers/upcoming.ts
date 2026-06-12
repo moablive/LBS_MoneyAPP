@@ -85,7 +85,7 @@ export async function showUpcoming(ctx: BotContext) {
         const backendUrl = (env as any).API_URL || env.BACKEND_URL || 'http://localhost:3000/api';
         const calendarUrl = `${backendUrl.replace('/api', '')}/api/calendar/${tokenStr}.ics`;
         buttons.push([
-          Markup.button.url('🍏 Apple Calendar', calendarUrl.replace('https://', 'webcal://').replace('http://', 'webcal://')),
+          Markup.button.url('🍏 Apple Calendar / Outlook', calendarUrl),
           Markup.button.url('📅 Google Agenda', `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl)}`)
         ]);
       }

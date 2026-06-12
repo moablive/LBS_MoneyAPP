@@ -46,7 +46,6 @@ bot.hears(`${Icons.NewRecord} Registrar Novo`, (ctx) => ctx.scene.enter(REGISTER
 bot.command('registrar', (ctx) => ctx.scene.enter(REGISTER_SCENE));
 bot.hears(`${Icons.Category} Ver Categoria`, (ctx) => ctx.scene.enter(VIEW_CATEGORY_SCENE));
 bot.hears(`${Icons.ChangeCategory} Trocar Categoria`, (ctx) => ctx.scene.enter(CHANGE_CATEGORY_SCENE));
-bot.hears(`${Icons.Receipt} Anexar Comprovante`, (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 
 // Dashboard e Cartões
