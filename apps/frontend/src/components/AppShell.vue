@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { RouterLink, useRouter, useRoute } from 'vue-router';
+import { api } from '@moneyapp/api-client';
+import type { Account, SubscriptionSummaryResponse, LoanSummaryResponse } from '@moneyapp/models';
 import { useAuthStore } from '../stores/auth';
 import NewTransactionModal from './modals/NewTransactionModal.vue';
 import ChangePasswordModal from './modals/ChangePasswordModal.vue';
@@ -55,11 +57,35 @@ function logout() {
   auth.logout();
   router.push('/login');
 }
+
+const accounts = ref<Account[]>([]);
+const subscriptionsData = ref<SubscriptionSummaryResponse | null>(null);
+const loansData = ref<LoanSummaryResponse | null>(null);
+
+onMounted(async () => {
+  try {
+    const [accs, subs, lns] = await Promise.all([
+      api.get<Account[]>('/accounts'),
+      api.get<SubscriptionSummaryResponse>('/subscriptions/summary'),
+      api.get<LoanSummaryResponse>('/loans/summary')
+    ]);
+    accounts.value = accs;
+    subscriptionsData.value = subs;
+    loansData.value = lns;
+  } catch (err) {
+    console.error('Failed to load data for app shell', err);
+  }
+});
+
+const creditCards = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
+const checkingAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 </script>
 
 <template>
   <div class="min-h-dvh flex bg-surface-base">
-    <aside class="hidden sm:flex w-64 shrink-0 flex-col bg-surface-raised border-r border-surface-border shadow-xl z-10">
+    <aside class="hidden sm:flex w-64 shrink-0 flex-col bg-surface-raised border-r border-surface-border shadow-xl z-50">
       <div class="px-6 py-6 flex flex-col items-center justify-center border-b border-white/10 mb-4 gap-3">
         <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-12 w-auto object-contain" />
         <div class="text-[11px] text-slate-300 truncate max-w-full font-medium tracking-wide bg-surface-overlay px-3 py-1 rounded-full border border-surface-border shadow-inner">
@@ -69,20 +95,101 @@ function logout() {
       <nav class="flex-1 px-4 space-y-1">
         <template v-for="item in nav" :key="item.label">
           <!-- Normal Link -->
-          <RouterLink
-            v-if="!item.children"
-            :to="item.to!"
-            class="nav-link group relative flex items-center gap-4 px-4 py-3.5 mx-2 rounded-lg text-[13px] font-semibold uppercase tracking-wider
-                   text-muted transition-all duration-300 ease-smooth
-                   hover:text-white hover:bg-surface-overlay"
-            active-class="nav-link--active !text-white !bg-accent shadow-lg shadow-accent/30"
-          >
-            <span v-html="item.icon" class="flex-shrink-0 transition-transform duration-300 group-hover:scale-110"></span>
-            {{ item.label }}
-          </RouterLink>
+          <div v-if="!item.children" class="relative group/nav">
+            <RouterLink
+              :to="item.to!"
+              class="nav-link relative flex items-center gap-4 px-4 py-3.5 mx-2 rounded-lg text-[13px] font-semibold uppercase tracking-wider
+                     text-muted transition-all duration-300 ease-smooth
+                     hover:text-white hover:bg-surface-overlay group-hover/nav:text-white group-hover/nav:bg-surface-overlay"
+              active-class="nav-link--active !text-white !bg-accent shadow-lg shadow-accent/30"
+            >
+              <span v-html="item.icon" class="flex-shrink-0 transition-transform duration-300 group-hover/nav:scale-110"></span>
+              {{ item.label }}
+            </RouterLink>
+
+            <!-- Hover popup para Cartões -->
+            <div 
+              v-if="item.label === 'Cartões' && creditCards.length > 0" 
+              class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
+            >
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+                <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
+                  <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
+                  Faturas Atuais
+                </h3>
+                <span class="text-xs font-bold text-expense">{{ brl(creditCards.reduce((acc, card) => acc + Math.abs(Number(card.currentBalance)), 0)) }}</span>
+              </div>
+              <ul class="p-2 space-y-1">
+                <li v-for="card in creditCards" :key="card.id" class="p-2.5 rounded-lg hover:bg-surface-overlay/80 transition-colors cursor-pointer" @click="router.push('/cartoes')">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                      <img v-if="card.customIconUrl" :src="card.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
+                      <span class="text-xs font-semibold text-white/90 truncate">{{ card.name }}</span>
+                    </div>
+                    <span class="text-xs font-bold font-display text-expense">{{ brl(Math.abs(Number(card.currentBalance))) }}</span>
+                  </div>
+                  <div class="h-1 rounded-full bg-surface-base overflow-hidden" v-if="card.creditLimit && Number(card.creditLimit) > 0">
+                    <div class="h-full bg-expense" :style="{ width: `${Math.min(100, Math.max(0, (Math.abs(Number(card.currentBalance)) / Number(card.creditLimit)) * 100))}%` }" />
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Hover popup para Contas -->
+            <div 
+              v-if="item.label === 'Contas' && checkingAccounts.length > 0" 
+              class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
+            >
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+                <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
+                  <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
+                  Saldos Atuais
+                </h3>
+                <span class="text-xs font-bold font-display" :class="checkingAccounts.reduce((acc, a) => acc + Number(a.currentBalance), 0) >= 0 ? 'text-income' : 'text-expense'">
+                  {{ brl(checkingAccounts.reduce((acc, a) => acc + Number(a.currentBalance), 0)) }}
+                </span>
+              </div>
+              <ul class="p-2 space-y-1">
+                <li v-for="acc in checkingAccounts" :key="acc.id" class="p-2.5 rounded-lg hover:bg-surface-overlay/80 transition-colors cursor-pointer" @click="router.push('/contas')">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                      <img v-if="acc.customIconUrl" :src="acc.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
+                      <span class="text-xs font-semibold text-white/90 truncate">{{ acc.name }}</span>
+                    </div>
+                    <span class="text-xs font-bold font-display" :class="Number(acc.currentBalance) >= 0 ? 'text-income' : 'text-expense'">{{ brl(Number(acc.currentBalance)) }}</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Hover popup para Mensalidades -->
+            <div 
+              v-if="item.label === 'Mensalidades' && subscriptionsData?.items?.length" 
+              class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
+            >
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+                <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
+                  <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
+                  Mensalidades
+                </h3>
+                <span class="text-xs font-bold text-expense">{{ brl(subscriptionsData.gastoMensal) }}</span>
+              </div>
+              <ul class="p-2 space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <li v-for="sub in subscriptionsData.items.filter(i => i.status === 'active')" :key="sub.id" class="p-2.5 rounded-lg hover:bg-surface-overlay/80 transition-colors cursor-pointer" @click="router.push('/recorrentes')">
+                  <div class="flex justify-between items-center">
+                    <div class="flex flex-col overflow-hidden max-w-[120px]">
+                      <span class="text-xs font-semibold text-white/90 truncate">{{ sub.description }}</span>
+                      <span class="text-[10px] text-muted">Dia {{ sub.billingDay }}</span>
+                    </div>
+                    <span class="text-xs font-bold font-display" :class="sub.type === 'income' ? 'text-income' : 'text-expense'">{{ brl(sub.amount) }}</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <!-- Dropdown -->
-          <div v-else class="flex flex-col">
+          <div v-else class="flex flex-col relative group/nav">
             <button
               @click="toggleDropdown(item.label)"
               class="nav-link group relative flex items-center justify-between gap-4 px-4 py-3.5 mx-2 rounded-lg text-[13px] font-semibold uppercase tracking-wider text-muted transition-all duration-300 ease-smooth hover:text-white hover:bg-surface-overlay w-[calc(100%-1rem)]"
@@ -114,6 +221,33 @@ function logout() {
                 <span v-html="child.icon" class="flex-shrink-0 transition-transform duration-300 group-hover:scale-110"></span>
                 {{ child.label }}
               </RouterLink>
+            </div>
+
+            <!-- Hover popup para Empréstimos -->
+            <div 
+              v-if="item.label === 'Empréstimos' && loansData?.items?.length" 
+              class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
+            >
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex flex-col gap-1">
+                <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2 mb-1">
+                  <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
+                  Empréstimos Ativos
+                </h3>
+                <div class="flex justify-between text-[10px] font-bold uppercase">
+                  <span class="text-expense">A Pagar: {{ brl(loansData.totalActiveAmountReceived) }}</span>
+                  <span class="text-income">A Receber: {{ brl(loansData.totalActiveAmountGiven) }}</span>
+                </div>
+              </div>
+              <ul class="p-2 space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <li v-for="loan in loansData.items.filter(i => i.status === 'active')" :key="loan.id" class="p-2.5 rounded-lg hover:bg-surface-overlay/80 transition-colors cursor-pointer" @click="router.push(loan.type === 'received' ? '/emprestimos/pagar' : '/emprestimos/receber')">
+                  <div class="flex justify-between items-center">
+                    <div class="flex flex-col overflow-hidden max-w-[120px]">
+                      <span class="text-xs font-semibold text-white/90 truncate">{{ loan.description }}</span>
+                    </div>
+                    <span class="text-xs font-bold font-display" :class="loan.type === 'given' ? 'text-income' : 'text-expense'">{{ brl(loan.amount) }}</span>
+                  </div>
+                </li>
+              </ul>
             </div>
           </div>
         </template>

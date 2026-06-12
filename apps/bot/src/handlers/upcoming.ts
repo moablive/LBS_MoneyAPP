@@ -1,7 +1,10 @@
 import type { BotContext } from '../context.js';
 import { getDbUserId } from '../utils/user-cache.js';
 import { brl, escHtml } from '../utils/format.js';
+import { Markup } from 'telegraf';
 import { getUpcomingTransactions } from '../utils/upcoming.js';
+import { userApi } from '../utils/api.js';
+import { env } from '../config.js';
 import { Icons } from '../ui/icons.js';
 
 export async function showUpcoming(ctx: BotContext) {
@@ -66,7 +69,37 @@ export async function showUpcoming(ctx: BotContext) {
          await ctx.reply(chunk, { parse_mode: 'HTML' });
       }
     } else {
-      await ctx.telegram.editMessageText(ctx.chat!.id, m.message_id, undefined, msg, { parse_mode: 'HTML' });
+      let tokenStr = '';
+      try {
+        const res = await userApi.get<{token: string}>('/users/me/calendar-token', userId);
+        tokenStr = res.token;
+      } catch {
+        try {
+          const res = await userApi.post<{token: string}>('/users/me/calendar-token', userId, {});
+          tokenStr = res.token;
+        } catch {}
+      }
+
+      const buttons = [];
+      if (tokenStr) {
+        const backendUrl = (env as any).API_URL || env.BACKEND_URL || 'http://localhost:3000/api';
+        const calendarUrl = `${backendUrl.replace('/api', '')}/api/calendar/${tokenStr}.ics`;
+        buttons.push([
+          Markup.button.url('🍏 Apple Calendar', calendarUrl.replace('https://', 'webcal://').replace('http://', 'webcal://')),
+          Markup.button.url('📅 Google Agenda', `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl)}`)
+        ]);
+      }
+
+      await ctx.telegram.editMessageText(
+        ctx.chat!.id, 
+        m.message_id, 
+        undefined, 
+        msg, 
+        { 
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard(buttons)
+        }
+      );
     }
   } catch (err) {
     console.error(err);

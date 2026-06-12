@@ -19,6 +19,7 @@ const showCreate = ref(false);
 const createType = ref<TransactionType>('expense');
 const filterType = ref<'all' | TransactionType>('all');
 const filterCategory = ref<string>('all');
+const filterAccount = ref<string>('all');
 const filterPeriod = ref<'current_month' | 'next_month' | 'all'>('current_month');
 const selectedRow = ref<Transaction | null>(null);
 const editingRow = ref<Transaction | null>(null);
@@ -53,6 +54,7 @@ async function reload() {
     const params = new URLSearchParams();
     if (filterType.value !== 'all') params.set('type', filterType.value);
     if (filterCategory.value !== 'all') params.set('categoryId', filterCategory.value);
+    if (filterAccount.value !== 'all') params.set('accountId', filterAccount.value);
     
     if (filterPeriod.value === 'current_month') {
       const now = new Date();
@@ -202,7 +204,15 @@ async function handleDelete(t: Transaction | null) {
             <option value="all">Todas Categorias</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
-          <div class="order-4 flex items-center gap-2 w-full sm:w-auto">
+          <select
+            v-model="filterAccount"
+            @change="reload()"
+            class="order-3 sm:order-4 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+          >
+            <option value="all">Todas Contas</option>
+            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+          </select>
+          <div class="order-5 flex items-center gap-2 w-full sm:w-auto">
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="showCreate = true; createType = 'expense'"

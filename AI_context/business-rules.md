@@ -10,6 +10,7 @@ regardless of how clean it looks.
 2. **`type` is denormalized** from the sign for fast filtering, but must
    always match the sign. Both the Zod schema (`createTransactionSchema`)
    and any update path must enforce this.
+2a. **UI Status terminology.** On the frontend (e.g. Livro Caixa), a transaction of type `income` is semantically an income, so its completed status is displayed as **"Entrada"** rather than "Pago". This ensures clarity between expenses ("Pago") and incomes ("Entrada").
 3. **Receipts** are optional and stored inline as base64.
 4. **Subscriptions** are standalone entities, detached from being just flags in transactions. Transactions created from a subscription hold a `subscription_id` to trace back to their origin. Subscriptions have `status` (active/inactive) and a `billing_day`.
 

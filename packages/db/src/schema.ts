@@ -43,8 +43,7 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   settings: jsonb('settings').default({ requireReceipts: true }).notNull(),
-  googleRefreshToken: text('google_refresh_token'),
-  googleCalendarId: varchar('google_calendar_id', { length: 255 }),
+  calendarSyncToken: varchar('calendar_sync_token', { length: 128 }).unique(),
 });
 
 // -------- categories ---------------------------------------------------------
@@ -146,7 +145,6 @@ export const transactions = pgTable(
     loanId: uuid('loan_id').references(() => loans.id, { onDelete: 'set null' }),
     receiptBase64: text('receipt_base64'),
     receiptMimeType: varchar('receipt_mime_type', { length: 80 }),
-    googleEventId: varchar('google_event_id', { length: 255 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

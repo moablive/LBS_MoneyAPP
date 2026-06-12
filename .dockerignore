@@ -1,5 +1,5 @@
-node_modules
-.pnpm-store
-dist
+.git
 .env
-**/.env
+node_modules
+apps/*/node_modules
+packages/*/node_modules

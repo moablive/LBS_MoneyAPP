@@ -78,3 +78,4 @@ CRUD flows happen in **overlay modals**, never on separate pages:
 - **Quick Actions**: Prominent, easily accessible buttons (often floating or at the top of the feed) to perform common tasks like adding a transaction or navigating to investments.
 - **Empty States**: Never show just a blank screen. Empty states should have an illustration or a clear message, alongside a direct call to action (CTA) to create the first entity.
 - **Cards**: Use elevated cards for distinct visual hierarchies, combining `surface-raised` with `shadow-modal` for focus.
+- **Navigation Summaries**: The main navigation (`AppShell`) uses elegant hover popups with a subtle blur (`backdrop-blur-sm`) to show quick context—such as current card invoices, account balances, subscriptions, and loans totals—allowing the user to get vital numbers without leaving the current view.

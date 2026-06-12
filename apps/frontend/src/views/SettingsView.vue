@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import type { Account } from '@moneyapp/models';
@@ -11,7 +11,50 @@ const requireReceipts = ref(auth.user?.settings?.requireReceipts ?? true);
 const saving = ref(false);
 const message = ref('');
 
-// --- Contas: congelar saldo (conta histórica) -------------------------------
+// --- Calendar Token ---
+const calendarToken = ref<string | null>(null);
+const generatingToken = ref(false);
+
+const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const calendarUrl = computed(() => {
+  if (!calendarToken.value) return '';
+  return `${backendUrl.replace('/api', '')}/api/calendar/${calendarToken.value}.ics`;
+});
+
+const loadCalendarToken = async () => {
+  try {
+    const res = await api.get<{token: string}>('/users/me/calendar-token');
+    calendarToken.value = res.token;
+  } catch {
+    // Ignore if no token
+  }
+};
+
+const generateCalendarToken = async () => {
+  generatingToken.value = true;
+  try {
+    const res = await api.post<{token: string}>('/users/me/calendar-token', {});
+    calendarToken.value = res.token;
+  } catch {
+    message.value = 'Erro ao gerar link de sincronização.';
+    setTimeout(() => { message.value = '' }, 3000);
+  } finally {
+    generatingToken.value = false;
+  }
+};
+
+const copyCalendarUrl = async () => {
+  if (!calendarUrl.value) return;
+  try {
+    await navigator.clipboard.writeText(calendarUrl.value);
+    message.value = 'Link copiado!';
+    setTimeout(() => { message.value = '' }, 3000);
+  } catch {
+    message.value = 'Erro ao copiar.';
+  }
+};
+
+// --- Contas: congelar saldo (conta histórica) ---
 const accounts = ref<Account[]>([]);
 const loadingAccounts = ref(true);
 const savingAccountId = ref<string | null>(null);
@@ -27,6 +70,7 @@ onMounted(async () => {
   } finally {
     loadingAccounts.value = false;
   }
+  await loadCalendarToken();
 });
 
 // Switch marcado = "afeta o saldo" (freezeBalance = false).
@@ -142,6 +186,51 @@ function logout() {
           </div>
         </li>
       </ul>
+    </div>
+
+    <!-- Seção de Integração de Calendário -->
+    <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
+      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Sincronização com Calendário</h2>
+      <div class="flex flex-col gap-4">
+        <div>
+          <p class="text-slate-100 font-medium">Exportar Próximos Lançamentos (iCal)</p>
+          <p class="text-sm text-muted mt-1">Gere um link secreto para adicionar seus lançamentos pendentes no Google Agenda ou Apple Calendar. Eles serão atualizados automaticamente todos os dias.</p>
+        </div>
+        
+        <div v-if="calendarToken" class="mt-2 space-y-3">
+          <div class="flex items-center gap-2 bg-surface-overlay/50 border border-surface-border p-3 rounded-xl overflow-hidden">
+            <span class="text-xs text-slate-300 truncate flex-1 font-mono select-all">{{ calendarUrl }}</span>
+            <button @click="copyCalendarUrl" class="px-3 py-1.5 bg-surface-base hover:bg-surface-border text-xs font-medium text-white rounded-lg transition-colors shrink-0 flex items-center gap-1.5 border border-surface-border">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copiar
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-3 mt-4">
+            <a :href="`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl)}`" target="_blank" class="flex-1 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-xl font-medium transition-colors text-sm text-center flex justify-center items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              Google Agenda
+            </a>
+            <a :href="calendarUrl.replace('https://', 'webcal://').replace('http://', 'webcal://')" class="flex-1 px-4 py-2 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors text-sm text-center flex justify-center items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path><path d="M10 2c1 .5 2 2 2 5"></path></svg>
+              Apple Calendar
+            </a>
+          </div>
+
+          <div class="pt-4 border-t border-surface-border">
+            <button @click="generateCalendarToken" :disabled="generatingToken" class="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50 transition-colors">
+              Gerar Novo Link (Revoga o anterior)
+            </button>
+          </div>
+        </div>
+        
+        <div v-else class="mt-2">
+          <button @click="generateCalendarToken" :disabled="generatingToken" class="px-5 py-2.5 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-8.31l-4.28 4.28"/></svg>
+            {{ generatingToken ? 'Gerando...' : 'Gerar Link de Sincronização' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Seção de Conta -->
