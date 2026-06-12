@@ -116,7 +116,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
     today.setHours(0, 0, 0, 0);
 
     const creditCardInvoices = accounts.value
-      .filter(a => a.type === 'credit_card' && Number(a.currentBalance) !== 0)
+      .filter(a => a.type === 'credit_card' && Number(a.currentBalance) !== 0 && !a.freezeBalance)
       .map(card => {
         let dueDate = new Date(today.getFullYear(), today.getMonth(), card.dueDay || card.closingDay || 1, 12, 0, 0);
         if (dueDate < today) {
