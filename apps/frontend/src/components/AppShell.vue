@@ -109,7 +109,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
 
             <!-- Hover popup para Cartões -->
             <div 
-              v-if="item.label === 'Cartões' && creditCards.length > 0" 
+              v-if="item.label === 'Cartões' && creditCards.length > 0 && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
               <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
@@ -137,7 +137,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
 
             <!-- Hover popup para Contas -->
             <div 
-              v-if="item.label === 'Contas' && checkingAccounts.length > 0" 
+              v-if="item.label === 'Contas' && checkingAccounts.length > 0 && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
               <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
@@ -164,7 +164,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
 
             <!-- Hover popup para Mensalidades -->
             <div 
-              v-if="item.label === 'Mensalidades' && subscriptionsData?.items?.length" 
+              v-if="item.label === 'Mensalidades' && subscriptionsData?.items?.length && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
               <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
@@ -225,7 +225,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
 
             <!-- Hover popup para Empréstimos -->
             <div 
-              v-if="item.label === 'Empréstimos' && loansData?.items?.length" 
+              v-if="item.label === 'Empréstimos' && loansData?.items?.length && !item.children.some(child => route.path === child.to)" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
               <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex flex-col gap-1">
