@@ -4,7 +4,7 @@ import { brl, escHtml } from '../utils/format.js';
 import { Markup } from 'telegraf';
 import { getUpcomingTransactions } from '../utils/upcoming.js';
 import { userApi } from '../utils/api.js';
-import { env } from '../config.js';
+
 import { Icons } from '../ui/icons.js';
 
 export async function showUpcoming(ctx: BotContext) {
@@ -82,8 +82,9 @@ export async function showUpcoming(ctx: BotContext) {
 
       const buttons = [];
       if (tokenStr) {
-        const backendUrl = (env as any).API_URL || env.BACKEND_URL || 'http://localhost:3000/api';
-        const calendarUrl = `${backendUrl.replace('/api', '')}/api/calendar/${tokenStr}.ics`;
+        // Usa o domínio público configurado do MoneyAPP, pois o Telegram rejeita URLs do Docker interno (http://backend:3000)
+        const publicUrl = 'https://money.astralwavelabel.com';
+        const calendarUrl = `${publicUrl}/api/calendar/${tokenStr}.ics`;
         buttons.push([
           Markup.button.url('🍏 Apple Calendar / Outlook', calendarUrl),
           Markup.button.url('📅 Google Agenda', `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl)}`)
