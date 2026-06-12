@@ -48,6 +48,19 @@ const isControleCategory = computed(() => {
   return !!sel && /controle/i.test(sel.name);
 });
 
+const statusOptions = computed(() => {
+  if (type.value === 'income') {
+    return [
+      { value: 'paid', label: 'Entrada / Recebido' },
+      { value: 'pending', label: 'Pendente / Agendado' }
+    ];
+  }
+  return [
+    { value: 'paid', label: 'Pago / Efetivado' },
+    { value: 'pending', label: 'Pendente / Agendado' }
+  ];
+});
+
 // No mobile, despesa nova já inicia em "Controle" para agilizar o lançamento.
 // O comprovante fica para depois (no PC), ao trocar para a categoria definitiva.
 function maybeDefaultControle() {
@@ -222,8 +235,7 @@ function onFileChange(e: Event) {
             v-model="status"
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
           >
-            <option value="paid">Pago / Efetivado</option>
-            <option value="pending">Pendente / Agendado</option>
+            <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </label>
 

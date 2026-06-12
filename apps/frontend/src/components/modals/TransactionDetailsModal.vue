@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import { CheckCircleIcon as CheckCircle2, ClockIcon as Clock, BuildingLibraryIcon as Landmark, CalendarIcon as Calendar, CurrencyDollarIcon as DollarSign, DocumentTextIcon as FileText } from '@heroicons/vue/24/outline';
 import Modal from './Modal.vue';
 import { useAuthStore } from '../../stores/auth';
@@ -45,6 +45,17 @@ const formatDay = (iso: string) => {
   monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
   return `${day}/${monthNum} - ${monthName}`;
 };
+
+const statusLabel = computed(() => {
+  if (!props.transaction) return 'Pendente';
+  if (props.transaction.status === 'paid') {
+    if (props.transaction.type === 'income') {
+      return 'Entrada';
+    }
+    return 'Pago';
+  }
+  return 'Pendente';
+});
 
 
 
@@ -131,7 +142,7 @@ watch(() => props.transaction, async (t) => {
             >
               <CheckCircle2 v-if="transaction.status === 'paid'" class="w-3 h-3" />
               <Clock v-else class="w-3 h-3" />
-              {{ transaction.status === 'paid' ? 'Pago' : 'Pendente' }}
+              {{ statusLabel }}
             </div>
           </div>
         </div>

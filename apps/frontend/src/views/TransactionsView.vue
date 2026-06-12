@@ -117,6 +117,16 @@ const formatDay = (iso: string) => {
   return `${day}/${monthNum} - ${monthName}`;
 };
 
+const getStatusLabel = (r: Transaction) => {
+  if (r.status === 'paid') {
+    if (r.type === 'income') {
+      return 'Entrada';
+    }
+    return 'Pago';
+  }
+  return 'Pendente';
+};
+
 async function toggleStatus(t: Transaction, e: Event) {
   e.stopPropagation();
   
@@ -276,7 +286,7 @@ async function handleDelete(t: Transaction | null) {
                 >
                   <CheckCircle2 v-if="r.status === 'paid'" class="w-2.5 h-2.5" />
                   <Clock v-else class="w-2.5 h-2.5" />
-                  {{ r.status === 'paid' ? 'Pago' : 'Pendente' }}
+                  {{ getStatusLabel(r) }}
                 </button>
                 <Paperclip 
                   v-if="r.hasReceipt"
@@ -306,7 +316,7 @@ async function handleDelete(t: Transaction | null) {
                 >
                   <CheckCircle2 v-if="r.status === 'paid'" class="w-2.5 h-2.5" />
                   <Clock v-else class="w-2.5 h-2.5" />
-                  {{ r.status === 'paid' ? 'Pago' : 'Pendente' }}
+                  {{ getStatusLabel(r) }}
                 </button>
               </div>
             </li>
