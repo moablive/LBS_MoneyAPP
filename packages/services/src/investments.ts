@@ -110,6 +110,22 @@ export const investmentsService = {
     };
   },
 
+  async syncAccountBalance(userId: string, accountId: string) {
+    const allInvs = await this.getByUserId(userId);
+    const accInvs = allInvs.filter(i => i.accountId === accountId);
+    
+    let total = 0;
+    for (const inv of accInvs) {
+      const q = parseFloat(inv.quantity);
+      const p = parseFloat(inv.currentPrice || inv.buyPrice);
+      total += q * p;
+    }
+    
+    await db.update(schema.accounts)
+      .set({ currentBalance: total.toFixed(2) })
+      .where(and(eq(schema.accounts.id, accountId), eq(schema.accounts.userId, userId)));
+  },
+
   async create(userId: string, data: z.infer<typeof investmentSchema>): Promise<Investment> {
     const [inserted] = await db.insert(investments).values({
       userId,
@@ -117,10 +133,20 @@ export const investmentsService = {
       currentPrice: data.currentPrice || data.buyPrice,
     }).returning();
     if (!inserted) throw new Error('Failed to insert investment');
+    
+    if (inserted.accountId) {
+      await this.syncAccountBalance(userId, inserted.accountId);
+    }
+    
     return inserted;
   },
 
   async update(userId: string, id: string, data: z.infer<typeof updateInvestmentSchema>): Promise<Investment | null> {
+    const existing = await db.query.investments.findFirst({
+      where: and(eq(investments.id, id), eq(investments.userId, userId))
+    });
+    if (!existing) return null;
+
     const [updated] = await db.update(investments).set({
       ...data,
       updatedAt: new Date(),
@@ -128,13 +154,28 @@ export const investmentsService = {
     .where(and(eq(investments.id, id), eq(investments.userId, userId)))
     .returning();
     
+    if (existing.accountId) {
+      await this.syncAccountBalance(userId, existing.accountId);
+    }
+    if (updated && updated.accountId && updated.accountId !== existing.accountId) {
+      await this.syncAccountBalance(userId, updated.accountId);
+    }
+    
     return updated || null;
   },
 
   async delete(userId: string, id: string): Promise<boolean> {
+    const existing = await db.query.investments.findFirst({
+      where: and(eq(investments.id, id), eq(investments.userId, userId))
+    });
+    
     const [deleted] = await db.delete(investments)
       .where(and(eq(investments.id, id), eq(investments.userId, userId)))
       .returning();
+      
+    if (deleted && existing?.accountId) {
+      await this.syncAccountBalance(userId, existing.accountId);
+    }
     
     return !!deleted;
   },
@@ -223,6 +264,14 @@ export const investmentsService = {
       accountId: accountId || null,
       investmentId: id
     });
+    
+    // Sync the linked account
+    const existing = await db.query.investments.findFirst({
+      where: and(eq(investments.id, id), eq(investments.userId, userId))
+    });
+    if (existing?.accountId) {
+      await this.syncAccountBalance(userId, existing.accountId);
+    }
   },
 
   async withdraw(userId: string, id: string, amount: number, accountId?: string) {
@@ -247,5 +296,13 @@ export const investmentsService = {
       accountId: accountId || null,
       investmentId: id
     });
+    
+    // Sync the linked account
+    const existing = await db.query.investments.findFirst({
+      where: and(eq(investments.id, id), eq(investments.userId, userId))
+    });
+    if (existing?.accountId) {
+      await this.syncAccountBalance(userId, existing.accountId);
+    }
   }
 };
