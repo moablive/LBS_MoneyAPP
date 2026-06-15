@@ -201,7 +201,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
       return;
     }
 
-    const state = ctx.wizard.state as RegisterState;
+    const state = ctx.wizard.state as RegisterState & { _accounts?: {id: string, name: string}[] };
     state.valor = valor;
 
     const userId = await getDbUserId(ctx.from?.id);
@@ -211,6 +211,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     }
 
     const accounts = await userApi.get<{id: string, name: string}[]>('/accounts', userId);
+    state._accounts = accounts;
     if (accounts.length === 0) {
       await ctx.reply('Você ainda não tem contas cadastradas no MoneyAPP! Crie uma conta no painel web primeiro.');
       return ctx.scene.leave();
@@ -230,12 +231,14 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     const accountId = cq.data;
     await ctx.answerCbQuery();
 
-    const state = ctx.wizard.state as RegisterState;
+    const state = ctx.wizard.state as RegisterState & { _accounts?: {id: string, name: string}[] };
     const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
       await ctx.editMessageText('Seu usuário não está vinculado!');
       return ctx.scene.leave();
     }
+
+    const accountName = state._accounts?.find(a => a.id === accountId)?.name || 'Desconhecida';
 
     try {
       const payload: any = {
@@ -259,7 +262,7 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
 
       const label = state.tipo === 'income' ? 'Receita' : 'Despesa';
       await ctx.editMessageText(
-        `✅ Sucesso!\n\nRegistrado no MoneyAPP:\nTipo: ${label}\nDesc: ${state.desc}\nValor: ${brl(state.valor!)}`,
+        `✅ Sucesso!\n\nRegistrado no MoneyAPP:\nTipo: ${label}\nConta: ${accountName}\nDesc: ${state.desc}\nValor: ${brl(state.valor!)}`,
       );
     } catch (e) {
       console.error(e);

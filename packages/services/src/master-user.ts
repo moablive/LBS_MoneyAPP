@@ -127,7 +127,13 @@ async function ensureDefaultCategories(userId: string): Promise<void> {
     { name: 'TI 🤖', type: 'expense' },
     { name: 'Transporte 🚕', type: 'expense' },
     { name: 'Vestuário 👕', type: 'expense' },
-    { name: 'Viagens 🎒', type: 'expense' }
+    { name: 'Viagens 🎒', type: 'expense' },
+    { name: 'Honorários 💼', type: 'income' },
+    { name: 'Combustível ⛽', type: 'expense' },
+    { name: 'Contabilidade 🧮', type: 'expense' },
+    { name: 'Advogado ⚖️', type: 'expense' },
+    { name: 'Pensão 💸', type: 'expense' },
+    { name: 'Lavagem 🧽', type: 'expense' }
   ] as const;
 
   const PRESET_COLORS = [
