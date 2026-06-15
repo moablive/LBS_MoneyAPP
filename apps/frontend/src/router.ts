@@ -13,6 +13,7 @@ export const router = createRouter({
     { path: '/categorias',  name: 'categories',   component: () => import('./views/CategoriesView.vue') },
     { path: '/cartoes',     name: 'credit_cards', component: () => import('./views/CreditCardsView.vue') },
     { path: '/investimentos', name: 'investments', component: () => import('./views/InvestmentsView.vue') },
+    { path: '/relatorios',  name: 'reports',      component: () => import('./views/ReportsView.vue') },
     { path: '/configuracoes', name: 'settings',   component: () => import('./views/SettingsView.vue') },
     { path: '/share/:token',  name: 'shared_view', component: () => import('./views/SharedView.vue'), meta: { public: true } },
   ],
