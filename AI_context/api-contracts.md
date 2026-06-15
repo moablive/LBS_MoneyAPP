@@ -45,6 +45,7 @@ is the contract — this document is a map, not a duplicate.
 | POST   | `/api/accounts`            | `createAccountSchema`  |
 | PATCH  | `/api/accounts/:id`        | `updateAccountSchema`  |
 | DELETE | `/api/accounts/:id`        | —                      |
+| POST   | `/api/accounts/:id/pay-invoice` | `payInvoiceSchema` |
 
 > `createAccountSchema` / `updateAccountSchema` include `freezeBalance: boolean`
 > (default `false`). `true` = historical account: balance frozen and excluded
