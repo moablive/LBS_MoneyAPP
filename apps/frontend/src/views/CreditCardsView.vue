@@ -3,6 +3,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
+import PayInvoiceModal from '../components/modals/PayInvoiceModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
@@ -11,11 +12,18 @@ import type { Account } from '@moneyapp/models';
 const items = shallowRef<Account[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
+const showPayInvoice = ref(false);
 const editingAccount = ref<Account | null>(null);
+const payingAccount = ref<Account | null>(null);
 
 function editAccount(a: Account) {
   editingAccount.value = a;
   showCreate.value = true;
+}
+
+function payInvoice(a: Account) {
+  payingAccount.value = a;
+  showPayInvoice.value = true;
 }
 
 async function reload() {
@@ -122,16 +130,26 @@ const totalLimit = computed(() =>
               </div>
             </div>
           </div>
-          <button
-            class="opacity-0 group-hover:opacity-100 transition-opacity
-                   text-muted hover:text-expense p-1.5 rounded-lg shrink-0"
-            title="Remover"
-            @click.stop="remove(a.id)"
-          >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              class="text-accent hover:text-accent/80 p-1.5 rounded-lg shrink-0"
+              title="Pagar Fatura"
+              @click.stop="payInvoice(a)"
+            >
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            <button
+              class="text-muted hover:text-expense p-1.5 rounded-lg shrink-0"
+              title="Remover"
+              @click.stop="remove(a.id)"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </article>
       </section>
     </div>
@@ -141,6 +159,13 @@ const totalLimit = computed(() =>
       :account="editingAccount"
       @update:open="val => { if (!val) editingAccount = null; }"
       @created="reload"
+    />
+
+    <PayInvoiceModal
+      v-model:open="showPayInvoice"
+      :creditCard="payingAccount"
+      @update:open="val => { if (!val) payingAccount = null; }"
+      @paid="reload"
     />
   </AppShell>
 </template>

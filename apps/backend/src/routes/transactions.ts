@@ -254,7 +254,7 @@ transactionsRouter.get('/:id/receipt', async (req, res, next) => {
 });
 
 // ---------- helpers ----------------------------------------------------------
-function applyBalanceDelta(
+export function applyBalanceDelta(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   userId: string,
   accountId: string,

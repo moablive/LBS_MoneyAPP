@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { and, asc, eq } from 'drizzle-orm';
-import { createAccountSchema, updateAccountSchema } from '@moneyapp/models';
+import { createAccountSchema, updateAccountSchema, payInvoiceSchema } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
-const { accounts } = schema;
+const { accounts, transactions } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { applyBalanceDelta } from './transactions.js';
 
 export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
@@ -91,6 +92,61 @@ accountsRouter.delete('/:id', async (req, res, next) => {
       return;
     }
     res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- pay-invoice ------------------------------------------------------
+accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, res, next) => {
+  try {
+    const userId = req.user!.id;
+    const creditCardId = req.params.id!;
+    const body = req.body as import('@moneyapp/models').PayInvoiceInput;
+
+    const result = await db.transaction(async (tx) => {
+      // 1. Transaction on the credit card (Income to reduce debt)
+      const [ccTx] = await tx
+        .insert(transactions)
+        .values({
+          userId,
+          description: body.description,
+          amount: body.amount.toFixed(2), // income is positive
+          type: 'income',
+          status: 'paid',
+          occurredAt: new Date(body.date),
+          categoryId: body.categoryId,
+          accountId: creditCardId,
+        })
+        .returning();
+
+      // Math.abs the delta as handled by credit cards, but here it's an income so it's already positive.
+      await applyBalanceDelta(tx, userId, creditCardId, ccTx!.amount);
+
+      let sourceTx = null;
+      // 2. If source account exists, transaction on source account (Expense)
+      if (body.sourceAccountId && body.sourceAccountId !== creditCardId) {
+        [sourceTx] = await tx
+          .insert(transactions)
+          .values({
+            userId,
+            description: body.description,
+            amount: (-Math.abs(body.amount)).toFixed(2), // expense is negative
+            type: 'expense',
+            status: 'paid',
+            occurredAt: new Date(body.date),
+            categoryId: body.categoryId,
+            accountId: body.sourceAccountId,
+          })
+          .returning();
+
+        await applyBalanceDelta(tx, userId, body.sourceAccountId, sourceTx!.amount);
+      }
+
+      return { ccTx, sourceTx };
+    });
+
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

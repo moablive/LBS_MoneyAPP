@@ -41,3 +41,12 @@ export interface Account {
   dueDay?: string | null;
   createdAt?: string;
 }
+
+export const payInvoiceSchema = z.object({
+  amount: z.number().finite().positive(),
+  sourceAccountId: z.string().uuid().nullable(),
+  categoryId: z.string().uuid(),
+  date: z.string().datetime(),
+  description: z.string().trim().min(1).max(255).default('Pagamento de Fatura'),
+});
+export type PayInvoiceInput = z.infer<typeof payInvoiceSchema>;
