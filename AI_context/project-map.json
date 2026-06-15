@@ -23,7 +23,7 @@
     "apps/frontend": {
       "stack": ["Vue 3 <script setup>", "Vite", "Pinia", "TailwindCSS", "VitePWA"],
       "entry": "src/main.ts",
-      "routes": ["/login", "/", "/transacoes", "/recorrentes", "/emprestimos/:type", "/contas", "/categorias", "/cartoes", "/investimentos", "/configuracoes", "/share/:token"]
+      "routes": ["/login", "/", "/transacoes", "/recorrentes", "/emprestimos/:type", "/contas", "/categorias", "/cartoes", "/investimentos", "/relatorios", "/configuracoes", "/share/:token"]
     },
     "apps/backend": {
       "stack": ["Express", "TypeScript", "Drizzle ORM", "node-postgres", "JWT", "argon2", "Zod"],
