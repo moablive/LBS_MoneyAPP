@@ -227,7 +227,20 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
   // Passo 4 — Recebe a conta e pergunta a data
   async (ctx) => {
     const cq = ctx.callbackQuery;
-    if (!cq || !('data' in cq)) return;
+    
+    if (cq && 'data' in cq && cq.data === 'cancel_wizard') {
+      await ctx.answerCbQuery();
+      await ctx.editMessageText('Operação cancelada.');
+      await sendMainMenu(ctx);
+      return ctx.scene.leave();
+    }
+
+    if (!cq || !('data' in cq)) {
+      if (ctx.message && 'text' in ctx.message) {
+        await ctx.reply('Por favor, clique em um dos botões de CONTA acima.');
+      }
+      return;
+    }
     const accountId = cq.data;
     await ctx.answerCbQuery();
 
@@ -256,11 +269,15 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
 
     const cq = ctx.callbackQuery;
     if (cq && 'data' in cq) {
+      if (cq.data === 'cancel_wizard') {
+        await ctx.answerCbQuery();
+        await ctx.editMessageText('Operação cancelada.');
+        await sendMainMenu(ctx);
+        return ctx.scene.leave();
+      }
       await ctx.answerCbQuery();
       if (cq.data === 'date_yesterday') {
         occurredAt.setDate(occurredAt.getDate() - 1);
-      } else if (cq.data === 'cancel_wizard') {
-        return; // handle by general action
       }
     } else {
       const message = ctx.message;
