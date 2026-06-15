@@ -224,21 +224,78 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
     return ctx.wizard.next();
   },
 
-  // Passo 4 — Recebe a conta e salva
+  // Passo 4 — Recebe a conta e pergunta a data
   async (ctx) => {
     const cq = ctx.callbackQuery;
     if (!cq || !('data' in cq)) return;
     const accountId = cq.data;
     await ctx.answerCbQuery();
 
-    const state = ctx.wizard.state as RegisterState & { _accounts?: {id: string, name: string}[] };
+    const state = ctx.wizard.state as RegisterState & { _accounts?: {id: string, name: string}[], accountId?: string };
+    state.accountId = accountId;
+
+    await ctx.editMessageText('Qual a data da transação?', {
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('Hoje', 'date_today')],
+        [Markup.button.callback('Ontem', 'date_yesterday')],
+        [Markup.button.callback('❌ Cancelar', 'cancel_wizard')]
+      ]).reply_markup
+    });
+    
+    await ctx.reply('Você também pode digitar no formato DD/MM (ex: 15/04).', {
+      reply_markup: Markup.inlineKeyboard([[Markup.button.callback('❌ Cancelar', 'cancel_wizard')]]).reply_markup
+    });
+    
+    return ctx.wizard.next();
+  },
+
+  // Passo 5 - Recebe a data e salva
+  async (ctx) => {
+    const state = ctx.wizard.state as RegisterState & { _accounts?: {id: string, name: string}[], accountId?: string };
+    let occurredAt = new Date();
+
+    const cq = ctx.callbackQuery;
+    if (cq && 'data' in cq) {
+      await ctx.answerCbQuery();
+      if (cq.data === 'date_yesterday') {
+        occurredAt.setDate(occurredAt.getDate() - 1);
+      } else if (cq.data === 'cancel_wizard') {
+        return; // handle by general action
+      }
+    } else {
+      const message = ctx.message;
+      if (!message || !('text' in message)) return;
+      const text = message.text.trim();
+      if (text.startsWith('/')) return;
+      
+      const match = text.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if (!match) {
+        await ctx.reply('Formato inválido. Digite DD/MM (ex: 15/04) ou clique num dos botões acima:', {
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('Hoje', 'date_today')],
+            [Markup.button.callback('Ontem', 'date_yesterday')],
+            [Markup.button.callback('❌ Cancelar', 'cancel_wizard')]
+          ]).reply_markup
+        });
+        return;
+      }
+      const day = parseInt(match[1]!, 10);
+      const month = parseInt(match[2]!, 10) - 1;
+      occurredAt.setMonth(month);
+      occurredAt.setDate(day);
+    }
+
     const userId = await getDbUserId(ctx.from?.id);
     if (!userId) {
-      await ctx.editMessageText('Seu usuário não está vinculado!');
+      if (cq) {
+        await ctx.editMessageText('Seu usuário não está vinculado!');
+      } else {
+        await ctx.reply('Seu usuário não está vinculado!');
+      }
       return ctx.scene.leave();
     }
 
-    const accountName = state._accounts?.find(a => a.id === accountId)?.name || 'Desconhecida';
+    const accountName = state._accounts?.find(a => a.id === state.accountId)?.name || 'Desconhecida';
 
     try {
       const payload: any = {
@@ -246,8 +303,8 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
         amount: state.tipo === 'expense' ? -state.valor! : state.valor!,
         type: state.tipo,
         categoryId: state.categoryId,
-        accountId: accountId,
-        occurredAt: new Date().toISOString(),
+        accountId: state.accountId,
+        occurredAt: occurredAt.toISOString(),
         status: 'paid',
       };
       
@@ -261,12 +318,21 @@ export const registerScene = new Scenes.WizardScene<BotContext>(
       await userApi.post('/transactions', userId, payload);
 
       const label = state.tipo === 'income' ? 'Receita' : 'Despesa';
-      await ctx.editMessageText(
-        `✅ Sucesso!\n\nRegistrado no MoneyAPP:\nTipo: ${label}\nConta: ${accountName}\nDesc: ${state.desc}\nValor: ${brl(state.valor!)}`,
-      );
+      const formattedDate = occurredAt.toLocaleDateString('pt-BR');
+      const successMsg = `✅ Sucesso!\n\nRegistrado no MoneyAPP:\nTipo: ${label}\nConta: ${accountName}\nData: ${formattedDate}\nDesc: ${state.desc}\nValor: ${brl(state.valor!)}`;
+
+      if (cq) {
+        await ctx.editMessageText(successMsg);
+      } else {
+        await ctx.reply(successMsg);
+      }
     } catch (e) {
       console.error(e);
-      await ctx.editMessageText('Ocorreu um erro ao registrar a transação.');
+      if (cq) {
+        await ctx.editMessageText('Ocorreu um erro ao registrar a transação.');
+      } else {
+        await ctx.reply('Ocorreu um erro ao registrar a transação.');
+      }
     }
     
     await sendMainMenu(ctx);
