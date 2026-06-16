@@ -161,17 +161,7 @@ moneyapp/
 │   │   │   └── server.ts          # HTTP server entrypoint
 │   │   └── Dockerfile
 │   │
-│   └── 📂 bot/                   # Bot do Telegram (telegraf + @moneyapp/db)
-│       ├── 📂 src/
-│       │   ├── index.ts          # bootstrap: middleware, scenes e rotas
-│       │   ├── config.ts         # env validado com zod
-│       │   ├── auth.ts           # middleware: valida usuário no banco
-│       │   ├── context.ts        # Tipagem estendida do Telegraf
-│       │   ├── 📂 ui/            # Telas do bot, cenas (wizards) e ícones globais
-│       │   ├── 📂 handlers/      # Controladores de ações principais (/start, etc)
-│       │   ├── 📂 cron/          # Trabalhos agendados (notificações)
-│       │   └── 📂 utils/         # Funções utilitárias e geração de gráficos
-│       └── Dockerfile
+│   └── 📂 bot/  → extraído para repositório próprio (github.com/moablive/MoneyAPP_BOT)
 │
 ├── 📂 packages/
 │   ├── 📂 api-client/            # Cliente HTTP e fetch wrappers
@@ -180,7 +170,7 @@ moneyapp/
 │   └── 📂 services/              # Serviços core (auth, configs, criptografia)
 │
 ├── 📂 AI_context/                # Documentação para agentes de IA
-├── docker-compose.yml            # 3 serviços (backend + frontend + bot)
+├── docker-compose.yml            # 2 serviços (backend + frontend)
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
 ```
@@ -193,20 +183,16 @@ flowchart LR
     PWA["🖥️ Vue 3 PWA<br/>Vite + Pinia + Tailwind"]
   end
 
-  TG["✈️ Telegram API"]
 
   subgraph awl_network["🐳 Docker · awl_network"]
     NGINX["nginx<br/>moneyapp_frontend:80"]
     API["Express + Drizzle<br/>moneyapp_backend:3000"]
-    BOT["telegraf<br/>moneyapp_bot"]
     PG["PostgreSQL<br/>awlsrvDB_postgres:5432<br/>database 'moneyapp'"]
   end
 
   PWA -- "HTTPS" --> NGINX
   NGINX -- "/api/*" --> API
   API -- "pg" --> PG
-  TG <-- "long polling" --> BOT
-  BOT -- "pg" --> PG
 ```
 
 > [!NOTE]
@@ -340,36 +326,13 @@ Para **forçar o reset de uma senha perdida** via infraestrutura, o administrado
 
 ---
 
-## 🤖 Telegram Bot (`apps/bot`)
+## 🤖 Telegram Bot
 
 🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
 
-Companheiro do MoneyAPP no Telegram — registra transações e gera relatórios direto pelo chat. **Porte em Node/TypeScript** do antigo bot em Python, agora **dentro do monorepo** reaproveitando o pacote `@moneyapp/db` (mesmo schema Drizzle e mesma conexão Postgres do backend). Não tem banco próprio: conecta no mesmo PostgreSQL via `awl_network`.
+O bot do Telegram foi **extraído para o seu próprio repositório**: **[moablive/MoneyAPP_BOT](https://github.com/moablive/MoneyAPP_BOT)** (deploy standalone em `server/telegram-bots/MoneyAPP_BOT`, no padrão dos demais bots do servidor).
 
-> [!NOTE]
-> Como está no monorepo, as queries diretas do bot usam o schema **tipado** de `@moneyapp/db`. Para relatórios e dados agregados complexos (como Empréstimos), o bot consome a própria API via `@moneyapp/api-client`. O design visual das mensagens do bot é centralizado em `ui/icons.ts` para garantir consistência.
-
-**Stack:** `telegraf` (wizard scenes) · `@moneyapp/db` + `@moneyapp/api-client` · `sharp` (gráfico de pizza SVG→PNG) · `zod` (validação de env).
-
-**Comandos:** `/login` (fluxo interativo para autenticar no banco passo a passo) · `/start` · `/registrar` · `/relatorios` · `/cancelar` — além dos botões do menu (incluindo acesso rápido via WebApp ao Dashboard e Cartões).
-
-**Variáveis de ambiente** (no `.env` único da raiz, junto com o backend):
-
-| Var | Descrição |
-| --- | --------- |
-| `TELEGRAM_BOT_TOKEN` | Token do bot (via BotFather) |
-| `ALLOWED_USER_ID` | *(Opcional)* Telegram user ID restrito antigamente |
-| `USER_EMAIL` | *(Opcional)* E-mail padrão herdado do backend |
-| `DATABASE_URL` | Reaproveitado da config do backend |
-
-```bash
-# Produção — sobe junto com backend/frontend
-docker compose up -d --build bot
-
-# Dev no host — Postgres publicado em localhost:9432
-DATABASE_URL='postgres://admin_root:...@localhost:9432/moneyapp' \
-  pnpm --filter @moneyapp/bot dev
-```
+Ele é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Stack, variáveis de ambiente e deploy estão documentados no README daquele repositório.
 
 ---
 
@@ -423,7 +386,7 @@ pnpm dev                  # backend :3000 + frontend :5173
 
 ## 🐳 Deploy com Docker
 
-O projeto roda como **3 containers** conectados a um PostgreSQL externo na rede `awl_network`.
+O projeto roda como **2 containers** conectados a um PostgreSQL externo na rede `awl_network`.
 
 ```bash
 # Garanta que a rede Docker existe
@@ -437,7 +400,6 @@ docker compose --env-file .env up -d --build
 | --------- | ---- | ----- | ------ |
 | `moneyapp_backend` | Node 20 | `3000` (interno) | API REST + healthcheck (migrations via `pnpm db:migrate`, não no boot) |
 | `moneyapp_frontend` | nginx | `80` (interno) | Static assets + reverse proxy `/api/` → backend |
-| `moneyapp_bot` | Node 20 | — | Bot do Telegram (telegraf) — long polling p/ Telegram + Postgres via `awl_network` |
 
 > [!IMPORTANT]
 > **Ingress em produção**: O tráfego chega via **Cloudflare Tunnel** diretamente ao `moneyapp_frontend:80` dentro da `awl_network`. Nenhuma porta é exposta ao host.

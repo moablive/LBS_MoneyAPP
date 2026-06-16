@@ -53,22 +53,6 @@ services:
     #   - "8088:80"
     restart: unless-stopped
 
-  # Telegram bot — porte Node de MoneyAPP-Telegram-Bot. Reaproveita @moneyapp/db.
-  # Fala com o Telegram (saída) e com o awlsrvDB_postgres pela rede awl_network.
-  bot:
-    build:
-      context: .
-      dockerfile: apps/bot/Dockerfile
-    container_name: moneyapp_bot
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      BACKEND_URL: http://backend:3000/api
-    networks:
-      - awl_network
-    restart: unless-stopped
-
 networks:
   # External — already exists on the host alongside `awlsrvDB_postgres`.
   # NOTE: the brief mentioned `awlsrv_network`, but the real network name on
