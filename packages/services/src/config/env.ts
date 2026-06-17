@@ -22,7 +22,7 @@ const envSchema = z.object({
     .optional(),
   MASTER_USER_NAME: z.string().trim().min(1).max(120).default('Master'),
   MASTER_USER_PASSWORD: z.string().min(10).max(128).optional(),
-}).passthrough(); // Allow other MASTER_USER_N keys to pass through for dynamic discovery
+});
 
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

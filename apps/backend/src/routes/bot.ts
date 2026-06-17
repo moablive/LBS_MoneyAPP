@@ -46,6 +46,47 @@ botRouter.get('/users/all', async (_req, res, next) => {
   }
 });
 
+// 1.6. Convidar usuário
+botRouter.post('/invite', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ error: 'missing_email' });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    const existing = await db.query.users.findFirst({ where: eq(schema.users.email, emailLower) });
+    if (existing) {
+      res.status(400).json({ error: 'user_already_exists' });
+      return;
+    }
+
+    const crypto = await import('node:crypto');
+    const temporaryPassword = crypto.randomBytes(6).toString('hex');
+    const passwordHash = await argon2.hash(temporaryPassword);
+    
+    const name = emailLower.split('@')[0];
+
+    await db.insert(schema.users).values({
+      email: emailLower,
+      name,
+      passwordHash,
+      defaultPassword: true,
+    });
+
+    res.json({
+      success: true,
+      email: emailLower,
+      temporaryPassword,
+      telegramLink: 'https://t.me/awl_money_bot'
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // 2. Fazer login do usuário pelo bot (valida email e senha e vincula o telegramId)
 botRouter.post('/login', async (req, res, next) => {
   try {

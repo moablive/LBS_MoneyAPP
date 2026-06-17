@@ -89,3 +89,76 @@ usersRouter.post('/me/calendar-token', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+usersRouter.post('/invite', requireAuth, async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ error: 'missing_email' });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    const existing = await db.query.users.findFirst({ where: eq(schema.users.email, emailLower) });
+    if (existing) {
+      res.status(400).json({ error: 'user_already_exists' });
+      return;
+    }
+
+    const temporaryPassword = crypto.randomBytes(6).toString('hex');
+    const passwordHash = await hashPassword(temporaryPassword);
+    
+    const name = emailLower.split('@')[0];
+
+    await db.insert(schema.users).values({
+      email: emailLower,
+      name,
+      passwordHash,
+      defaultPassword: true,
+    });
+
+    res.json({
+      success: true,
+      email: emailLower,
+      temporaryPassword,
+      telegramLink: 'https://t.me/awl_money_bot'
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+usersRouter.post('/reset-password', requireAuth, async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ error: 'missing_email' });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    const existing = await db.query.users.findFirst({ where: eq(schema.users.email, emailLower) });
+    if (!existing) {
+      res.status(404).json({ error: 'user_not_found' });
+      return;
+    }
+
+    const temporaryPassword = crypto.randomBytes(6).toString('hex');
+    const passwordHash = await hashPassword(temporaryPassword);
+
+    await db.update(schema.users)
+      .set({ passwordHash, defaultPassword: true, updatedAt: new Date() })
+      .where(eq(schema.users.id, existing.id));
+
+    res.json({
+      success: true,
+      email: emailLower,
+      temporaryPassword,
+      telegramLink: 'https://t.me/awl_money_bot'
+    });
+  } catch (err) {
+    next(err);
+  }
+});

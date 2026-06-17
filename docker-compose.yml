@@ -12,20 +12,22 @@
 # =============================================================================
 
 services:
-  backend:
+  app_moneyapp_backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    container_name: moneyapp_backend
+    container_name: app_moneyapp_backend
     env_file:
-      - .env
+    - .env
     environment:
       NODE_ENV: production
       PORT: 3000
     networks:
-      - awl_network
+      awl_network:
+        aliases:
+        - moneyapp_backend
     expose:
-      - "3000"
+    - "3000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -34,23 +36,20 @@ services:
       retries: 3
       start_period: 20s
 
-  frontend:
+  app_moneyapp_frontend:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
         VITE_API_BASE_URL: /api
-    container_name: moneyapp_frontend
+    container_name: app_moneyapp_frontend
     depends_on:
-      backend:
+      app_moneyapp_backend:
         condition: service_healthy
     networks:
-      - awl_network
-    # No host port binding — production ingress goes through the Cloudflare
-    # Tunnel container on `awl_network` directly to `moneyapp_frontend:80`.
-    # For local debugging, uncomment the next two lines (pick a free port):
-    # ports:
-    #   - "8088:80"
+      awl_network:
+        aliases:
+        - moneyapp_frontend
     restart: unless-stopped
 
 networks:

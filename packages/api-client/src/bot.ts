@@ -27,6 +27,19 @@ export const botApi = {
     return await res.json();
   },
 
+  inviteUser: async (email: string): Promise<{ success: boolean; email: string; temporaryPassword: string; telegramLink: string }> => {
+    const res = await fetch(`${apiOptions.baseUrl}/bot/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiOptions.getToken() || ''}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
+    return await res.json();
+  },
+
   login: async (email: string, password: string, telegramId: string): Promise<{ id: string } | null> => {
     try {
       const res = await fetch(`${apiOptions.baseUrl}/bot/login`, {

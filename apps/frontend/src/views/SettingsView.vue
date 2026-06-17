@@ -105,6 +105,58 @@ async function save() {
   }
 }
 
+// --- Gestão de Usuários ---
+const userAction = ref<'invite' | 'reset' | null>(null);
+const userEmail = ref('');
+const userActionLoading = ref(false);
+const userActionResult = ref<string | null>(null);
+const userActionError = ref<string | null>(null);
+
+async function submitUserAction() {
+  if (!userEmail.value) return;
+  userActionLoading.value = true;
+  userActionResult.value = null;
+  userActionError.value = null;
+
+  try {
+    const endpoint = userAction.value === 'invite' ? '/users/invite' : '/users/reset-password';
+    const res = await api.post<{ email: string; temporaryPassword: string; telegramLink: string }>(endpoint, { email: userEmail.value });
+    
+    userActionResult.value = `Seu acesso ao MoneyAPP foi liberado!\nAcesse: ${window.location.origin}\nLogin: ${res.email}\nSenha temporária: ${res.temporaryPassword}\n\nNo seu primeiro acesso, o sistema exigirá a criação de uma senha definitiva.\nApós criar sua nova senha, você poderá se conectar ao nosso assistente no Telegram clicando aqui: ${res.telegramLink}`;
+  } catch (err: any) {
+    userActionError.value = err.message || 'Ocorreu um erro na solicitação. Verifique se o e-mail está correto.';
+  } finally {
+    userActionLoading.value = false;
+  }
+}
+
+const copyActionResult = async () => {
+  if (!userActionResult.value) return;
+  try {
+    await navigator.clipboard.writeText(userActionResult.value);
+    message.value = 'Mensagem copiada!';
+    setTimeout(() => { message.value = '' }, 3000);
+  } catch {
+    message.value = 'Erro ao copiar.';
+  }
+};
+
+const canShare = computed(() => !!navigator.share);
+
+const shareActionResult = async () => {
+  if (!userActionResult.value || !navigator.share) return;
+  try {
+    await navigator.share({
+      title: 'Acesso MoneyAPP',
+      text: userActionResult.value,
+    });
+  } catch (err: any) {
+    if (err.name !== 'AbortError') {
+      message.value = 'Erro ao compartilhar.';
+    }
+  }
+};
+
 function logout() {
   auth.logout();
   router.push('/login');
@@ -229,6 +281,86 @@ function logout() {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-8.31l-4.28 4.28"/></svg>
             {{ generatingToken ? 'Gerando...' : 'Gerar Link de Sincronização' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção de Gestão de Usuários -->
+    <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
+      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Gestão de Usuários</h2>
+      
+      <div v-if="!userAction" class="flex gap-3">
+        <button @click="userAction = 'invite'" class="px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors">
+          Convidar Pessoas
+        </button>
+        <button @click="userAction = 'reset'" class="px-4 py-2 bg-surface-overlay border border-surface-border hover:bg-surface-border text-white rounded-xl font-medium transition-colors">
+          Resetar Senha
+        </button>
+      </div>
+
+      <div v-else class="space-y-4">
+        <h3 class="text-slate-100 font-medium">{{ userAction === 'invite' ? 'Convidar Novo Usuário' : 'Resetar Senha de Usuário' }}</h3>
+        <p class="text-sm text-muted">
+          {{ userAction === 'invite' ? 'Informe o e-mail da pessoa que deseja convidar. Uma senha temporária será gerada.' : 'Informe o e-mail do usuário existente para gerar uma nova senha temporária.' }}
+        </p>
+
+        <form @submit.prevent="submitUserAction" class="flex flex-col sm:flex-row gap-3 mt-3">
+          <input 
+            v-model="userEmail" 
+            type="email" 
+            required 
+            placeholder="E-mail do usuário"
+            class="flex-1 bg-surface-overlay border border-surface-border rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accent"
+          />
+          <div class="flex gap-2">
+            <button 
+              type="submit" 
+              :disabled="userActionLoading" 
+              class="flex-1 sm:flex-none px-5 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+            >
+              {{ userActionLoading ? 'Gerando...' : 'Gerar' }}
+            </button>
+            <button 
+              type="button" 
+              @click="userAction = null; userEmail = ''; userActionResult = null; userActionError = null" 
+              class="flex-1 sm:flex-none px-4 py-2 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+
+        <p v-if="userActionError" class="text-sm text-red-400 mt-2">{{ userActionError }}</p>
+
+        <div v-if="userActionResult" class="mt-4">
+          <p class="text-sm font-medium text-emerald-400 mb-2">Sucesso! Copie a mensagem abaixo:</p>
+          <div class="relative">
+            <textarea 
+              readonly 
+              :value="userActionResult" 
+              rows="6"
+              class="w-full bg-surface-overlay/50 border border-emerald-500/30 rounded-xl px-4 py-3 text-xs font-mono text-slate-300 resize-none focus:outline-none pr-32"
+            ></textarea>
+            <div class="absolute top-2 right-2 flex flex-col gap-2">
+              <button 
+                v-if="canShare"
+                @click="shareActionResult"
+                type="button"
+                class="px-3 py-1.5 bg-surface-base hover:bg-surface-border border border-surface-border text-xs text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                Compartilhar
+              </button>
+              <button 
+                @click="copyActionResult"
+                type="button"
+                class="px-3 py-1.5 bg-surface-base hover:bg-surface-border border border-surface-border text-xs text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copiar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
