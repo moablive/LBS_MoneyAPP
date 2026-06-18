@@ -122,16 +122,24 @@ const typeLabels: Record<AccountType, string> = {
               {{ brl(a.currentBalance) }}
             </div>
           </div>
-          <button
-            class="opacity-0 group-hover:opacity-100 transition-opacity
-                   text-muted hover:text-expense p-1.5 rounded-lg shrink-0"
-            title="Remover"
-            @click.stop="remove(a.id)"
-          >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="flex items-center gap-2 opacity-0 group-[.hover]:opacity-100 group-hover:opacity-100 transition-opacity">
+            <button
+              class="bg-accent/15 text-accent hover:bg-accent hover:text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg transition-colors"
+              title="Modificar"
+              @click.stop="editAccount(a)"
+            >
+              Modificar
+            </button>
+            <button
+              class="text-muted hover:text-expense p-1.5 rounded-lg shrink-0"
+              title="Remover"
+              @click.stop="remove(a.id)"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </article>
       </section>
     </div>

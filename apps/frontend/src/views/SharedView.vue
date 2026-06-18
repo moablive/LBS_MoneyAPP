@@ -89,6 +89,11 @@ const formatDay = (iso: string) => {
   return `${day}/${monthNum} - ${monthName}`;
 };
 
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+};
+
 </script>
 
 <template>
@@ -167,6 +172,7 @@ const formatDay = (iso: string) => {
                 <div class="flex flex-col min-w-0">
                   <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
                   <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs text-muted">{{ formatTime(r.occurredAt) }}</span>
                     <div v-if="(r as any).category" class="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-surface-overlay border border-surface-border">
                       <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: (r as any).category.color || '#666' }"></div>
                       <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ (r as any).category.name }}</span>

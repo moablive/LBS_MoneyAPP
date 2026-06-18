@@ -177,12 +177,19 @@ function openEditModal(item: LoanItem) {
               {{ brl(list.reduce((acc, r) => acc + Number(r.amount), 0)) }}
             </span>
           </div>
+          <div class="hidden sm:grid grid-cols-[3fr_1.5fr_1fr_0.5fr_1fr] gap-4 px-4 py-2 bg-surface-base border-b border-surface-border text-[10px] font-bold text-muted uppercase tracking-wider">
+            <div>Descrição</div>
+            <div>Conta</div>
+            <div>Status</div>
+            <div class="text-center">Comprovante</div>
+            <div class="text-right">Valor</div>
+          </div>
           <ul class="divide-y divide-surface-border/30">
             <li
               v-for="item in list"
               :key="item.id"
               v-memo="[item.id, item.status, item.amount, item.description]"
-              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1fr_0.5fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
               <!-- Left: Icon & Description -->
@@ -203,14 +210,18 @@ function openEditModal(item: LoanItem) {
                 </div>
               </div>
               
-              <!-- Center: Status & Receipt -->
-              <div class="hidden sm:flex items-center justify-start gap-3 min-w-0">
+              <!-- Center: Status -->
+              <div class="hidden sm:flex items-center justify-start min-w-0">
                 <div 
                   class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[60px] shrink-0"
                   :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-surface-overlay text-muted border border-surface-border'"
                 >
                   {{ item.status === 'paid' ? 'Pago' : 'Aberto' }}
                 </div>
+              </div>
+
+              <!-- Center: Doc -->
+              <div class="hidden sm:flex items-center justify-center min-w-0">
                 <Paperclip
                   v-if="item.hasReceipt"
                   class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 

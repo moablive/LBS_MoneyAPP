@@ -119,6 +119,11 @@ const formatDay = (iso: string) => {
   return `${day}/${monthNum} - ${monthName}`;
 };
 
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+};
+
 const getStatusLabel = (r: Transaction) => {
   if (r.status === 'paid') {
     if (r.type === 'income') {
@@ -249,16 +254,25 @@ async function handleDelete(t: Transaction | null) {
               {{ brl(list.reduce((acc, r) => acc + Number(r.amount), 0)) }}
             </span>
           </div>
+          <div class="hidden sm:grid grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr] gap-4 px-4 py-2 bg-surface-base border-b border-surface-border text-[10px] font-bold text-muted uppercase tracking-wider">
+            <div>Banco</div>
+            <div>Descrição</div>
+            <div class="text-center">Comprovante</div>
+            <div>Horário</div>
+            <div>Categoria</div>
+            <div>Status</div>
+            <div class="text-right">Valor</div>
+          </div>
           <ul class="divide-y divide-surface-border/30">
             <li
               v-for="r in list"
               :key="r.id"
               v-memo="[r.id, r.status, selectedRow?.id === r.id]"
               @click="selectedRow = r"
-              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
             >
-              <!-- Left: Account Icon & Description -->
-              <div class="flex items-center justify-start gap-3 min-w-0">
+              <!-- Mobile Left: Icon & Description -->
+              <div class="flex sm:hidden items-center justify-start gap-3 min-w-0">
                 <div v-if="r.accountId && accountsMap.get(r.accountId)" 
                      class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-white/80 shrink-0">
                   <img v-if="accountsMap.get(r.accountId)?.customIconUrl" :src="accountsMap.get(r.accountId)?.customIconUrl ?? undefined" class="w-5 h-5 rounded-md object-contain" />
@@ -268,10 +282,45 @@ async function handleDelete(t: Transaction | null) {
                   <Landmark class="w-4 h-4" />
                 </div>
                 
+                <div class="flex flex-col min-w-0">
+                  <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
+                  <span class="text-xs text-muted sm:hidden">{{ formatTime(r.occurredAt) }}</span>
+                </div>
+              </div>
+
+              <!-- Desktop Col 1: Banco (Icon + Name) -->
+              <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
+                <div v-if="r.accountId && accountsMap.get(r.accountId)" 
+                     class="flex items-center justify-center w-6 h-6 rounded bg-surface-base border border-surface-border text-white/80 shrink-0">
+                  <img v-if="accountsMap.get(r.accountId)?.customIconUrl" :src="accountsMap.get(r.accountId)?.customIconUrl ?? undefined" class="w-4 h-4 rounded-sm object-contain" />
+                  <Landmark v-else class="w-3 h-3 text-accent" />
+                </div>
+                <div v-else class="flex items-center justify-center w-6 h-6 rounded bg-surface-base border border-surface-border text-muted shrink-0">
+                  <Landmark class="w-3 h-3" />
+                </div>
+                <span class="text-[10px] font-semibold uppercase text-muted tracking-wide truncate">{{ r.accountId && accountsMap.get(r.accountId) ? accountsMap.get(r.accountId)?.name : 'N/A' }}</span>
+              </div>
+
+              <!-- Desktop Col 2: Descrição -->
+              <div class="hidden sm:flex items-center justify-start min-w-0">
                 <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
               </div>
               
-              <!-- Center: Tags (Category) -->
+              <!-- Desktop Col 3: Comprovante -->
+              <div class="hidden sm:flex items-center justify-center min-w-0">
+                <Paperclip 
+                  v-if="r.hasReceipt"
+                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
+                  title="Comprovante Anexado"
+                />
+              </div>
+
+              <!-- Desktop Col 4: Horário -->
+              <div class="hidden sm:flex items-center justify-start min-w-0">
+                <span class="text-xs font-semibold text-muted tracking-wide truncate">{{ formatTime(r.occurredAt) }}</span>
+              </div>
+
+              <!-- Desktop Col 5: Categoria -->
               <div class="hidden sm:flex items-center justify-start min-w-0">
                 <div v-if="r.categoryId && categoriesMap.get(r.categoryId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
                   <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: categoriesMap.get(r.categoryId)?.color || '#666' }"></div>
@@ -279,16 +328,8 @@ async function handleDelete(t: Transaction | null) {
                 </div>
               </div>
 
-              <!-- Center: Account Name -->
+              <!-- Desktop Col 6: Status -->
               <div class="hidden sm:flex items-center justify-start min-w-0">
-                <div v-if="r.accountId && accountsMap.get(r.accountId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
-                  <Landmark class="w-2.5 h-2.5 text-muted shrink-0" />
-                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ accountsMap.get(r.accountId)?.name }}</span>
-                </div>
-              </div>
-              
-              <!-- Right: Status & Receipt -->
-              <div class="hidden sm:flex items-center justify-start gap-3 min-w-0">
                 <button 
                   @click="(e) => toggleStatus(r, e)"
                   class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md hover:opacity-80 transition-opacity w-[72px] shrink-0"
@@ -298,13 +339,9 @@ async function handleDelete(t: Transaction | null) {
                   <Clock v-else class="w-2.5 h-2.5" />
                   {{ getStatusLabel(r) }}
                 </button>
-                <Paperclip 
-                  v-if="r.hasReceipt"
-                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
-                  title="Comprovante Anexado"
-                />
               </div>
 
+              <!-- Desktop Col 7: Valor -->
               <div
                 class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate"
                 :class="r.type === 'expense' ? 'text-expense' : 'text-income'"

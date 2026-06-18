@@ -154,12 +154,21 @@ async function toggleStatus(item: SubscriptionItem) {
           <p class="text-muted font-medium">Nenhuma assinatura encontrada.</p>
         </div>
 
-        <article
-          v-for="item in filteredItems"
-          :key="item.id"
-          class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
-          @click="openEditModal(item)"
-        >
+        <template v-else>
+          <div class="hidden sm:grid grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] gap-4 px-4 py-2 bg-surface-base border border-surface-border rounded-xl text-[10px] font-bold text-muted uppercase tracking-wider">
+            <div>Descrição</div>
+            <div>Categoria</div>
+            <div>Conta</div>
+            <div>Vencimento</div>
+            <div class="text-right pr-12">Valor</div>
+          </div>
+
+          <article
+            v-for="item in filteredItems"
+            :key="item.id"
+            class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
+            @click="openEditModal(item)"
+          >
           <!-- Icon & Info -->
           <div class="flex items-center gap-3 min-w-0">
             <div class="w-8 h-8 rounded-lg bg-surface-base border border-surface-border p-1 flex items-center justify-center shrink-0">
@@ -238,6 +247,7 @@ async function toggleStatus(item: SubscriptionItem) {
             </button>
           </div>
         </article>
+        </template>
       </section>
     </div>
 
