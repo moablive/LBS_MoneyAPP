@@ -169,7 +169,6 @@ moneyapp/
 │   ├── 📂 models/                # Zod schemas e tipos TypeScript
 │   └── 📂 services/              # Serviços core (auth, configs, criptografia)
 │
-├── 📂 AI_context/                # Documentação para agentes de IA
 ├── docker-compose.yml            # 2 serviços (backend + frontend)
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
@@ -500,24 +499,6 @@ docker compose --env-file .env up -d --build
 | `/investimentos` | `InvestmentsView` | 📈 Portfólio de investimentos |
 | `/emprestimos/:type` | `LoansView` | 🤝 Empréstimos por tipo (`receber` / `pagar` / `fgts`) |
 | `/configuracoes` | `SettingsView` | ⚙️ Preferências: comprovantes, saldo por conta |
-
----
-
-## 🤖 AI Context
-
-O diretório `AI_context/` contém documentação estratégica otimizada para agentes de IA.
-
-> [!TIP]
-> **Leia antes de fazer mudanças não triviais.** Comece por `project-map.json` para entender onde as coisas vivem.
-
-| Arquivo | Conteúdo |
-| ------- | -------- |
-| 📋 [`project-map.json`](AI_context/project-map.json) | Índice estruturado — entidades, rotas, invariantes |
-| 🏗️ [`architecture.md`](AI_context/architecture.md) | Topologia, tech choices e deployment |
-| ⚖️ [`business-rules.md`](AI_context/business-rules.md) | Invariantes — violá-las = bug |
-| 🗃️ [`data-model.md`](AI_context/data-model.md) | ER diagram, índices, convenções |
-| 🔌 [`api-contracts.md`](AI_context/api-contracts.md) | Endpoints, schemas Zod, convenções de API |
-| 🎨 [`ui-guidelines.md`](AI_context/ui-guidelines.md) | Design tokens, motion, modais, charts |
 
 ---
 
