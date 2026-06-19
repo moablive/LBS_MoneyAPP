@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
-import { categoryRankingQuerySchema, dashboardSummaryQuerySchema, spendingEvolutionQuerySchema, type CategoryRankingResponse, type DashboardSummaryResponse, type SpendingEvolutionResponse } from '@moneyapp/models';
+import { categoryRankingQuerySchema, dashboardSummaryQuerySchema, spendingEvolutionQuerySchema, categoryEvolutionQuerySchema, type CategoryRankingResponse, type DashboardSummaryResponse, type SpendingEvolutionResponse, type CategoryEvolutionResponse } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
 const { accounts, categories, transactions } = schema;
 import { requireAuth } from '../middleware/auth.js';
@@ -111,6 +111,115 @@ dashboardRouter.get(
       next(err);
     }
   },
+);
+
+/**
+ * GET /api/dashboard/categories/evolution?month=YYYY-MM&type=expense
+ * Returns daily aggregated spending per category, isolating Top 5 and Outros.
+ */
+dashboardRouter.get(
+  '/categories/evolution',
+  requireAuth,
+  validate(categoryEvolutionQuerySchema, 'query'),
+  async (req, res, next) => {
+    try {
+      const userId = req.user!.id;
+      const { month, type } = req.query as unknown as import('@moneyapp/models').CategoryEvolutionQuery;
+      const monthStart = parseMonthStart(month);
+      const nextMonthStart = addMonths(monthStart, 1);
+      const daysInMonth = new Date(
+        Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0),
+      ).getUTCDate();
+
+      const rows = await db
+        .select({
+          categoryId: transactions.categoryId,
+          categoryName: categories.name,
+          categoryColor: categories.color,
+          day: sql<number>`extract(day from ${transactions.occurredAt} at time zone 'utc')::int`.as('day'),
+          total: sql<string>`sum(abs(${transactions.amount}))`.as('total'),
+        })
+        .from(transactions)
+        .leftJoin(categories, eq(categories.id, transactions.categoryId))
+        .where(
+          and(
+            eq(transactions.userId, userId),
+            eq(transactions.type, type),
+            gte(transactions.occurredAt, monthStart),
+            lt(transactions.occurredAt, nextMonthStart),
+          ),
+        )
+        .groupBy(transactions.categoryId, categories.name, categories.color, sql`day`);
+
+      // Find Top 5 categories by total amount over the month
+      const catTotals = new Map<string, { id: string, name: string, color: string | null, total: number }>();
+      for (const r of rows) {
+        const catId = r.categoryId || 'unknown';
+        if (!catTotals.has(catId)) {
+          catTotals.set(catId, { id: catId, name: r.categoryName || 'Outros', color: r.categoryColor, total: 0 });
+        }
+        catTotals.get(catId)!.total += Number(r.total);
+      }
+
+      const sortedCats = Array.from(catTotals.values()).sort((a, b) => b.total - a.total);
+      const top5 = sortedCats.slice(0, 5);
+      const topIds = new Set(top5.map(c => c.id));
+
+      const dailySums = new Map<string, number[]>();
+      top5.forEach(c => dailySums.set(c.id, new Array(daysInMonth + 1).fill(0)));
+      const outrosSum = new Array(daysInMonth + 1).fill(0);
+
+      for (const r of rows) {
+        const catId = r.categoryId || 'unknown';
+        const day = r.day;
+        const amt = Number(r.total);
+        if (day >= 1 && day <= daysInMonth) {
+          if (topIds.has(catId)) {
+            const arr = dailySums.get(catId);
+            if (arr) arr[day] = (arr[day] || 0) + amt;
+          } else {
+            outrosSum[day] = (outrosSum[day] || 0) + amt;
+          }
+        }
+      }
+
+      const datasets: CategoryEvolutionResponse['datasets'] = [];
+      
+      for (const c of top5) {
+        const daily = dailySums.get(c.id)!;
+        const cum = [];
+        let acc = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          acc += daily[d] || 0;
+          cum.push(acc);
+        }
+        datasets.push({ label: c.name, color: c.color || '#6366f1', data: cum });
+      }
+
+      const totalOutros = outrosSum.reduce((sum, val) => sum + val, 0);
+      if (totalOutros > 0) {
+        const cum = [];
+        let acc = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+          acc += outrosSum[d] || 0;
+          cum.push(acc);
+        }
+        datasets.push({ label: 'Outros', color: '#6b7280', data: cum });
+      }
+
+      const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+
+      const body: CategoryEvolutionResponse = {
+        month: formatMonth(monthStart),
+        type,
+        labels,
+        datasets,
+      };
+      res.json(body);
+    } catch (err) {
+      next(err);
+    }
+  }
 );
 
 /**

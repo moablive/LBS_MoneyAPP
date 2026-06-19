@@ -4,10 +4,28 @@ import { XMarkIcon as X, ArrowTrendingUpIcon as TrendingUp, ArrowDownTrayIcon as
 import Modal from './Modal.vue';
 import { api } from '@moneyapp/api-client';
 import { useInvestmentsStore } from '../../stores/investments';
-// @ts-ignore
-import VueApexCharts from 'vue3-apexcharts';
-// @ts-ignore
-import type { ApexOptions } from 'apexcharts';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler,
+  type ChartOptions
+} from 'chart.js';
+import { Line } from 'vue-chartjs';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler
+);
 
 const props = defineProps<{
   investment: any;
@@ -48,52 +66,55 @@ const formatMoney = (val: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 };
 
-const series = computed(() => [{
-  name: 'Saldo',
-  data: chartData.value.map(d => d.value)
-}]);
-
-const chartOptions = computed<ApexOptions>(() => ({
-  chart: {
-    type: 'area',
-    toolbar: { show: false },
-    zoom: { enabled: false }
-  },
-  colors: ['#10b981'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 1,
-      opacityFrom: 0.4,
-      opacityTo: 0,
-      stops: [0, 100]
-    }
-  },
-  dataLabels: { enabled: false },
-  stroke: { curve: 'smooth', width: 2 },
-  xaxis: {
-    categories: chartData.value.map(d => {
+const chartDatasetData = computed(() => {
+  return {
+    labels: chartData.value.map(d => {
       const date = new Date(d.date);
       return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
     }),
-    labels: { style: { colors: '#9ca3af' } },
-    axisBorder: { show: false },
-    axisTicks: { show: false }
+    datasets: [{
+      label: 'Saldo',
+      data: chartData.value.map(d => d.value),
+      borderColor: '#10b981',
+      backgroundColor: '#10b9811a',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+    }]
+  };
+});
+
+const chartOptions = computed<ChartOptions<'line'>>(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index',
+    intersect: false,
   },
-  yaxis: {
-    labels: {
-      formatter: (val: number) => formatMoney(val),
-      style: { colors: '#9ca3af' }
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (ctx) => `${ctx.dataset.label}: ${formatMoney(ctx.raw as number)}`
+      }
     }
   },
-  grid: {
-    borderColor: '#374151',
-    strokeDashArray: 4,
-    yaxis: { lines: { show: true } }
-  },
-  tooltip: {
-    theme: 'dark',
-    y: { formatter: (val: number) => formatMoney(val) }
+  scales: {
+    x: {
+      grid: { color: 'rgba(255,255,255,0.05)', tickLength: 0 },
+      ticks: { color: '#9ca3af' },
+      border: { display: false }
+    },
+    y: {
+      grid: { color: '#374151' },
+      ticks: {
+        color: '#9ca3af',
+        callback: (val) => formatMoney(val as number)
+      },
+      border: { display: false }
+    }
   }
 }));
 
@@ -155,12 +176,11 @@ const submitAction = async () => {
         <div class="p-4 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-xl">
           <h3 class="text-sm font-medium text-surface-700 dark:text-surface-300 mb-4">Evolução do Patrimônio</h3>
           <div class="h-64">
-            <VueApexCharts
+            <Line
               v-if="chartData.length > 0"
-              type="area"
-              height="100%"
+              :data="chartDatasetData"
               :options="chartOptions"
-              :series="series"
+              class="h-full w-full"
             />
             <div v-else class="h-full flex items-center justify-center text-surface-500">
               Carregando gráfico...

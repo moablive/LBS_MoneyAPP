@@ -3,9 +3,34 @@ import { computed, onMounted, ref } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import EmptyState from '../components/EmptyState.vue';
-import type { CategoryRankingResponse } from '@moneyapp/models';
+import type { CategoryRankingResponse, CategoryEvolutionResponse } from '@moneyapp/models';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  type ChartOptions
+} from 'chart.js';
+import { Line } from 'vue-chartjs';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const ranking = ref<CategoryRankingResponse | null>(null);
+const evolution = ref<CategoryEvolutionResponse | null>(null);
 const loading = ref(true);
 
 const filterType = ref<'expense' | 'income'>('expense');
@@ -32,12 +57,21 @@ if (!filterPeriod.value) {
 async function reload() {
   loading.value = true;
   try {
-    const params = new URLSearchParams();
-    params.set('type', filterType.value);
-    params.set('month', filterPeriod.value);
-    params.set('includeZero', 'false');
+    const rankParams = new URLSearchParams();
+    rankParams.set('type', filterType.value);
+    rankParams.set('month', filterPeriod.value);
+    rankParams.set('includeZero', 'false');
     
-    ranking.value = await api.get<CategoryRankingResponse>(`/dashboard/categories/ranking?${params.toString()}`);
+    const evoParams = new URLSearchParams();
+    evoParams.set('type', filterType.value);
+    evoParams.set('month', filterPeriod.value);
+    
+    const [rankData, evoData] = await Promise.all([
+      api.get<CategoryRankingResponse>(`/dashboard/categories/ranking?${rankParams.toString()}`),
+      api.get<CategoryEvolutionResponse>(`/dashboard/categories/evolution?${evoParams.toString()}`)
+    ]);
+    ranking.value = rankData;
+    evolution.value = evoData;
   } catch (err) {
     console.error('Failed to load ranking', err);
   } finally {
@@ -48,6 +82,64 @@ async function reload() {
 onMounted(reload);
 
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const chartData = computed(() => {
+  if (!evolution.value) return { labels: [], datasets: [] };
+  
+  return {
+    labels: evolution.value.labels,
+    datasets: evolution.value.datasets.map(ds => ({
+      label: ds.label,
+      data: ds.data,
+      borderColor: ds.color || '#6366f1',
+      backgroundColor: (ds.color || '#6366f1') + '1a',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+    }))
+  };
+});
+
+const chartOptions = computed<ChartOptions<'line'>>(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        color: '#f3f4f6',
+        usePointStyle: true,
+        boxWidth: 8,
+      }
+    },
+    tooltip: {
+      callbacks: {
+        label: (ctx) => `${ctx.dataset.label}: ${brl(ctx.raw as number)}`
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: { color: 'rgba(255,255,255,0.05)', tickLength: 0 },
+      ticks: { color: '#9ca3af' },
+      border: { display: false }
+    },
+    y: {
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: {
+        color: '#9ca3af',
+        callback: (val) => brl(val as number)
+      },
+      border: { display: false }
+    }
+  }
+}));
 </script>
 
 <template>
@@ -123,37 +215,11 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
       />
 
       <!-- Populated State -->
-      <section v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <article
-          v-for="item in ranking.ranking"
-          :key="item.categoryId"
-          class="glass-card rounded-xl p-4 flex flex-col gap-3 group"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-surface border border-white/5 flex items-center justify-center shrink-0">
-                <span class="inline-block w-3 h-3 rounded-full color-glow" :style="{ backgroundColor: item.color || '#6366f1' }"></span>
-              </div>
-              <h3 class="text-sm font-semibold text-white truncate">{{ item.name }}</h3>
-            </div>
-            <span class="tabular-nums font-bold text-lg font-display truncate pl-2" :class="filterType === 'expense' ? 'text-expense' : 'text-income'">
-              {{ brl(item.current) }}
-            </span>
-          </div>
-          
-          <div class="w-full h-1.5 bg-surface rounded-full overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500 ease-out" 
-                 :style="{ width: `${Math.min(100, item.share)}%`, backgroundColor: item.color || '#6366f1' }"></div>
-          </div>
-          
-          <div class="flex justify-between items-center text-xs text-zinc-400">
-            <span>{{ item.share.toFixed(1) }}% do total</span>
-            <span v-if="item.variationPct !== null" :class="item.variationPct >= 0 ? 'text-expense' : 'text-income'">
-              {{ item.variationPct > 0 ? '+' : '' }}{{ item.variationPct.toFixed(1) }}% vs anterior
-            </span>
-            <span v-else class="text-zinc-500">Novo</span>
-          </div>
-        </article>
+      <section v-else class="glass-card rounded-2xl p-6 min-h-[400px] relative">
+        <Line 
+          :data="chartData" 
+          :options="chartOptions" 
+        />
       </section>
     </div>
   </AppShell>

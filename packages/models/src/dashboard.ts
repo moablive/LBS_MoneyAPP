@@ -49,6 +49,28 @@ export const dashboardSummaryResponseSchema = z.object({
 export type DashboardSummaryResponse = z.infer<typeof dashboardSummaryResponseSchema>;
 
 // ---------- cumulative spending evolution line chart -------------------------
+export const categoryEvolutionQuerySchema = z
+  .object({
+    month: monthStringSchema.optional(),
+    type: categoryTypeEnum.default('expense'),
+  })
+  .strict();
+export type CategoryEvolutionQuery = z.infer<typeof categoryEvolutionQuerySchema>;
+
+export const categoryEvolutionDatasetSchema = z.object({
+  label: z.string(),
+  color: z.string().nullable(),
+  data: z.array(z.number()),
+});
+
+export const categoryEvolutionResponseSchema = z.object({
+  month: monthStringSchema,
+  type: categoryTypeEnum,
+  labels: z.array(z.string()),
+  datasets: z.array(categoryEvolutionDatasetSchema),
+});
+export type CategoryEvolutionResponse = z.infer<typeof categoryEvolutionResponseSchema>;
+
 export const spendingEvolutionQuerySchema = z
   .object({ month: monthStringSchema.optional() })
   .strict();

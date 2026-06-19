@@ -155,10 +155,10 @@ async function toggleStatus(item: SubscriptionItem) {
         </div>
 
         <template v-else>
-          <div class="hidden sm:grid grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] gap-4 px-4 py-2 bg-surface-base border border-surface-border rounded-xl text-[10px] font-bold text-muted uppercase tracking-wider">
+          <div class="hidden sm:grid grid-cols-[1.5fr_2fr_1.5fr_1fr_auto] gap-4 px-4 py-2 bg-surface-base border border-surface-border rounded-xl text-[10px] font-bold text-muted uppercase tracking-wider">
+            <div>Banco</div>
             <div>Descrição</div>
             <div>Categoria</div>
-            <div>Conta</div>
             <div>Vencimento</div>
             <div class="text-right pr-12">Valor</div>
           </div>
@@ -166,11 +166,11 @@ async function toggleStatus(item: SubscriptionItem) {
           <article
             v-for="item in filteredItems"
             :key="item.id"
-            class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1.5fr_1fr_auto] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
+            class="group bg-surface-raised border border-surface-border hover:border-surface-border/80 rounded-xl px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1.5fr_1fr_auto] items-center gap-4 transition-all hover:shadow-sm cursor-pointer hover:bg-surface-overlay/30"
             @click="openEditModal(item)"
           >
-          <!-- Icon & Info -->
-          <div class="flex items-center gap-3 min-w-0">
+          <!-- Mobile Left: Icon & Description -->
+          <div class="flex sm:hidden items-center gap-3 min-w-0">
             <div class="w-8 h-8 rounded-lg bg-surface-base border border-surface-border p-1 flex items-center justify-center shrink-0">
               <img
                 :src="iconFor(item)"
@@ -178,7 +178,25 @@ async function toggleStatus(item: SubscriptionItem) {
                 class="w-full h-full object-contain rounded-md"
               />
             </div>
-            
+            <div class="flex flex-col min-w-0">
+              <span class="font-medium text-sm text-white/90 truncate">{{ item.description }}</span>
+              <span
+                v-if="item.status === 'inactive'"
+                class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 mt-0.5 rounded-md bg-surface-base text-muted border border-surface-border shrink-0 w-max"
+              >Inativa</span>
+            </div>
+          </div>
+
+          <!-- Desktop Col 1: Banco -->
+          <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
+            <div class="w-6 h-6 rounded bg-surface-base border border-surface-border p-0.5 flex items-center justify-center shrink-0">
+              <img :src="iconFor(item)" alt="" class="w-full h-full object-contain rounded-sm" />
+            </div>
+            <span class="text-[10px] font-semibold uppercase text-muted tracking-wide truncate">{{ item.accountName || 'N/A' }}</span>
+          </div>
+
+          <!-- Desktop Col 2: Descrição -->
+          <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
             <span class="font-medium text-sm text-white/90 truncate">{{ item.description }}</span>
             <span
               v-if="item.status === 'inactive'"
@@ -186,7 +204,7 @@ async function toggleStatus(item: SubscriptionItem) {
             >Inativa</span>
           </div>
 
-          <!-- Tags: Category -->
+          <!-- Desktop Col 3: Categoria -->
           <div class="hidden sm:flex items-center justify-start min-w-0">
             <div v-if="item.categoryName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
               <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: item.categoryColor || '#666' }"></div>
@@ -194,14 +212,7 @@ async function toggleStatus(item: SubscriptionItem) {
             </div>
           </div>
 
-          <!-- Tags: Account -->
-          <div class="hidden sm:flex items-center justify-start min-w-0">
-            <div v-if="item.accountName" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
-              <span class="truncate">{{ item.accountName }}</span>
-            </div>
-          </div>
-
-          <!-- Tags: Billing Day -->
+          <!-- Desktop Col 4: Vencimento -->
           <div class="hidden sm:flex items-center justify-start min-w-0">
             <div v-if="item.billingDay" class="flex items-center gap-1.5 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border text-[10px] uppercase font-semibold text-muted tracking-wide truncate max-w-full">
               <span class="truncate">Dia {{ item.billingDay }}</span>

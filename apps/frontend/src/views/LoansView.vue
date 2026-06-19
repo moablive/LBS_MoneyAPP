@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import LoanModal from '../components/modals/LoanModal.vue';
-import { PaperClipIcon as Paperclip } from '@heroicons/vue/24/outline';
+import { PaperClipIcon as Paperclip, CheckCircleIcon as CheckCircle2, ClockIcon as Clock } from '@heroicons/vue/24/outline';
 import type { LoanSummaryResponse, LoanItem } from '@moneyapp/models';
 
 const route = useRoute();
@@ -177,9 +177,9 @@ function openEditModal(item: LoanItem) {
               {{ brl(list.reduce((acc, r) => acc + Number(r.amount), 0)) }}
             </span>
           </div>
-          <div class="hidden sm:grid grid-cols-[3fr_1.5fr_1fr_0.5fr_1fr] gap-4 px-4 py-2 bg-surface-base border-b border-surface-border text-[10px] font-bold text-muted uppercase tracking-wider">
+          <div class="hidden sm:grid grid-cols-[1.5fr_2fr_1fr_0.5fr_1fr] gap-4 px-4 py-2 bg-surface-base border-b border-surface-border text-[10px] font-bold text-muted uppercase tracking-wider">
+            <div>Banco</div>
             <div>Descrição</div>
-            <div>Conta</div>
             <div>Status</div>
             <div class="text-center">Comprovante</div>
             <div class="text-right">Valor</div>
@@ -189,11 +189,11 @@ function openEditModal(item: LoanItem) {
               v-for="item in list"
               :key="item.id"
               v-memo="[item.id, item.status, item.amount, item.description]"
-              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[3fr_1.5fr_1fr_0.5fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_0.5fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
-              <!-- Left: Icon & Description -->
-              <div class="flex items-center justify-start gap-3 min-w-0">
+              <!-- Mobile Left: Icon & Description -->
+              <div class="flex sm:hidden items-center justify-start gap-3 min-w-0">
                 <div class="h-8 w-8 rounded-lg border border-surface-border shrink-0 flex items-center justify-center bg-surface-base">
                   <svg v-if="item.type === 'given'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                   <svg v-else-if="item.type === 'received'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-expense"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
@@ -201,21 +201,31 @@ function openEditModal(item: LoanItem) {
                 </div>
                 <span class="font-medium text-sm text-white/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
               </div>
-              
-              <!-- Center: Tags (Account) -->
-              <div class="hidden sm:flex items-center justify-start min-w-0">
-                <div v-if="item.accountId && accountsMap.get(item.accountId)" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-overlay border border-surface-border truncate max-w-full">
-                  <img v-if="accountsMap.get(item.accountId)?.customIconUrl" :src="accountsMap.get(item.accountId)?.customIconUrl ?? undefined" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" />
-                  <span class="text-[10px] uppercase font-semibold text-muted tracking-wide truncate">{{ accountsMap.get(item.accountId)?.name }}</span>
+
+              <!-- Desktop Col 1: Banco (Icon + Account) -->
+              <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
+                <div class="h-6 w-6 rounded bg-surface-base border border-surface-border flex items-center justify-center shrink-0">
+                  <img v-if="item.accountId && accountsMap.get(item.accountId)?.customIconUrl" :src="accountsMap.get(item.accountId)?.customIconUrl ?? undefined" class="w-4 h-4 rounded-sm object-contain" />
+                  <svg v-else-if="item.type === 'given'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                  <svg v-else-if="item.type === 'received'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-expense"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01M17 12h.01M7 12h.01"/></svg>
                 </div>
+                <span class="text-[10px] font-semibold uppercase text-muted tracking-wide truncate">{{ item.accountId && accountsMap.get(item.accountId) ? accountsMap.get(item.accountId)?.name : 'N/A' }}</span>
+              </div>
+
+              <!-- Desktop Col 2: Descrição -->
+              <div class="hidden sm:flex items-center justify-start min-w-0">
+                <span class="font-medium text-sm text-white/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
               </div>
               
               <!-- Center: Status -->
               <div class="hidden sm:flex items-center justify-start min-w-0">
                 <div 
-                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[60px] shrink-0"
-                  :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-surface-overlay text-muted border border-surface-border'"
+                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[72px] shrink-0"
+                  :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'"
                 >
+                  <CheckCircle2 v-if="item.status === 'paid'" class="w-2.5 h-2.5" />
+                  <Clock v-else class="w-2.5 h-2.5" />
                   {{ item.status === 'paid' ? 'Pago' : 'Aberto' }}
                 </div>
               </div>
@@ -243,9 +253,11 @@ function openEditModal(item: LoanItem) {
                   {{ brl(item.amount) }}
                 </div>
                 <div 
-                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[60px] shrink-0"
-                  :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-surface-overlay text-muted border border-surface-border'"
+                  class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[72px] shrink-0"
+                  :class="item.status === 'paid' ? 'bg-income/10 text-income border border-income/20' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'"
                 >
+                  <CheckCircle2 v-if="item.status === 'paid'" class="w-2.5 h-2.5" />
+                  <Clock v-else class="w-2.5 h-2.5" />
                   {{ item.status === 'paid' ? 'Pago' : 'Aberto' }}
                 </div>
               </div>
