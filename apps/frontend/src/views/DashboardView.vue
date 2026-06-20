@@ -11,6 +11,7 @@ import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyap
 
 // Lazy-load the modal so it's not in the initial bundle
 const NewAccountModal = defineAsyncComponent(() => import('../components/modals/NewAccountModal.vue'));
+const ConfirmPaymentModal = defineAsyncComponent(() => import('../components/modals/ConfirmPaymentModal.vue'));
 
 const summary = ref<DashboardSummaryResponse | null>(null);
 const ranking = ref<CategoryRankingResponse | null>(null);
@@ -28,6 +29,14 @@ const showEditAccount = ref(false);
 const editingAccount = ref<any | null>(null);
 const showCreate = ref(false);
 const createType = ref<'expense' | 'income'>('expense');
+
+const showConfirmPayment = ref(false);
+const itemToPay = ref<any | null>(null);
+
+function handlePayUpcoming(item: any) {
+  itemToPay.value = item;
+  showConfirmPayment.value = true;
+}
 
 const categoriesMap = computed(() => {
   return new Map(categories.value.map(c => [c.id, c]));
@@ -234,6 +243,7 @@ onUnmounted(() => {
           :upcomingTransactions="upcomingTransactions"
           :categoriesMap="categoriesMap"
           :loading="loadingUpcoming"
+          @pay="handlePayUpcoming"
         />
       </section>
     </div>
@@ -251,6 +261,13 @@ onUnmounted(() => {
       v-model:open="showCreate"
       :defaultType="createType"
       @created="loadData"
+    />
+
+    <ConfirmPaymentModal
+      v-if="showConfirmPayment"
+      v-model:open="showConfirmPayment"
+      :item="itemToPay"
+      @paid="loadData"
     />
   </AppShell>
 </template>

@@ -7,6 +7,10 @@ const props = defineProps<{
   loading: boolean;
 }>();
 
+const emit = defineEmits<{
+  (e: 'pay', item: any): void;
+}>();
+
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -107,9 +111,14 @@ const totalUpcoming = computed(() => {
             </div>
           </div>
         </div>
-        <span class="tabular-nums font-semibold text-sm shrink-0 font-display" :class="t.type === 'expense' ? 'text-expense' : 'text-income'">
-          {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
-        </span>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="tabular-nums font-semibold text-sm font-display" :class="t.type === 'expense' ? 'text-expense' : 'text-income'">
+            {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
+          </span>
+          <button @click="emit('pay', t)" class="p-1.5 rounded-lg bg-surface-base border border-surface-border text-muted hover:bg-accent hover:border-accent hover:text-white transition-all" title="Confirmar Pagamento">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </button>
+        </div>
         </li>
       </template>
     </ul>
