@@ -46,6 +46,9 @@ const amount = ref('');
 const accounts = ref<any[]>([]);
 const accountId = ref('');
 
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
+
 const loadChart = async () => {
   try {
     const res = await api.get<{ chart: any[], currentBalance: number, yieldTotal: number }>(`/api/investments/${props.investment.id}/chart`);
@@ -240,9 +243,16 @@ const submitAction = async () => {
                   class="w-full px-3 py-2 bg-surface-base dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Nenhuma conta (Saldo avulso)</option>
-                  <option v-for="acc in accounts" :key="acc.id" :value="acc.id">
-                    {{ acc.name }} ({{ formatMoney(parseFloat(acc.balance)) }})
-                  </option>
+                  <optgroup label="Contas" v-if="normalAccounts.length > 0">
+                    <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">
+                      {{ acc.name }} ({{ formatMoney(parseFloat(acc.balance)) }})
+                    </option>
+                  </optgroup>
+                  <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+                    <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">
+                      {{ acc.name }} ({{ formatMoney(parseFloat(acc.balance)) }})
+                    </option>
+                  </optgroup>
                 </select>
               </div>
             </div>

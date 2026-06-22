@@ -6,6 +6,10 @@ const props = defineProps<{
   loading: boolean;
 }>();
 
+const emit = defineEmits<{
+  (e: 'action', account: any): void;
+}>();
+
 const creditCards = computed(() => {
   return props.accounts.filter(a => a.type === 'credit_card');
 });
@@ -26,9 +30,10 @@ const brl = (n: number | string) =>
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-3 opacity-20"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
       <span class="text-sm">Nenhum cartão.</span>
     </div>
-    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
       <li v-for="(card, idx) in creditCards" :key="card.id" 
-          class="group p-2 -mx-2 rounded-xl transition-colors animate-fade-in-up"
+          @click="emit('action', card)"
+          class="relative group p-2 -ml-2 mr-1 rounded-xl hover:bg-surface-overlay/60 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition-all cursor-pointer animate-fade-in-up"
           :style="{ animationDelay: `${(idx * 75) + 300}ms` }">
         <div class="flex items-center gap-3 mb-1.5">
           <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base/50 border border-surface-border shrink-0 group-hover:scale-105 transition-transform">

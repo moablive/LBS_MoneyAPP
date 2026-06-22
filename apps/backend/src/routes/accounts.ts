@@ -117,6 +117,8 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
           occurredAt: new Date(body.date),
           categoryId: body.categoryId,
           accountId: creditCardId,
+          receiptBase64: (!body.sourceAccountId || body.sourceAccountId === creditCardId) ? (body.receipt?.base64 ?? null) : null,
+          receiptMimeType: (!body.sourceAccountId || body.sourceAccountId === creditCardId) ? (body.receipt?.mimeType ?? null) : null,
         })
         .returning();
 
@@ -137,6 +139,8 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
             occurredAt: new Date(body.date),
             categoryId: body.categoryId,
             accountId: body.sourceAccountId,
+            receiptBase64: body.receipt?.base64 ?? null,
+            receiptMimeType: body.receipt?.mimeType ?? null,
           })
           .returning();
 

@@ -8,7 +8,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  (e: 'action', item: any): void;
   (e: 'pay', item: any): void;
+  (e: 'dismiss', item: any): void;
 }>();
 
 const brl = (n: number | string) =>
@@ -62,7 +64,7 @@ const totalUpcoming = computed(() => {
     <div v-else-if="upcomingTransactions.length === 0" class="text-center py-8">
       <span class="text-muted text-sm font-medium">Nenhum lançamento pendente.</span>
     </div>
-    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
       <template v-for="(t, idx) in upcomingTransactions" :key="t.id">
         <div v-if="idx === 0 || t.occurredAt.slice(0,7) !== upcomingTransactions[idx - 1].occurredAt.slice(0,7)" 
              class="flex items-center gap-3 opacity-60" :class="idx === 0 ? 'mb-2' : 'mt-4 mb-2'">
@@ -75,50 +77,53 @@ const totalUpcoming = computed(() => {
           <div class="h-px flex-1" :class="isCurrentMonth(t.occurredAt) ? 'bg-accent/50' : 'bg-surface-border'"></div>
         </div>
 
-        <li class="flex items-center justify-between group hover:bg-surface-overlay/40 p-2 -mx-2 rounded-xl transition-colors animate-fade-in-up"
+        <li @click="emit('action', t)"
+            class="relative flex items-center justify-between group hover:bg-surface-overlay/60 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 p-2 -ml-2 mr-1 rounded-xl transition-all cursor-pointer animate-fade-in-up"
             :style="{ animationDelay: `${(idx * 75) + 500}ms` }">
-          <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-3 min-w-0 w-full">
           <div class="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-surface-base/50 border border-surface-border shrink-0 group-hover:scale-105 transition-transform">
             <span class="text-[10px] font-bold text-muted uppercase leading-none">{{ formatDay(t.occurredAt).month }}</span>
             <span class="text-sm font-bold text-white leading-none mt-0.5">{{ formatDay(t.occurredAt).day }}</span>
           </div>
-          <div class="min-w-0 flex flex-col justify-center">
-            <span class="font-medium text-sm text-white/90 truncate flex items-center gap-1.5">
-              <img v-if="t.isCreditCard && t.account?.customIconUrl" :src="t.account.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
-              <img v-else-if="t.isSubscription && t.customIconUrl" :src="t.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
-              <svg v-else-if="t.isCreditCard" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-              {{ t.description }}
-            </span>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <div v-if="t.categoryId && categoriesMap.get(t.categoryId)" class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: categoriesMap.get(t.categoryId)?.color || '#666' }"></div>
-              <span class="text-[11px] text-muted truncate" :class="t.type === 'expense' ? 'text-expense/80' : 'text-income/80'">
-                <template v-if="t.categoryId && categoriesMap.get(t.categoryId)">
-                  {{ categoriesMap.get(t.categoryId)?.name }} &bull;
-                </template>
-                <template v-if="t.isLoan">
-                  {{ t.loanType === 'received' ? 'Empréstimo a pagar' : t.loanType === 'fgts' ? 'FGTS a receber' : 'Empréstimo a receber' }}
-                </template>
-                <template v-else-if="t.isSubscription">
-                  Assinatura
-                </template>
-                <template v-else-if="t.isCreditCard">
-                  Fatura de Cartão
-                </template>
-                <template v-else>
-                  {{ t.type === 'expense' ? 'Despesa' : 'Receita' }} pendente
-                </template>
+          <div class="min-w-0 flex flex-col justify-center flex-1">
+            <div class="font-medium text-sm text-white/90 flex items-start gap-1.5 min-w-0">
+              <div class="mt-0.5 shrink-0 flex items-center justify-center">
+                <img v-if="t.isCreditCard && t.account?.customIconUrl" :src="t.account.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
+                <img v-else-if="t.isSubscription && t.customIconUrl" :src="t.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
+                <svg v-else-if="t.isCreditCard" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+              </div>
+              <div class="flex items-center gap-2 mt-0.5 min-w-0 flex-1">
+                <span class="truncate" :title="t.description">{{ t.description }}</span>
+                <svg v-if="t.isSubscription" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-accent shrink-0" title="Assinatura"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mt-0.5 gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <div v-if="t.categoryId && categoriesMap.get(t.categoryId)" class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: categoriesMap.get(t.categoryId)?.color || '#666' }"></div>
+                <span class="text-[11px] text-muted truncate" :class="t.type === 'expense' ? 'text-expense/80' : 'text-income/80'">
+                  <template v-if="t.categoryId && categoriesMap.get(t.categoryId)">
+                    {{ categoriesMap.get(t.categoryId)?.name }} &bull;
+                  </template>
+                  <template v-if="t.isLoan">
+                    {{ t.loanType === 'received' ? 'Empréstimo a pagar' : t.loanType === 'fgts' ? 'FGTS a receber' : 'Empréstimo a receber' }}
+                  </template>
+                  <template v-else-if="t.isSubscription">
+                    Assinatura
+                  </template>
+                  <template v-else-if="t.isCreditCard">
+                    Fatura de Cartão
+                  </template>
+                  <template v-else>
+                    {{ t.type === 'expense' ? 'Despesa' : 'Receita' }} pendente
+                  </template>
+                </span>
+              </div>
+              <span class="font-bold text-sm shrink-0" :class="t.type === 'expense' ? 'text-expense' : 'text-income'">
+                {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
               </span>
             </div>
           </div>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-          <span class="tabular-nums font-semibold text-sm font-display" :class="t.type === 'expense' ? 'text-expense' : 'text-income'">
-            {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
-          </span>
-          <button @click="emit('pay', t)" class="p-1.5 rounded-lg bg-surface-base border border-surface-border text-muted hover:bg-accent hover:border-accent hover:text-white transition-all" title="Confirmar Pagamento">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          </button>
-        </div>
+          </div>
         </li>
       </template>
     </ul>

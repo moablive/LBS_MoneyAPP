@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { XMarkIcon as X, CheckIcon as Save } from '@heroicons/vue/24/outline';
 import Modal from './Modal.vue';
 import { api } from '@moneyapp/api-client';
@@ -14,6 +14,9 @@ const emit = defineEmits(['close']);
 const store = useInvestmentsStore();
 const accounts = ref<any[]>([]);
 
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
+
 const isSubmitting = ref(false);
 const errorMsg = ref('');
 
@@ -24,7 +27,7 @@ const form = ref({
   quantity: '',
   buyPrice: '',
   currentPrice: '',
-  buyDate: new Date().toISOString().split('T')[0],
+  buyDate: new Date(Date.now() - 10800000).toISOString().slice(0, 10),
   notes: '',
   goalAmount: '',
   yieldRate: '',
@@ -42,7 +45,7 @@ onMounted(async () => {
       quantity: props.investment.quantity,
       buyPrice: props.investment.buyPrice,
       currentPrice: props.investment.currentPrice,
-      buyDate: new Date(props.investment.buyDate).toISOString().split('T')[0],
+      buyDate: new Date(props.investment.buyDate).toISOString().slice(0, 10),
       notes: props.investment.notes || '',
       goalAmount: props.investment.goalAmount || '',
       yieldRate: props.investment.yieldRate || '',
@@ -233,9 +236,16 @@ const submit = async () => {
               class="w-full px-3 py-2 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Nenhuma conta</option>
-              <option v-for="acc in accounts" :key="acc.id" :value="acc.id">
-                {{ acc.name }} ({{ acc.type }})
-              </option>
+              <optgroup label="Contas" v-if="normalAccounts.length > 0">
+                <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">
+                  {{ acc.name }} ({{ acc.type }})
+                </option>
+              </optgroup>
+              <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+                <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">
+                  {{ acc.name }} ({{ acc.type }})
+                </option>
+              </optgroup>
             </select>
           </div>
 

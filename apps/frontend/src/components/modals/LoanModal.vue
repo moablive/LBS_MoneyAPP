@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { LoanItem, Account, Category } from '@moneyapp/models';
 import { useAuthStore } from '../../stores/auth';
@@ -25,7 +25,7 @@ const form = ref({
   amount: '',
   accountId: null as string | null,
   installments: 1,
-  date: new Date().toISOString().split('T')[0] as string,
+  date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
   type: 'given' as 'given' | 'received' | 'fgts',
   status: 'active' as 'active' | 'paid',
   categoryId: null as string | null,
@@ -33,6 +33,9 @@ const form = ref({
 
 const accounts = ref<Account[]>([]);
 const categories = ref<Category[]>([]);
+
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
 
 const receiptFile = ref<File | null>(null);
 const receiptBlobUrl = ref<string | null>(null);
@@ -66,7 +69,7 @@ function resetForm() {
       amount: '',
       accountId: null,
       installments: 1,
-      date: new Date().toISOString().split('T')[0] as string,
+      date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
       type: props.defaultType || 'given',
       status: 'active',
       categoryId: null,
@@ -246,7 +249,12 @@ async function destroy() {
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer disabled:opacity-50"
           >
             <option :value="null">Selecionar conta...</option>
-            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            <optgroup label="Contas" v-if="normalAccounts.length > 0">
+              <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            </optgroup>
+            <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+              <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            </optgroup>
           </select>
         </div>
 

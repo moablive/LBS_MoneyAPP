@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { receiptSchema } from './transaction';
 
 export const accountTypeEnum = z.enum([
   'checking',
@@ -48,5 +49,6 @@ export const payInvoiceSchema = z.object({
   categoryId: z.string().uuid(),
   date: z.string().datetime(),
   description: z.string().trim().min(1).max(255).default('Pagamento de Fatura'),
+  receipt: receiptSchema.nullable().optional(),
 });
 export type PayInvoiceInput = z.infer<typeof payInvoiceSchema>;

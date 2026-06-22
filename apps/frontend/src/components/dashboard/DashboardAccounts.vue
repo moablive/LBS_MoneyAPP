@@ -41,9 +41,9 @@ const brl = (n: number | string) =>
     <div v-if="loading" class="space-y-4">
       <div v-for="i in 4" :key="i" class="skeleton h-14 w-full" />
     </div>
-    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
       <li v-for="(acc, idx) in sortedAccounts" :key="acc.id" 
-          class="cursor-pointer group hover:bg-surface-overlay/60 p-2 -mx-2 rounded-xl transition-colors animate-fade-in-up"
+          class="cursor-pointer group hover:bg-surface-overlay/60 p-2 -ml-2 mr-1 rounded-xl transition-colors animate-fade-in-up"
           :style="{ animationDelay: `${(idx * 75) + 300}ms` }"
           @click="emit('edit-account', acc)">
         <div class="flex items-center gap-3 mb-1.5">

@@ -19,7 +19,7 @@ const description = ref('');
 const absAmount = ref<number | null>(null);
 const type = ref<TransactionType>('expense');
 const status = ref<'paid' | 'pending'>('paid');
-const occurredAt = ref(new Date().toISOString().slice(0, 10));
+const occurredAt = ref(new Date(Date.now() - 10800000).toISOString().slice(0, 16));
 const categoryId = ref<string | ''>('');
 const accountId = ref<string | ''>('');
 const receiptFile = ref<File | null>(null);
@@ -30,7 +30,11 @@ const accounts = ref<Account[]>([]);
 const submitting = ref(false);
 const error = ref<string | null>(null);
 
-const visibleCategories = computed(() => categories.value.filter((c) => c.type === type.value));
+const expenseCategories = computed(() => categories.value.filter((c) => c.type === 'expense'));
+const incomeCategories = computed(() => categories.value.filter((c) => c.type === 'income'));
+
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
 
 // "< sm" no Tailwind = mobile. Reativo (não só CSS) para podermos definir
 // padrões de formulário no celular.
@@ -80,7 +84,8 @@ watch(
       absAmount.value = Math.abs(Number(props.transaction.amount));
       type.value = props.transaction.type;
       status.value = props.transaction.status || 'paid';
-      occurredAt.value = props.transaction.occurredAt.slice(0, 10);
+      const txTime = new Date(props.transaction.occurredAt).getTime();
+      occurredAt.value = new Date(txTime - 10800000).toISOString().slice(0, 16);
       categoryId.value = props.transaction.categoryId;
       accountId.value = props.transaction.accountId || '';
       receiptFile.value = null;
@@ -106,7 +111,7 @@ watch(
 // e, no mobile, re-aplica o padrão "Controle" para despesas.
 watch(type, () => {
   if (props.transaction) return;
-  if (categoryId.value && !visibleCategories.value.some((c) => c.id === categoryId.value)) {
+  if (categoryId.value && !categories.value.some((c) => c.id === categoryId.value)) {
     categoryId.value = '';
   }
   maybeDefaultControle();
@@ -119,7 +124,7 @@ function reset() {
   absAmount.value = null;
   type.value = props.defaultType || 'expense';
   status.value = 'paid';
-  occurredAt.value = new Date().toISOString().slice(0, 10);
+  occurredAt.value = new Date(Date.now() - 10800000).toISOString().slice(0, 16);
   categoryId.value = '';
   accountId.value = '';
   receiptFile.value = null;
@@ -161,7 +166,7 @@ async function submit() {
       amount: signed,
       type: type.value,
       status: status.value,
-      occurredAt: new Date(`${occurredAt.value}T12:00:00Z`),
+      occurredAt: new Date(`${occurredAt.value}:00-03:00`),
       categoryId: categoryId.value,
       accountId: accountId.value || null,
       receipt: receiptPayload,
@@ -253,10 +258,10 @@ function onFileChange(e: Event) {
         </label>
 
         <label class="block space-y-1">
-          <span class="text-xs uppercase tracking-wide text-muted">Data</span>
+          <span class="text-xs uppercase tracking-wide text-muted">Data e Hora</span>
           <input
             v-model="occurredAt"
-            type="date"
+            type="datetime-local"
             required
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark]"
           />
@@ -270,7 +275,12 @@ function onFileChange(e: Event) {
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
           >
             <option value="" disabled>Selecione…</option>
-            <option v-for="c in visibleCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            <optgroup label="Despesas" v-if="expenseCategories.length > 0">
+              <option v-for="c in expenseCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </optgroup>
+            <optgroup label="Receitas" v-if="incomeCategories.length > 0">
+              <option v-for="c in incomeCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </optgroup>
           </select>
         </label>
 
@@ -281,7 +291,12 @@ function onFileChange(e: Event) {
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
           >
             <option value="">— sem conta —</option>
-            <option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+            <optgroup label="Contas" v-if="normalAccounts.length > 0">
+              <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+            </optgroup>
+            <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+              <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+            </optgroup>
           </select>
         </label>
       </div>

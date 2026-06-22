@@ -33,6 +33,9 @@ const filteredCategories = computed(() => {
   return categories.value.filter((c) => c.type === type.value);
 });
 
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
+
 onMounted(async () => {
   const [catRes, accRes] = await Promise.all([
     api.get<any[]>('/categories'),
@@ -202,7 +205,12 @@ async function remove() {
               class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/60"
             >
               <option value="">Outro</option>
-              <option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+              <optgroup label="Contas" v-if="normalAccounts.length > 0">
+                <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+              </optgroup>
+              <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+                <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+              </optgroup>
             </select>
           </div>
         </div>

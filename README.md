@@ -72,7 +72,7 @@
 <td width="50%">
 
 ### 📊 Dashboard
-Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências.
+Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências. A lista de **Próximos Lançamentos** conta com uma modal de ação rápida ao clicar, roteando automaticamente pagamentos para suas modais específicas (faturas, assinaturas, empréstimos ou transações).
 
 ### 💳 Transações
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).

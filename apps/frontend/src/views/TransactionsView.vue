@@ -97,6 +97,9 @@ const categoriesMap = computed(() => {
   return new Map(categories.value.map(c => [c.id, c]));
 });
 
+const normalAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
+const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 'credit_card'));
+
 const grouped = computed(() => {
   const map = new Map<string, Transaction[]>();
   for (const r of rows.value) {
@@ -215,7 +218,12 @@ async function handleDelete(t: Transaction | null) {
             class="order-3 sm:order-4 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas Contas</option>
-            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            <optgroup label="Contas" v-if="normalAccounts.length > 0">
+              <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            </optgroup>
+            <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
+              <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+            </optgroup>
           </select>
           <div class="order-5 flex items-center gap-2 w-full sm:w-auto">
             <button
