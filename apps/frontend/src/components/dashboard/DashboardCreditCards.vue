@@ -41,9 +41,9 @@ const brl = (n: number | string) =>
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
           </div>
           <div class="flex-1 flex flex-col justify-center text-sm">
-            <div class="flex items-baseline justify-between">
-              <span class="font-medium text-white/90">{{ card.name }}</span>
-              <span class="tabular-nums font-semibold font-display text-expense">{{ brl(Math.abs(Number(card.currentBalance))) }}</span>
+            <div class="flex items-baseline justify-between gap-2 min-w-0">
+              <span class="font-medium text-white/90 truncate">{{ card.name }}</span>
+              <span class="tabular-nums font-semibold font-display text-expense shrink-0">{{ brl(Math.abs(Number(card.currentBalance))) }}</span>
             </div>
             <div class="text-[10px] text-muted uppercase font-semibold tracking-wide flex justify-between" v-if="card.closingDay">
               <span>Vence dia {{ card.dueDay || card.closingDay }}</span>

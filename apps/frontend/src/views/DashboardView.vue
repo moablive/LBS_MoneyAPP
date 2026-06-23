@@ -345,7 +345,7 @@ onUnmounted(() => {
       />
 
       <!-- Bottom row: Accounts, CreditCards, Categories, Upcoming -->
-      <section class="grid lg:grid-cols-4 gap-6">
+      <section class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-6">
         <DashboardAccounts 
           :accounts="accounts"
           :loading="loadingAccounts"

@@ -51,9 +51,9 @@ const brl = (n: number | string) =>
             <img v-if="acc.customIconUrl" :src="acc.customIconUrl" class="w-5 h-5 rounded-md object-contain" />
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a8 8 0 0 1-5.45 7.49 1 1 0 0 1-1.22-1.08L14 16.5a1 1 0 0 0-1-1H7.5a1 1 0 0 0-1 1L5.5 20.41a1 1 0 0 1-1.22 1.08A8 8 0 0 1 2 14v-5"/><path d="M20 12v4M20 16a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2"/></svg>
           </div>
-          <div class="flex-1 flex items-baseline justify-between text-sm">
-            <span class="font-medium text-white/90 group-hover:text-accent transition-colors">{{ acc.name }}</span>
-            <span class="tabular-nums font-semibold font-display" :class="Number(acc.currentBalance) >= 0 ? 'text-white' : 'text-expense'">{{ brl(Number(acc.currentBalance)) }}</span>
+          <div class="flex-1 flex items-baseline justify-between text-sm gap-2 min-w-0">
+            <span class="font-medium text-white/90 group-hover:text-accent transition-colors truncate">{{ acc.name }}</span>
+            <span class="tabular-nums font-semibold font-display shrink-0" :class="Number(acc.currentBalance) >= 0 ? 'text-white' : 'text-expense'">{{ brl(Number(acc.currentBalance)) }}</span>
           </div>
         </div>
         <div class="h-1.5 rounded-full bg-surface-overlay overflow-hidden ml-11">

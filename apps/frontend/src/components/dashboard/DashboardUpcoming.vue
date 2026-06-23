@@ -46,7 +46,7 @@ const totalUpcoming = computed(() => {
   <div class="card flex flex-col animate-fade-in-up delay-400">
     <h2 class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Visão de Futuro</h2>
     
-    <div class="flex items-baseline justify-between mb-6">
+    <div class="flex items-start sm:items-center justify-between mb-6 flex-wrap gap-2">
       <div class="flex items-center gap-3">
         <h3 class="text-lg text-white font-medium font-display">Próximos Lançamentos</h3>
         <RouterLink to="/settings" title="Sincronizar com Agenda" class="p-1.5 bg-surface-overlay hover:bg-surface-border border border-surface-border rounded-lg text-muted hover:text-white transition-colors">

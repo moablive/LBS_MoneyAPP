@@ -22,9 +22,9 @@ const brl = (n: number | string) =>
       <li v-for="(item, idx) in ranking.ranking" :key="item.categoryId" 
           class="space-y-1.5 animate-fade-in-up"
           :style="{ animationDelay: `${(idx * 75) + 400}ms` }">
-        <div class="flex items-baseline justify-between text-sm">
-          <span class="font-medium text-white/90">{{ item.name }}</span>
-          <span class="tabular-nums font-semibold font-display">{{ brl(item.current) }}</span>
+        <div class="flex items-baseline justify-between text-sm gap-2 min-w-0">
+          <span class="font-medium text-white/90 truncate">{{ item.name }}</span>
+          <span class="tabular-nums font-semibold font-display shrink-0">{{ brl(item.current) }}</span>
         </div>
         <div class="h-1.5 rounded-full bg-surface-overlay overflow-hidden">
           <div class="h-full transition-[width] duration-500 ease-smooth" :style="{ width: `${Math.min(100, item.share)}%`, backgroundColor: item.color || '#d946ef' }" />
