@@ -42,6 +42,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         VITE_API_BASE_URL: /api
+        VITE_LOGINHUB_API_URL: ${VITE_LOGINHUB_API_URL:-https://api-auth.astralwavelabel.com/api}
     container_name: app_moneyapp_frontend
     depends_on:
       app_moneyapp_backend:
