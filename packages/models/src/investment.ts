@@ -1,6 +1,6 @@
 export interface Investment {
   id: string;
-  userId: string;
+  loginhubId: number;
   accountId: string | null;
   name: string;
   type: import('./common').InvestmentType;

@@ -10,12 +10,12 @@ export const subscriptionsRouter = Router();
 
 subscriptionsRouter.get('/summary', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
 
     const rows = await db
       .select({
         id: subscriptions.id,
-        userId: subscriptions.userId,
+        loginhubId: subscriptions.loginhubId,
         description: subscriptions.description,
         amount: subscriptions.amount,
         type: subscriptions.type,
@@ -34,12 +34,12 @@ subscriptionsRouter.get('/summary', requireAuth, async (req, res, next) => {
       .from(subscriptions)
       .leftJoin(categories, eq(subscriptions.categoryId, categories.id))
       .leftJoin(accounts, eq(subscriptions.accountId, accounts.id))
-      .where(eq(subscriptions.userId, userId))
+      .where(eq(subscriptions.loginhubId, loginhubId))
       .orderBy(desc(subscriptions.createdAt));
 
     const items = rows.map((r) => ({
       id: r.id,
-      userId: r.userId,
+      loginhubId: r.loginhubId,
       description: r.description,
       amount: Number(r.amount),
       type: r.type,
@@ -89,14 +89,14 @@ subscriptionsRouter.post(
   validate(createSubscriptionSchema, 'body'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const data = req.body as import('@moneyapp/models').CreateSubscriptionInput;
 
       const [newSub] = await db
         .insert(subscriptions)
         .values({
           ...data,
-          userId,
+          loginhubId,
           amount: data.amount.toString(),
           billingDay: data.billingDay?.toString(),
         })
@@ -123,7 +123,7 @@ subscriptionsRouter.put(
   validate(updateSubscriptionSchema, 'body'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const id = req.params.id as string;
       const data = req.body as import('@moneyapp/models').UpdateSubscriptionInput;
 
@@ -134,7 +134,7 @@ subscriptionsRouter.put(
       const [updated] = await db
         .update(subscriptions)
         .set(updateData)
-        .where(and(eq(subscriptions.id, id), eq(subscriptions.userId, userId)))
+        .where(and(eq(subscriptions.id, id), eq(subscriptions.loginhubId, loginhubId)))
         .returning();
 
       if (!updated) {
@@ -154,12 +154,12 @@ subscriptionsRouter.put(
 
 subscriptionsRouter.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id as string;
 
     const [deleted] = await db
       .delete(subscriptions)
-      .where(and(eq(subscriptions.id, id), eq(subscriptions.userId, userId)))
+      .where(and(eq(subscriptions.id, id), eq(subscriptions.loginhubId, loginhubId)))
       .returning();
 
     if (!deleted) {

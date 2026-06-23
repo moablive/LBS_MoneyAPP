@@ -5,7 +5,7 @@ export const subscriptionStatusEnum = z.enum(['active', 'inactive']);
 
 export const subscriptionSchema = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid(),
+  loginhubId: z.number(),
   description: z.string().min(1, 'A descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
   type: transactionTypeEnum,

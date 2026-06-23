@@ -25,7 +25,7 @@ dashboardRouter.get(
   validate(categoryRankingQuerySchema, 'query'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const { month, type, includeZero, limit } = req.query as unknown as
         import('@moneyapp/models').CategoryRankingQuery;
 
@@ -63,13 +63,13 @@ dashboardRouter.get(
           transactions,
           and(
             eq(transactions.categoryId, categories.id),
-            eq(transactions.userId, userId),
+            eq(transactions.loginhubId, loginhubId),
             eq(transactions.type, type),
             gte(transactions.occurredAt, prevMonthStart),
             lt(transactions.occurredAt, nextMonthStart),
           ),
         )
-        .where(and(eq(categories.userId, userId), eq(categories.type, type)))
+        .where(and(eq(categories.loginhubId, loginhubId), eq(categories.type, type)))
         .groupBy(categories.id)
         .orderBy(desc(sql`current_total`));
 
@@ -123,7 +123,7 @@ dashboardRouter.get(
   validate(categoryEvolutionQuerySchema, 'query'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const { month, type } = req.query as unknown as import('@moneyapp/models').CategoryEvolutionQuery;
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
@@ -143,7 +143,7 @@ dashboardRouter.get(
         .leftJoin(categories, eq(categories.id, transactions.categoryId))
         .where(
           and(
-            eq(transactions.userId, userId),
+            eq(transactions.loginhubId, loginhubId),
             eq(transactions.type, type),
             gte(transactions.occurredAt, monthStart),
             lt(transactions.occurredAt, nextMonthStart),
@@ -233,7 +233,7 @@ dashboardRouter.get(
   validate(dashboardSummaryQuerySchema, 'query'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const { month } = req.query as unknown as import('@moneyapp/models').DashboardSummaryQuery;
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
@@ -246,7 +246,7 @@ dashboardRouter.get(
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, userId),
+            eq(transactions.loginhubId, loginhubId),
             gte(transactions.occurredAt, monthStart),
             lt(transactions.occurredAt, nextMonthStart),
           ),
@@ -258,7 +258,7 @@ dashboardRouter.get(
           creditCardTotal: sql<string>`coalesce(sum(case when ${accounts.freezeBalance} = false and ${accounts.type} = 'credit_card' then abs(${accounts.currentBalance}) else 0 end), 0)`.as('creditCardTotal'),
         })
         .from(accounts)
-        .where(eq(accounts.userId, userId));
+        .where(eq(accounts.loginhubId, loginhubId));
 
       const income = Number(agg!.income);
       const expense = Number(agg!.expense);
@@ -296,7 +296,7 @@ dashboardRouter.get(
   validate(spendingEvolutionQuerySchema, 'query'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const { month } = req.query as unknown as import('@moneyapp/models').SpendingEvolutionQuery;
       const monthStart = parseMonthStart(month);
       const nextMonthStart = addMonths(monthStart, 1);
@@ -322,7 +322,7 @@ dashboardRouter.get(
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, userId),
+            eq(transactions.loginhubId, loginhubId),
             eq(transactions.type, 'expense'),
             gte(transactions.occurredAt, prevMonthStart),
             lt(transactions.occurredAt, nextMonthStart),

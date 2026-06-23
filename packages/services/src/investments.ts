@@ -21,9 +21,9 @@ export const investmentSchema = z.object({
 export const updateInvestmentSchema = investmentSchema.partial();
 
 export const investmentsService = {
-  async getByUserId(userId: string): Promise<Investment[]> {
+  async getByUserId(loginhubId: number): Promise<Investment[]> {
     const rows = await db.query.investments.findMany({
-      where: eq(investments.userId, userId),
+      where: eq(investments.loginhubId, loginhubId),
       with: {
         account: true,
       },
@@ -34,7 +34,7 @@ export const investmentsService = {
     if (fixedIncomes.length > 0) {
       const txs = await db.query.transactions.findMany({
         where: and(
-          eq(transactions.userId, userId),
+          eq(transactions.loginhubId, loginhubId),
           inArray(transactions.investmentId, fixedIncomes.map(f => f.id))
         ),
       });
@@ -83,8 +83,8 @@ export const investmentsService = {
     return rows;
   },
 
-  async getSummary(userId: string) {
-    const allInvestments = await this.getByUserId(userId);
+  async getSummary(loginhubId: number) {
+    const allInvestments = await this.getByUserId(loginhubId);
 
     let totalInvested = 0;
     let currentTotal = 0;
@@ -110,8 +110,8 @@ export const investmentsService = {
     };
   },
 
-  async syncAccountBalance(userId: string, accountId: string) {
-    const allInvs = await this.getByUserId(userId);
+  async syncAccountBalance(loginhubId: number, accountId: string) {
+    const allInvs = await this.getByUserId(loginhubId);
     const accInvs = allInvs.filter(i => i.accountId === accountId);
     
     let total = 0;
@@ -123,27 +123,27 @@ export const investmentsService = {
     
     await db.update(schema.accounts)
       .set({ currentBalance: total.toFixed(2) })
-      .where(and(eq(schema.accounts.id, accountId), eq(schema.accounts.userId, userId)));
+      .where(and(eq(schema.accounts.id, accountId), eq(schema.accounts.loginhubId, loginhubId)));
   },
 
-  async create(userId: string, data: z.infer<typeof investmentSchema>): Promise<Investment> {
+  async create(loginhubId: number, data: z.infer<typeof investmentSchema>): Promise<Investment> {
     const [inserted] = await db.insert(investments).values({
-      userId,
+      loginhubId,
       ...data,
       currentPrice: data.currentPrice || data.buyPrice,
     }).returning();
     if (!inserted) throw new Error('Failed to insert investment');
     
     if (inserted.accountId) {
-      await this.syncAccountBalance(userId, inserted.accountId);
+      await this.syncAccountBalance(loginhubId, inserted.accountId);
     }
     
     return inserted;
   },
 
-  async update(userId: string, id: string, data: z.infer<typeof updateInvestmentSchema>): Promise<Investment | null> {
+  async update(loginhubId: number, id: string, data: z.infer<typeof updateInvestmentSchema>): Promise<Investment | null> {
     const existing = await db.query.investments.findFirst({
-      where: and(eq(investments.id, id), eq(investments.userId, userId))
+      where: and(eq(investments.id, id), eq(investments.loginhubId, loginhubId))
     });
     if (!existing) return null;
 
@@ -151,38 +151,38 @@ export const investmentsService = {
       ...data,
       updatedAt: new Date(),
     })
-    .where(and(eq(investments.id, id), eq(investments.userId, userId)))
+    .where(and(eq(investments.id, id), eq(investments.loginhubId, loginhubId)))
     .returning();
     
     if (existing.accountId) {
-      await this.syncAccountBalance(userId, existing.accountId);
+      await this.syncAccountBalance(loginhubId, existing.accountId);
     }
     if (updated && updated.accountId && updated.accountId !== existing.accountId) {
-      await this.syncAccountBalance(userId, updated.accountId);
+      await this.syncAccountBalance(loginhubId, updated.accountId);
     }
     
     return updated || null;
   },
 
-  async delete(userId: string, id: string): Promise<boolean> {
+  async delete(loginhubId: number, id: string): Promise<boolean> {
     const existing = await db.query.investments.findFirst({
-      where: and(eq(investments.id, id), eq(investments.userId, userId))
+      where: and(eq(investments.id, id), eq(investments.loginhubId, loginhubId))
     });
     
     const [deleted] = await db.delete(investments)
-      .where(and(eq(investments.id, id), eq(investments.userId, userId)))
+      .where(and(eq(investments.id, id), eq(investments.loginhubId, loginhubId)))
       .returning();
       
     if (deleted && existing?.accountId) {
-      await this.syncAccountBalance(userId, existing.accountId);
+      await this.syncAccountBalance(loginhubId, existing.accountId);
     }
     
     return !!deleted;
   },
 
-  async getPiggyBankChart(userId: string, id: string) {
+  async getPiggyBankChart(loginhubId: number, id: string) {
     const inv = await db.query.investments.findFirst({
-      where: and(eq(investments.id, id), eq(investments.userId, userId))
+      where: and(eq(investments.id, id), eq(investments.loginhubId, loginhubId))
     });
     if (!inv) throw new Error('Investment not found');
 
@@ -242,20 +242,20 @@ export const investmentsService = {
     };
   },
 
-  async deposit(userId: string, id: string, amount: number, accountId?: string) {
+  async deposit(loginhubId: number, id: string, amount: number, accountId?: string) {
     let cat = await db.query.categories.findFirst({
-      where: and(eq(categories.userId, userId), eq(categories.name, 'Investimentos'), eq(categories.type, 'expense'))
+      where: and(eq(categories.loginhubId, loginhubId), eq(categories.name, 'Investimentos'), eq(categories.type, 'expense'))
     });
     let catId = cat?.id;
     if (!catId) {
       const [newCat] = await db.insert(categories).values({
-        userId, name: 'Investimentos', type: 'expense', color: '#3b82f6'
+        loginhubId, name: 'Investimentos', type: 'expense', color: '#3b82f6'
       }).returning();
       catId = newCat!.id;
     }
     
     await db.insert(transactions).values({
-      userId,
+      loginhubId,
       amount: String(amount),
       type: 'expense',
       description: 'Depósito Cofrinho',
@@ -267,27 +267,27 @@ export const investmentsService = {
     
     // Sync the linked account
     const existing = await db.query.investments.findFirst({
-      where: and(eq(investments.id, id), eq(investments.userId, userId))
+      where: and(eq(investments.id, id), eq(investments.loginhubId, loginhubId))
     });
     if (existing?.accountId) {
-      await this.syncAccountBalance(userId, existing.accountId);
+      await this.syncAccountBalance(loginhubId, existing.accountId);
     }
   },
 
-  async withdraw(userId: string, id: string, amount: number, accountId?: string) {
+  async withdraw(loginhubId: number, id: string, amount: number, accountId?: string) {
     let cat = await db.query.categories.findFirst({
-      where: and(eq(categories.userId, userId), eq(categories.name, 'Resgate Investimento'), eq(categories.type, 'income'))
+      where: and(eq(categories.loginhubId, loginhubId), eq(categories.name, 'Resgate Investimento'), eq(categories.type, 'income'))
     });
     let catId = cat?.id;
     if (!catId) {
       const [newCat] = await db.insert(categories).values({
-        userId, name: 'Resgate Investimento', type: 'income', color: '#10b981'
+        loginhubId, name: 'Resgate Investimento', type: 'income', color: '#10b981'
       }).returning();
       catId = newCat!.id;
     }
     
     await db.insert(transactions).values({
-      userId,
+      loginhubId,
       amount: String(amount),
       type: 'income',
       description: 'Resgate Cofrinho',
@@ -299,10 +299,10 @@ export const investmentsService = {
     
     // Sync the linked account
     const existing = await db.query.investments.findFirst({
-      where: and(eq(investments.id, id), eq(investments.userId, userId))
+      where: and(eq(investments.id, id), eq(investments.loginhubId, loginhubId))
     });
     if (existing?.accountId) {
-      await this.syncAccountBalance(userId, existing.accountId);
+      await this.syncAccountBalance(loginhubId, existing.accountId);
     }
   }
 };

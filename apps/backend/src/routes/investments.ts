@@ -6,11 +6,11 @@ import { requireAuth } from '../middleware/auth.js';
 investmentsRouter.use(requireAuth);
 
 investmentsRouter.get('/', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const data = await investmentsService.getByUserId(userId);
+    const data = await investmentsService.getByUserId(loginhubId);
     res.json(data);
   } catch (err) {
     req.log.error(err, 'Failed to fetch investments');
@@ -19,11 +19,11 @@ investmentsRouter.get('/', async (req, res) => {
 });
 
 investmentsRouter.get('/summary', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const summary = await investmentsService.getSummary(userId);
+    const summary = await investmentsService.getSummary(loginhubId);
     res.json(summary);
   } catch (err) {
     req.log.error(err, 'Failed to fetch investments summary');
@@ -32,12 +32,12 @@ investmentsRouter.get('/summary', async (req, res) => {
 });
 
 investmentsRouter.post('/', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const data = investmentSchema.parse(req.body);
-    const created = await investmentsService.create(userId, data);
+    const created = await investmentsService.create(loginhubId, data);
     res.status(201).json(created);
   } catch (err: any) {
     if (err.name === 'ZodError') {
@@ -49,12 +49,12 @@ investmentsRouter.post('/', async (req, res) => {
 });
 
 investmentsRouter.put('/:id', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const data = updateInvestmentSchema.parse(req.body);
-    const updated = await investmentsService.update(userId, req.params.id, data);
+    const updated = await investmentsService.update(loginhubId, req.params.id, data);
     
     if (!updated) {
       return res.status(404).json({ error: 'Investment not found' });
@@ -71,11 +71,11 @@ investmentsRouter.put('/:id', async (req, res) => {
 });
 
 investmentsRouter.get('/:id/chart', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const data = await investmentsService.getPiggyBankChart(userId, req.params.id);
+    const data = await investmentsService.getPiggyBankChart(loginhubId, req.params.id);
     res.json(data);
   } catch (err) {
     req.log.error(err, 'Failed to fetch investment chart');
@@ -84,12 +84,12 @@ investmentsRouter.get('/:id/chart', async (req, res) => {
 });
 
 investmentsRouter.post('/:id/deposit', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const { amount, accountId } = req.body;
-    await investmentsService.deposit(userId, req.params.id, Number(amount), accountId);
+    await investmentsService.deposit(loginhubId, req.params.id, Number(amount), accountId);
     res.status(204).send();
   } catch (err) {
     req.log.error(err, 'Failed to deposit into investment');
@@ -98,12 +98,12 @@ investmentsRouter.post('/:id/deposit', async (req, res) => {
 });
 
 investmentsRouter.post('/:id/withdraw', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const { amount, accountId } = req.body;
-    await investmentsService.withdraw(userId, req.params.id, Number(amount), accountId);
+    await investmentsService.withdraw(loginhubId, req.params.id, Number(amount), accountId);
     res.status(204).send();
   } catch (err) {
     req.log.error(err, 'Failed to withdraw from investment');
@@ -112,11 +112,11 @@ investmentsRouter.post('/:id/withdraw', async (req, res) => {
 });
 
 investmentsRouter.delete('/:id', async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const loginhubId = req.user?.loginhubId;
+  if (!loginhubId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const success = await investmentsService.delete(userId, req.params.id);
+    const success = await investmentsService.delete(loginhubId, req.params.id);
     if (!success) {
       return res.status(404).json({ error: 'Investment not found' });
     }

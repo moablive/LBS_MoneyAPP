@@ -5,7 +5,7 @@ export const loanTypeEnum = z.enum(['given', 'received', 'fgts']);
 
 export const loanSchema = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid(),
+  loginhubId: z.number(),
   accountId: z.string().uuid().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, 'A descrição é obrigatória'),

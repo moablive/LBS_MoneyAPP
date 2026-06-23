@@ -41,8 +41,7 @@ export const investmentTypeEnum = pgEnum("investment_type", [
 
 // -------- userSettings --------------------------------------------------------------
 export const userSettings = pgTable("user_settings", {
-  id: varchar("id", { length: 50 }).primaryKey(),
-  loginhubId: integer("loginhub_id"),
+  loginhubId: integer("loginhub_id").primaryKey(),
   telegramId: varchar("telegram_id", { length: 50 }).unique(),
   settings: jsonb("settings").default({ requireReceipts: true }).notNull(),
 });
@@ -52,9 +51,8 @@ export const categories = pgTable(
   "categories",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    name: varchar("name", { length: 120 }).notNull(),
+    loginhubId: integer("loginhub_id").notNull(),
+        name: varchar("name", { length: 120 }).notNull(),
     type: categoryTypeEnum("type").notNull(),
     color: varchar("color", { length: 9 }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -62,9 +60,9 @@ export const categories = pgTable(
       .notNull(),
   },
   (t) => ({
-    userIdx: index("categories_user_idx").on(t.userId),
-    uniqueUserNameType: uniqueIndex("categories_user_name_type_uq").on(
-      t.userId,
+    userIdx: index("categories_loginhub_idx").on(t.loginhubId),
+    uniqueUserNameType: uniqueIndex("categories_loginhub_name_type_uq").on(
+      t.loginhubId,
       t.name,
       t.type,
     ),
@@ -76,9 +74,8 @@ export const accounts = pgTable(
   "accounts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    name: varchar("name", { length: 120 }).notNull(),
+    loginhubId: integer("loginhub_id").notNull(),
+        name: varchar("name", { length: 120 }).notNull(),
     type: accountTypeEnum("type").notNull(),
     // Identifier into the static bank registry on the frontend
     // (e.g. "itau", "nubank", "picpay"). Nullable for cash/wallet/other.
@@ -100,7 +97,7 @@ export const accounts = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => ({ userIdx: index("accounts_user_idx").on(t.userId) }),
+  (t) => ({ userIdx: index("accounts_loginhub_idx").on(t.loginhubId) }),
 );
 
 // -------- subscriptions ------------------------------------------------------
@@ -113,9 +110,8 @@ export const subscriptions = pgTable(
   "subscriptions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    description: varchar("description", { length: 255 }).notNull(),
+    loginhubId: integer("loginhub_id").notNull(),
+        description: varchar("description", { length: 255 }).notNull(),
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
     type: transactionTypeEnum("type").notNull(),
     categoryId: uuid("category_id")
@@ -134,7 +130,7 @@ export const subscriptions = pgTable(
       .notNull(),
   },
   (t) => ({
-    userIdx: index("subscriptions_user_idx").on(t.userId),
+    userIdx: index("subscriptions_loginhub_idx").on(t.loginhubId),
   }),
 );
 
@@ -143,9 +139,8 @@ export const transactions = pgTable(
   "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    description: varchar("description", { length: 255 }).notNull(),
+    loginhubId: integer("loginhub_id").notNull(),
+        description: varchar("description", { length: 255 }).notNull(),
     // Signed: negative = expense, positive = income. `type` is denormalized
     // for fast filtering and to keep the UI's filter chips O(1).
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
@@ -177,12 +172,12 @@ export const transactions = pgTable(
       .notNull(),
   },
   (t) => ({
-    userOccurredIdx: index("transactions_user_occurred_idx").on(
-      t.userId,
+    userOccurredIdx: index("transactions_loginhub_occurred_idx").on(
+      t.loginhubId,
       t.occurredAt,
     ),
     userTypeOccurredIdx: index("transactions_user_type_occurred_idx").on(
-      t.userId,
+      t.loginhubId,
       t.type,
       t.occurredAt,
     ),
@@ -202,9 +197,8 @@ export const loans = pgTable(
   "loans",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    accountId: uuid("account_id").references(() => accounts.id, {
+    loginhubId: integer("loginhub_id").notNull(),
+        accountId: uuid("account_id").references(() => accounts.id, {
       onDelete: "set null",
     }),
     categoryId: uuid("category_id").references(() => categories.id, {
@@ -225,7 +219,7 @@ export const loans = pgTable(
       .notNull(),
   },
   (t) => ({
-    userIdx: index("loans_user_idx").on(t.userId),
+    userIdx: index("loans_loginhub_idx").on(t.loginhubId),
   }),
 );
 
@@ -234,9 +228,8 @@ export const sharedLinks = pgTable(
   "shared_links",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: integer("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
-    categoryId: uuid("category_id").references(() => categories.id, {
+    loginhubId: integer("loginhub_id").notNull(),
+        categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
     }),
     token: varchar("token", { length: 128 }).notNull().unique(),
@@ -247,7 +240,7 @@ export const sharedLinks = pgTable(
       .notNull(),
   },
   (t) => ({
-    userIdx: index("shared_links_user_idx").on(t.userId),
+    userIdx: index("shared_links_loginhub_idx").on(t.loginhubId),
     tokenIdx: uniqueIndex("shared_links_token_idx").on(t.token),
   }),
 );
@@ -259,8 +252,7 @@ export const investments = pgTable(
   "investments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    loginhubId: uuid("loginhub_id"),
-    userId: varchar("user_id", { length: 50 }).notNull(),
+    loginhubId: integer("loginhub_id").notNull(),
     accountId: uuid("account_id").references(() => accounts.id, {
       onDelete: "set null",
     }),
@@ -284,7 +276,7 @@ export const investments = pgTable(
       .notNull(),
   },
   (t) => ({
-    userIdx: index("investments_user_idx").on(t.userId),
+    userIdx: index("investments_loginhub_idx").on(t.loginhubId),
     accountIdx: index("investments_account_idx").on(t.accountId),
   }),
 );

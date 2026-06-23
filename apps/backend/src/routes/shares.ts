@@ -18,7 +18,7 @@ const createShareSchema = z.object({
 
 sharesRouter.post('/', requireAuth, validate(createShareSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const body = req.body as z.infer<typeof createShareSchema>;
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -29,7 +29,7 @@ sharesRouter.post('/', requireAuth, validate(createShareSchema), async (req, res
     const [row] = await db
       .insert(sharedLinks)
       .values({
-        userId,
+        loginhubId,
         categoryId: body.categoryId ?? null,
         token,
         passwordHash,
@@ -68,7 +68,7 @@ sharesRouter.post('/:token/verify', validate(verifyShareSchema), async (req, res
     }
 
     const sessionToken = jwt.sign(
-      { sub: link.userId, shareToken: token, categoryId: link.categoryId },
+      { sub: link.loginhubId, shareToken: token, categoryId: link.categoryId },
       env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -116,7 +116,7 @@ sharesRouter.get('/:token/transactions', async (req, res, next) => {
       return;
     }
 
-    const conds = [eq(transactions.userId, link.userId)];
+    const conds = [eq(transactions.loginhubId, link.loginhubId)];
     if (link.categoryId) {
       conds.push(eq(transactions.categoryId, link.categoryId));
     }
@@ -195,7 +195,7 @@ sharesRouter.get('/:token/transactions/:id/receipt', async (req, res, next) => {
     }
 
     const id = req.params.id!;
-    const conds = [eq(transactions.id, id), eq(transactions.userId, link.userId)];
+    const conds = [eq(transactions.id, id), eq(transactions.loginhubId, link.loginhubId)];
     if (link.categoryId) {
       conds.push(eq(transactions.categoryId, link.categoryId));
     }

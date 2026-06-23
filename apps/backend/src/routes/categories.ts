@@ -16,15 +16,15 @@ const listQuerySchema = z
 
 categoriesRouter.get('/', validate(listQuerySchema, 'query'), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const { type } = req.query as z.infer<typeof listQuerySchema>;
     const rows = await db
       .select()
       .from(categories)
       .where(
         type
-          ? and(eq(categories.userId, userId), eq(categories.type, type))
-          : eq(categories.userId, userId),
+          ? and(eq(categories.loginhubId, loginhubId), eq(categories.type, type))
+          : eq(categories.loginhubId, loginhubId),
       )
       .orderBy(asc(categories.name));
     res.json(rows);
@@ -35,11 +35,11 @@ categoriesRouter.get('/', validate(listQuerySchema, 'query'), async (req, res, n
 
 categoriesRouter.post('/', validate(createCategorySchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const body = req.body as import('@moneyapp/models').CreateCategoryInput;
     const [row] = await db
       .insert(categories)
-      .values({ ...body, userId })
+      .values({ ...body, loginhubId })
       .returning();
     res.status(201).json(row);
   } catch (err: unknown) {
@@ -54,13 +54,13 @@ categoriesRouter.post('/', validate(createCategorySchema), async (req, res, next
 
 categoriesRouter.patch('/:id', validate(updateCategorySchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const body = req.body as import('@moneyapp/models').UpdateCategoryInput;
     const [row] = await db
       .update(categories)
       .set(body)
-      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .where(and(eq(categories.id, id), eq(categories.loginhubId, loginhubId)))
       .returning();
     if (!row) {
       res.status(404).json({ error: 'not_found' });
@@ -74,11 +74,11 @@ categoriesRouter.patch('/:id', validate(updateCategorySchema), async (req, res, 
 
 categoriesRouter.delete('/:id', async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const result = await db
       .delete(categories)
-      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+      .where(and(eq(categories.id, id), eq(categories.loginhubId, loginhubId)))
       .returning({ id: categories.id });
     if (result.length === 0) {
       res.status(404).json({ error: 'not_found' });

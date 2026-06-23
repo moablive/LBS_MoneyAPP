@@ -78,6 +78,13 @@
       "when": 1782221118624,
       "tag": "0010_loose_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782226057927,
+      "tag": "0011_majestic_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

@@ -11,7 +11,7 @@ export const loansRouter = Router();
 // ---------- helpers ----------------------------------------------------------
 function applyBalanceDelta(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  userId: string,
+  loginhubId: number,
   accountId: string,
   delta: string | number,
 ) {
@@ -21,7 +21,7 @@ function applyBalanceDelta(
       currentBalance: sql`${accounts.currentBalance} + ${String(delta)}::numeric`,
     })
     // Frozen accounts keep a historical balance — skip the mutation for them.
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId), eq(accounts.freezeBalance, false)));
+    .where(and(eq(accounts.id, accountId), eq(accounts.loginhubId, loginhubId), eq(accounts.freezeBalance, false)));
 }
 
 function negate(value: string): string {
@@ -31,12 +31,12 @@ function negate(value: string): string {
 
 loansRouter.get('/summary', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
 
     const rows = await db
       .select({
         id: loans.id,
-        userId: loans.userId,
+        loginhubId: loans.loginhubId,
         description: loans.description,
         amount: loans.amount,
         date: loans.date,
@@ -49,12 +49,12 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
         hasReceipt: sql<boolean>`${loans.receiptBase64} is not null`.as('has_receipt'),
       })
       .from(loans)
-      .where(eq(loans.userId, userId))
+      .where(eq(loans.loginhubId, loginhubId))
       .orderBy(desc(loans.date));
 
     const items = rows.map((r) => ({
       id: r.id,
-      userId: r.userId,
+      loginhubId: r.loginhubId,
       description: r.description,
       amount: Number(r.amount),
       date: r.date.toISOString(),
@@ -102,7 +102,7 @@ loansRouter.post(
   validate(createLoanSchema, 'body'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const data = req.body as import('@moneyapp/models').CreateLoanInput;
       const installmentsCount = data.installments ?? 1;
 
@@ -115,7 +115,7 @@ loansRouter.post(
           installmentDate.setUTCMonth(installmentDate.getUTCMonth() + (i - 1));
           
           recordsToInsert.push({
-            userId,
+            loginhubId,
             description: `${data.description} (${i}/${installmentsCount})`,
             amount: perInstallmentAmount.toString(),
             date: installmentDate,
@@ -137,7 +137,7 @@ loansRouter.post(
               const txType = l.type === 'received' ? 'expense' : 'income';
               const signedAmount = txType === 'expense' ? `-${l.amount}` : l.amount;
               await tx.insert(transactions).values({
-                userId,
+                loginhubId,
                 loanId: l.id,
                 description: l.description,
                 amount: signedAmount,
@@ -150,7 +150,7 @@ loansRouter.post(
                 receiptMimeType: l.receiptMimeType,
               });
               if (l.accountId) {
-                await applyBalanceDelta(tx, userId, l.accountId, signedAmount);
+                await applyBalanceDelta(tx, loginhubId, l.accountId, signedAmount);
               }
             }
           }
@@ -167,7 +167,7 @@ loansRouter.post(
             .insert(loans)
             .values({
               ...data,
-              userId,
+              loginhubId,
               accountId: data.accountId ?? null,
               categoryId: data.categoryId ?? null,
               amount: data.amount.toString(),
@@ -181,7 +181,7 @@ loansRouter.post(
             const txType = created.type === 'received' ? 'expense' : 'income';
             const signedAmount = txType === 'expense' ? `-${created.amount}` : created.amount;
             await tx.insert(transactions).values({
-              userId,
+              loginhubId,
               loanId: created.id,
               description: created.description,
               amount: signedAmount,
@@ -194,7 +194,7 @@ loansRouter.post(
               receiptMimeType: created.receiptMimeType,
             });
             if (created.accountId) {
-              await applyBalanceDelta(tx, userId, created.accountId, signedAmount);
+              await applyBalanceDelta(tx, loginhubId, created.accountId, signedAmount);
             }
           }
 
@@ -225,7 +225,7 @@ loansRouter.put(
   validate(updateLoanSchema, 'body'),
   async (req, res, next) => {
     try {
-      const userId = req.user!.id;
+      const loginhubId = req.user!.loginhubId;
       const id = req.params.id as string;
       const data = req.body as import('@moneyapp/models').UpdateLoanInput;
 
@@ -244,7 +244,7 @@ loansRouter.put(
         const [updatedLoan] = await tx
           .update(loans)
           .set(updateData)
-          .where(and(eq(loans.id, id), eq(loans.userId, userId)))
+          .where(and(eq(loans.id, id), eq(loans.loginhubId, loginhubId)))
           .returning();
 
         if (!updatedLoan) return null;
@@ -260,7 +260,7 @@ loansRouter.put(
           if (existingTx) {
             // Revert old balance
             if (existingTx.accountId) {
-              await applyBalanceDelta(tx, userId, existingTx.accountId, negate(existingTx.amount));
+              await applyBalanceDelta(tx, loginhubId, existingTx.accountId, negate(existingTx.amount));
             }
             // Update transaction
             await tx.update(transactions).set({
@@ -274,11 +274,11 @@ loansRouter.put(
             }).where(eq(transactions.id, existingTx.id));
             // Apply new balance
             if (updatedLoan.accountId) {
-              await applyBalanceDelta(tx, userId, updatedLoan.accountId, signedAmount);
+              await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
             }
           } else {
             await tx.insert(transactions).values({
-              userId,
+              loginhubId,
               loanId: updatedLoan.id,
               description: updatedLoan.description,
               amount: signedAmount,
@@ -291,13 +291,13 @@ loansRouter.put(
               receiptMimeType: updatedLoan.receiptMimeType,
             });
             if (updatedLoan.accountId) {
-              await applyBalanceDelta(tx, userId, updatedLoan.accountId, signedAmount);
+              await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
             }
           }
         } else if (existingTx) {
           // If it was changed to active, or category removed, delete the tx and revert balance
           if (existingTx.accountId) {
-            await applyBalanceDelta(tx, userId, existingTx.accountId, negate(existingTx.amount));
+            await applyBalanceDelta(tx, loginhubId, existingTx.accountId, negate(existingTx.amount));
           }
           await tx.delete(transactions).where(eq(transactions.id, existingTx.id));
         }
@@ -324,12 +324,12 @@ loansRouter.put(
 
 loansRouter.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id as string;
 
     const [deleted] = await db
       .delete(loans)
-      .where(and(eq(loans.id, id), eq(loans.userId, userId)))
+      .where(and(eq(loans.id, id), eq(loans.loginhubId, loginhubId)))
       .returning();
 
     if (!deleted) {
@@ -344,12 +344,12 @@ loansRouter.delete('/:id', requireAuth, async (req, res, next) => {
 
 loansRouter.get('/:id/receipt', requireAuth, async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id as string;
     const [row] = await db
       .select({ receiptBase64: loans.receiptBase64, receiptMimeType: loans.receiptMimeType })
       .from(loans)
-      .where(and(eq(loans.id, id), eq(loans.userId, userId)));
+      .where(and(eq(loans.id, id), eq(loans.loginhubId, loginhubId)));
       
     if (!row?.receiptBase64 || !row.receiptMimeType) {
       res.status(404).json({ error: 'no_receipt' });

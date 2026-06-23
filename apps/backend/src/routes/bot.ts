@@ -19,7 +19,7 @@ botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
   try {
     const { telegramId } = req.params;
     const [user] = await db
-      .select({ id: userSettings.id })
+      .select({ id: userSettings.loginhubId })
       .from(userSettings)
       .where(eq(userSettings.telegramId, telegramId))
       .limit(1);
@@ -38,7 +38,7 @@ botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
 botRouter.get('/users/all', async (_req, res, next) => {
   try {
     const rows = await db
-      .select({ id: userSettings.id,  telegramId: userSettings.telegramId })
+      .select({ id: userSettings.loginhubId,  telegramId: userSettings.telegramId })
       .from(userSettings)
       .where(isNotNull(userSettings.telegramId));
 
@@ -54,23 +54,23 @@ botRouter.get('/users/all', async (_req, res, next) => {
 //    + categorias padrão se for o primeiro acesso do usuário ao MoneyAPP.
 botRouter.post('/link-telegram', async (req, res, next) => {
   try {
-    const { userId, telegramId } = req.body as { userId?: string; telegramId?: string };
+    const { loginhubId, telegramId } = req.body as { loginhubId?: number; telegramId?: string };
 
-    if (!userId || !telegramId) {
+    if (!loginhubId || !telegramId) {
       res.status(400).json({ error: 'missing_fields' });
       return;
     }
 
-    let settings = await db.query.userSettings.findFirst({ where: eq(userSettings.id, userId) });
+    let settings = await db.query.userSettings.findFirst({ where: eq(userSettings.loginhubId, loginhubId) });
     if (!settings) {
-      const [created] = await db.insert(userSettings).values({ id: userId, telegramId }).returning();
+      const [created] = await db.insert(userSettings).values({ loginhubId, telegramId }).returning();
       settings = created!;
-      await ensureDefaultCategories(userId);
+      await ensureDefaultCategories(loginhubId);
     } else {
-      await db.update(userSettings).set({ telegramId }).where(eq(userSettings.id, userId));
+      await db.update(userSettings).set({ telegramId }).where(eq(userSettings.loginhubId, loginhubId));
     }
 
-    res.json({ id: userId });
+    res.json({ id: loginhubId });
   } catch (err) {
     next(err);
   }
@@ -79,10 +79,10 @@ botRouter.post('/link-telegram', async (req, res, next) => {
 // 3. Resumo por categoria (Gráfico de Pizza)
 botRouter.get('/summaries/by-category', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
+    const loginhubId = Number(req.query.loginhubId);
     const type = req.query.type as 'income' | 'expense';
 
-    if (!userId || !type) {
+    if (!loginhubId || !type) {
       res.status(400).json({ error: 'missing_fields' });
       return;
     }
@@ -95,7 +95,7 @@ botRouter.get('/summaries/by-category', async (req, res, next) => {
       })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
-      .where(and(eq(transactions.userId, userId), eq(transactions.type, type)))
+      .where(and(eq(transactions.loginhubId, loginhubId), eq(transactions.type, type)))
       .groupBy(categories.name, categories.color);
 
     res.json(rows.map((r) => ({ name: r.name, color: r.color, total: Number(r.total) })));
@@ -107,10 +107,10 @@ botRouter.get('/summaries/by-category', async (req, res, next) => {
 // 4. Todas as transações da categoria
 botRouter.get('/categories/:categoryId/transactions', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
+    const loginhubId = Number(req.query.loginhubId);
     const { categoryId } = req.params;
 
-    if (!userId || !categoryId) {
+    if (!loginhubId || !categoryId) {
       res.status(400).json({ error: 'missing_fields' });
       return;
     }
@@ -122,7 +122,7 @@ botRouter.get('/categories/:categoryId/transactions', async (req, res, next) => 
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userId),
+          eq(transactions.loginhubId, loginhubId),
           eq(transactions.categoryId, categoryId),
           currentMonth,
         ),
@@ -136,7 +136,7 @@ botRouter.get('/categories/:categoryId/transactions', async (req, res, next) => 
         occurredAt: transactions.occurredAt,
       })
       .from(transactions)
-      .where(and(eq(transactions.userId, userId), eq(transactions.categoryId, categoryId)))
+      .where(and(eq(transactions.loginhubId, loginhubId), eq(transactions.categoryId, categoryId)))
       .orderBy(desc(transactions.occurredAt))
       .limit(5);
 
@@ -156,9 +156,9 @@ botRouter.get('/categories/:categoryId/transactions', async (req, res, next) => 
 // 5. Todos os resumos (Receitas e Despesas do mês)
 botRouter.get('/summaries/all', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const loginhubId = Number(req.query.loginhubId);
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -172,7 +172,7 @@ botRouter.get('/summaries/all', async (req, res, next) => {
       })
       .from(transactions)
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
-      .where(and(eq(transactions.userId, userId), currentMonth))
+      .where(and(eq(transactions.loginhubId, loginhubId), currentMonth))
       .groupBy(categories.name, categories.type)
       .orderBy(desc(categories.type), desc(sql`abs(sum(${transactions.amount}))`));
 
@@ -185,11 +185,11 @@ botRouter.get('/summaries/all', async (req, res, next) => {
 // 6. Transações recentes sem recibo
 botRouter.get('/transactions/no-receipt', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
+    const loginhubId = Number(req.query.loginhubId);
     const limitCount = req.query.limit ? Number(req.query.limit) : 5;
 
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -204,7 +204,7 @@ botRouter.get('/transactions/no-receipt', async (req, res, next) => {
       .innerJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
         and(
-          eq(transactions.userId, userId),
+          eq(transactions.loginhubId, loginhubId),
           isNull(transactions.receiptBase64),
           sql`${categories.name} ILIKE '%controle%'`
         )
@@ -221,9 +221,9 @@ botRouter.get('/transactions/no-receipt', async (req, res, next) => {
 // 7. Dashboard summary (saldo atual)
 botRouter.get('/dashboard/summary', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const loginhubId = Number(req.query.loginhubId);
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -232,7 +232,7 @@ botRouter.get('/dashboard/summary', async (req, res, next) => {
       .from(accounts)
       .where(
         and(
-          eq(accounts.userId, userId),
+          eq(accounts.loginhubId, loginhubId),
           eq(accounts.freezeBalance, false),
           sql`${accounts.type} != 'credit_card'`
         )
@@ -249,9 +249,9 @@ botRouter.get('/dashboard/summary', async (req, res, next) => {
 // 7.5. Resumo de contas (Saldos)
 botRouter.get('/dashboard/accounts', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const loginhubId = Number(req.query.loginhubId);
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -263,7 +263,7 @@ botRouter.get('/dashboard/accounts', async (req, res, next) => {
       .from(accounts)
       .where(
         and(
-          eq(accounts.userId, userId),
+          eq(accounts.loginhubId, loginhubId),
           sql`${accounts.type} != 'credit_card'`
         )
       )
@@ -281,9 +281,9 @@ botRouter.get('/dashboard/accounts', async (req, res, next) => {
 // 8. Resumo de cartões de crédito
 botRouter.get('/dashboard/cards', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const loginhubId = Number(req.query.loginhubId);
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -296,7 +296,7 @@ botRouter.get('/dashboard/cards', async (req, res, next) => {
       .from(accounts)
       .where(
         and(
-          eq(accounts.userId, userId),
+          eq(accounts.loginhubId, loginhubId),
           eq(accounts.type, 'credit_card')
         )
       );
@@ -314,9 +314,9 @@ botRouter.get('/dashboard/cards', async (req, res, next) => {
 // 9. Criar link de compartilhamento
 botRouter.post('/shares', async (req, res, next) => {
   try {
-    const { userId, categoryId } = req.body;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const { loginhubId, categoryId } = req.body;
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -330,7 +330,7 @@ botRouter.post('/shares', async (req, res, next) => {
     const [row] = await db
       .insert(sharedLinks)
       .values({
-        userId,
+        loginhubId,
         categoryId: categoryId || null,
         token,
         passwordHash,
@@ -346,9 +346,9 @@ botRouter.post('/shares', async (req, res, next) => {
 // 10. Resumo de Empréstimos
 botRouter.get('/loans/summary', async (req, res, next) => {
   try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      res.status(400).json({ error: 'missing_userId' });
+    const loginhubId = Number(req.query.loginhubId);
+    if (!loginhubId) {
+      res.status(400).json({ error: 'missing_loginhubId' });
       return;
     }
 
@@ -362,7 +362,7 @@ botRouter.get('/loans/summary', async (req, res, next) => {
         description: loans.description,
       })
       .from(loans)
-      .where(eq(loans.userId, userId))
+      .where(eq(loans.loginhubId, loginhubId))
       .orderBy(desc(loans.date));
 
     const activeItems = rows.filter((i) => i.status === 'active').map(i => ({

@@ -43,11 +43,11 @@ const PRESET_COLORS = [
  * categories that don't already exist for that user. Called when a user is
  * first provisioned in MoneyAPP (after LoginHub authenticates them).
  */
-export async function ensureDefaultCategories(userId: string): Promise<void> {
+export async function ensureDefaultCategories(loginhubId: number): Promise<void> {
   for (const [i, cat] of DEFAULT_CATEGORIES.entries()) {
     const existing = await db.query.categories.findFirst({
       where: and(
-        eq(schema.categories.userId, userId),
+        eq(schema.categories.loginhubId, loginhubId),
         eq(schema.categories.name, cat.name),
         eq(schema.categories.type, cat.type as 'expense' | 'income'),
       ),
@@ -55,7 +55,7 @@ export async function ensureDefaultCategories(userId: string): Promise<void> {
 
     if (!existing) {
       await db.insert(schema.categories).values({
-        userId,
+        loginhubId,
         name: cat.name,
         type: cat.type as 'expense' | 'income',
         color: PRESET_COLORS[i % PRESET_COLORS.length],

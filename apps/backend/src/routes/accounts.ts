@@ -12,11 +12,11 @@ accountsRouter.use(requireAuth);
 
 accountsRouter.get('/', async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const rows = await db
       .select()
       .from(accounts)
-      .where(eq(accounts.userId, userId))
+      .where(eq(accounts.loginhubId, loginhubId))
       .orderBy(asc(accounts.name));
     res.json(rows);
   } catch (err) {
@@ -26,12 +26,12 @@ accountsRouter.get('/', async (req, res, next) => {
 
 accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const body = req.body as import('@moneyapp/models').CreateAccountInput;
     const [row] = await db
       .insert(accounts)
       .values({
-        userId,
+        loginhubId,
         name: body.name,
         type: body.type,
         bankCode: body.bankCode ?? null,
@@ -51,7 +51,7 @@ accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) =
 
 accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const body = req.body as import('@moneyapp/models').UpdateAccountInput;
     const patch: Record<string, unknown> = {};
@@ -67,7 +67,7 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
     const [row] = await db
       .update(accounts)
       .set(patch)
-      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .where(and(eq(accounts.id, id), eq(accounts.loginhubId, loginhubId)))
       .returning();
     if (!row) {
       res.status(404).json({ error: 'not_found' });
@@ -81,11 +81,11 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
 
 accountsRouter.delete('/:id', async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const result = await db
       .delete(accounts)
-      .where(and(eq(accounts.id, id), eq(accounts.userId, userId)))
+      .where(and(eq(accounts.id, id), eq(accounts.loginhubId, loginhubId)))
       .returning({ id: accounts.id });
     if (result.length === 0) {
       res.status(404).json({ error: 'not_found' });
@@ -100,7 +100,7 @@ accountsRouter.delete('/:id', async (req, res, next) => {
 // ---------- pay-invoice ------------------------------------------------------
 accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const creditCardId = req.params.id!;
     const body = req.body as import('@moneyapp/models').PayInvoiceInput;
 
@@ -109,7 +109,7 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
       const [ccTx] = await tx
         .insert(transactions)
         .values({
-          userId,
+          loginhubId,
           description: body.description,
           amount: body.amount.toFixed(2), // income is positive
           type: 'income',
@@ -123,7 +123,7 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
         .returning();
 
       // Math.abs the delta as handled by credit cards, but here it's an income so it's already positive.
-      await applyBalanceDelta(tx, userId, creditCardId, ccTx!.amount);
+      await applyBalanceDelta(tx, loginhubId, creditCardId, ccTx!.amount);
 
       let sourceTx = null;
       // 2. If source account exists, transaction on source account (Expense)
@@ -131,7 +131,7 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
         [sourceTx] = await tx
           .insert(transactions)
           .values({
-            userId,
+            loginhubId,
             description: body.description,
             amount: (-Math.abs(body.amount)).toFixed(2), // expense is negative
             type: 'expense',
@@ -144,7 +144,7 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
           })
           .returning();
 
-        await applyBalanceDelta(tx, userId, body.sourceAccountId, sourceTx!.amount);
+        await applyBalanceDelta(tx, loginhubId, body.sourceAccountId, sourceTx!.amount);
       }
 
       return { ccTx, sourceTx };

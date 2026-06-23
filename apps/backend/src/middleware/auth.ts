@@ -7,7 +7,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: { id: string; email: string };
+      user?: { loginhubId: number; email: string };
     }
   }
 }
@@ -43,11 +43,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const apiKey = req.headers['x-api-key'];
     if (typeof apiKey === 'string' && apiKey === env.BOT_SERVICE_KEY) {
       const onBehalfOf = req.headers['x-user-id'];
-      if (typeof onBehalfOf !== 'string' || !onBehalfOf) {
+      if (typeof onBehalfOf !== 'string' || !onBehalfOf || isNaN(Number(onBehalfOf))) {
         res.status(401).json({ error: 'unauthorized' });
         return;
       }
-      req.user = { id: onBehalfOf, email: '' }; // Bot might not send email
+      req.user = { loginhubId: parseInt(onBehalfOf, 10), email: '' }; // Bot might not send email
       next();
       return;
     }
@@ -59,7 +59,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return;
     }
     
-    req.user = { id: payload.sub, email: payload.email };
+    req.user = { loginhubId: parseInt(payload.sub, 10), email: payload.email };
     next();
   } catch (err) {
     next(err);

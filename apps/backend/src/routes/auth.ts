@@ -21,17 +21,17 @@ authRouter.post('/bootstrap', async (req, res, next) => {
       return;
     }
 
-    const userId = payload.sub;
+    const loginhubId = parseInt(payload.sub, 10);
 
-    let settings = await db.query.userSettings.findFirst({ where: eq(userSettings.id, userId) });
+    let settings = await db.query.userSettings.findFirst({ where: eq(userSettings.loginhubId, loginhubId) });
 
     if (!settings) {
-      const [created] = await db.insert(userSettings).values({ id: userId }).returning();
+      const [created] = await db.insert(userSettings).values({ loginhubId }).returning();
       settings = created!;
-      await ensureDefaultCategories(userId);
+      await ensureDefaultCategories(loginhubId);
     }
 
-    res.json({ id: settings.id, name: req.body?.name || '', email: payload.email || '', settings: settings.settings });
+    res.json({ id: settings.loginhubId, name: req.body?.name || '', email: payload.email || '', settings: settings.settings });
   } catch (err) {
     next(err);
   }

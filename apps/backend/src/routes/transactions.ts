@@ -12,14 +12,14 @@ transactionsRouter.use(requireAuth);
 // ---------- list -------------------------------------------------------------
 transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const f = req.query as unknown as import('@moneyapp/models').TransactionFilters;
 
     const monthRange = f.month ? monthBounds(f.month) : null;
     const from = f.from ?? monthRange?.start;
     const to = f.to ?? monthRange?.end;
 
-    const conds = [eq(transactions.userId, userId), isNull(transactions.loanId)];
+    const conds = [eq(transactions.loginhubId, loginhubId), isNull(transactions.loanId)];
     if (from) conds.push(gte(transactions.occurredAt, from));
     if (to) conds.push(lt(transactions.occurredAt, to));
     if (f.type) conds.push(eq(transactions.type, f.type));
@@ -68,7 +68,7 @@ transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (
 // ---------- create -----------------------------------------------------------
 transactionsRouter.post('/', validate(createTransactionSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const body = req.body as import('@moneyapp/models').CreateTransactionInput;
 
     const created = await db.transaction(async (tx) => {
@@ -82,7 +82,7 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
       const [row] = await tx
         .insert(transactions)
         .values({
-          userId,
+          loginhubId,
           description: body.description,
           amount: body.amount.toFixed(2),
           type: body.type,
@@ -98,7 +98,7 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
       if (row!.accountId && row!.status === 'paid') {
         let delta = Number(row!.amount);
         if (isFatura) delta = Math.abs(delta);
-        await applyBalanceDelta(tx, userId, row!.accountId, delta);
+        await applyBalanceDelta(tx, loginhubId, row!.accountId, delta);
       }
       return row!;
     });
@@ -116,13 +116,13 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
 // ---------- update -----------------------------------------------------------
 transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const body = req.body as import('@moneyapp/models').UpdateTransactionInput;
 
     const updated = await db.transaction(async (tx) => {
       const existing = await tx.query.transactions.findFirst({
-        where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
+        where: and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)),
       });
       if (!existing) return null;
 
@@ -154,7 +154,7 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
       const [row] = await tx
         .update(transactions)
         .set(patch)
-        .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+        .where(and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)))
         .returning();
 
       const oldIsFatura = await isFaturaPaymentTx(tx, existing.accountId, existing.categoryId);
@@ -172,12 +172,12 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
       if (existing.accountId && oldAmountToReverse !== 0) {
         let deltaToReverse = oldAmountToReverse;
         if (oldIsFatura) deltaToReverse = Math.abs(deltaToReverse);
-        await applyBalanceDelta(tx, userId, existing.accountId, negate(String(deltaToReverse)));
+        await applyBalanceDelta(tx, loginhubId, existing.accountId, negate(String(deltaToReverse)));
       }
       if (row!.accountId && newAmountToApply !== 0) {
         let deltaToApply = newAmountToApply;
         if (newIsFatura) deltaToApply = Math.abs(deltaToApply);
-        await applyBalanceDelta(tx, userId, row!.accountId, deltaToApply);
+        await applyBalanceDelta(tx, loginhubId, row!.accountId, deltaToApply);
       }
       return row!;
     });
@@ -199,23 +199,23 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
 // ---------- delete -----------------------------------------------------------
 transactionsRouter.delete('/:id', async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
 
     const removed = await db.transaction(async (tx) => {
       const existing = await tx.query.transactions.findFirst({
-        where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
+        where: and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)),
       });
       if (!existing) return null;
       await tx
         .delete(transactions)
-        .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+        .where(and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)));
       
       const oldIsFatura = await isFaturaPaymentTx(tx, existing.accountId, existing.categoryId);
       if (existing.accountId && existing.status === 'paid') {
         let deltaToReverse = Number(existing.amount);
         if (oldIsFatura) deltaToReverse = Math.abs(deltaToReverse);
-        await applyBalanceDelta(tx, userId, existing.accountId, negate(String(deltaToReverse)));
+        await applyBalanceDelta(tx, loginhubId, existing.accountId, negate(String(deltaToReverse)));
       }
       return existing;
     });
@@ -233,10 +233,10 @@ transactionsRouter.delete('/:id', async (req, res, next) => {
 // ---------- receipt streaming ------------------------------------------------
 transactionsRouter.get('/:id/receipt', async (req, res, next) => {
   try {
-    const userId = req.user!.id;
+    const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const row = await db.query.transactions.findFirst({
-      where: and(eq(transactions.id, id), eq(transactions.userId, userId)),
+      where: and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)),
       columns: { receiptBase64: true, receiptMimeType: true },
     });
     if (!row?.receiptBase64 || !row.receiptMimeType) {
@@ -256,7 +256,7 @@ transactionsRouter.get('/:id/receipt', async (req, res, next) => {
 // ---------- helpers ----------------------------------------------------------
 export function applyBalanceDelta(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  userId: string,
+  loginhubId: number,
   accountId: string,
   delta: string | number,
 ) {
@@ -266,7 +266,7 @@ export function applyBalanceDelta(
       currentBalance: sql`${accounts.currentBalance} + ${String(delta)}::numeric`,
     })
     // Frozen accounts keep a historical balance — skip the mutation for them.
-    .where(and(eq(accounts.id, accountId), eq(accounts.userId, userId), eq(accounts.freezeBalance, false)));
+    .where(and(eq(accounts.id, accountId), eq(accounts.loginhubId, loginhubId), eq(accounts.freezeBalance, false)));
 }
 
 function negate(value: string): string {
