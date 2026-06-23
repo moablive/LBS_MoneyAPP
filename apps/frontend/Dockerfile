@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
-ARG VITE_API_BASE_URL=/api
-ARG VITE_LOGINHUB_API_URL=https://api-auth.astralwavelabel.com/api
+ARG VITE_API_BASE_URL
+ARG VITE_LOGINHUB_API_URL
 
 FROM node:20-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
