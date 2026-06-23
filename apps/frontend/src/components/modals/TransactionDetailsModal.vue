@@ -64,7 +64,7 @@ watch(() => props.transaction, async (t) => {
     loadingReceipt.value = true;
     receiptBlobUrl.value = null;
     try {
-      const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
+      const BASE = import.meta.env.VITE_API_BASE_URL as string;
       const auth = useAuthStore();
       const headers: Record<string, string> = {};
       if (auth.token) headers.Authorization = `Bearer ${auth.token}`;

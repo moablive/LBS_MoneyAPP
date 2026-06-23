@@ -5,9 +5,8 @@ import type { AuthState, User } from '@moneyapp/models';
 const STORAGE_KEY = 'moneyapp.auth';
 
 // Central identity provider (LoginHub) and the MoneyAPP backend.
-const LOGINHUB_API =
-  (import.meta.env.VITE_LOGINHUB_API_URL as string | undefined) ?? 'https://api-auth.astralwavelabel.com/api';
-const BACKEND_API = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
+const LOGINHUB_API = import.meta.env.VITE_LOGINHUB_API_URL as string;
+const BACKEND_API = import.meta.env.VITE_API_BASE_URL as string;
 
 interface PersistedState extends AuthState {
   requirePasswordChange?: boolean;
