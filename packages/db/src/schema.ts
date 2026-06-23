@@ -11,6 +11,7 @@ import {
   pgEnum,
   pgTable,
   jsonb,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const transactionTypeEnum = pgEnum("transaction_type", [
@@ -41,6 +42,7 @@ export const investmentTypeEnum = pgEnum("investment_type", [
 // -------- userSettings --------------------------------------------------------------
 export const userSettings = pgTable("user_settings", {
   id: varchar("id", { length: 50 }).primaryKey(),
+  loginhubId: integer("loginhub_id"),
   telegramId: varchar("telegram_id", { length: 50 }).unique(),
   settings: jsonb("settings").default({ requireReceipts: true }).notNull(),
 });
@@ -50,6 +52,7 @@ export const categories = pgTable(
   "categories",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     name: varchar("name", { length: 120 }).notNull(),
     type: categoryTypeEnum("type").notNull(),
@@ -73,6 +76,7 @@ export const accounts = pgTable(
   "accounts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     name: varchar("name", { length: 120 }).notNull(),
     type: accountTypeEnum("type").notNull(),
@@ -109,6 +113,7 @@ export const subscriptions = pgTable(
   "subscriptions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     description: varchar("description", { length: 255 }).notNull(),
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
@@ -138,6 +143,7 @@ export const transactions = pgTable(
   "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     description: varchar("description", { length: 255 }).notNull(),
     // Signed: negative = expense, positive = income. `type` is denormalized
@@ -196,6 +202,7 @@ export const loans = pgTable(
   "loans",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     accountId: uuid("account_id").references(() => accounts.id, {
       onDelete: "set null",
@@ -227,6 +234,7 @@ export const sharedLinks = pgTable(
   "shared_links",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     categoryId: uuid("category_id").references(() => categories.id, {
       onDelete: "set null",
@@ -251,6 +259,7 @@ export const investments = pgTable(
   "investments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: uuid("loginhub_id"),
     userId: varchar("user_id", { length: 50 }).notNull(),
     accountId: uuid("account_id").references(() => accounts.id, {
       onDelete: "set null",

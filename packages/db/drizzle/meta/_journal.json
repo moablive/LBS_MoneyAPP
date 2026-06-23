@@ -71,6 +71,13 @@
       "when": 1782176422082,
       "tag": "0009_tense_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782221118624,
+      "tag": "0010_loose_jackal",
+      "breakpoints": true
     }
   ]
 }
