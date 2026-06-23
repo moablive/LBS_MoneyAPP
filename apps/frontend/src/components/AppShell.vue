@@ -36,6 +36,7 @@ const nav = [
       { to: '/emprestimos/receber', label: 'A Receber', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>' },
       { to: '/emprestimos/pagar', label: 'A Pagar', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-expense"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>' },
       { to: '/emprestimos/fgts', label: 'FGTS', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01M17 12h.01M7 12h.01"/></svg>' },
+      { to: '/emprestimos/pagos', label: 'Pagos', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' },
     ]
   },
   { to: '/contas',     label: 'Contas',      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a8 8 0 0 1-5.45 7.49 1 1 0 0 1-1.22-1.08L14 16.5a1 1 0 0 0-1-1H7.5a1 1 0 0 0-1 1L5.5 20.41a1 1 0 0 1-1.22 1.08A8 8 0 0 1 2 14v-5"/><path d="M20 12v4M20 16a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2"/></svg>' },
@@ -82,6 +83,11 @@ const creditCards = computed(() => accounts.value.filter(a => a.type === 'credit
 const checkingAccounts = computed(() => accounts.value.filter(a => a.type !== 'credit_card'));
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const totalPaidLoansAmount = computed(() => {
+  if (!loansData.value?.items) return 0;
+  return loansData.value.items.filter(i => i.status === 'paid').reduce((acc, i) => acc + Number(i.amount), 0);
+});
+
 </script>
 
 <template>
@@ -113,7 +119,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
               v-if="item.label === 'Cartões' && creditCards.length > 0 && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
-              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay flex justify-between items-center">
                 <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
                   <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
                   Faturas Atuais
@@ -141,7 +147,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
               v-if="item.label === 'Contas' && checkingAccounts.length > 0 && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
-              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay flex justify-between items-center">
                 <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
                   <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
                   Saldos Atuais
@@ -168,7 +174,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
               v-if="item.label === 'Mensalidades' && subscriptionsData?.items?.length && route.path !== item.to" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
-              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex justify-between items-center">
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay flex justify-between items-center">
                 <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
                   <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
                   Mensalidades
@@ -229,7 +235,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
               v-if="item.label === 'Empréstimos' && loansData?.items?.length && !item.children.some(child => route.path === child.to)" 
               class="absolute left-[calc(100%-1rem)] top-0 ml-2 w-64 bg-surface-raised border border-surface-border rounded-xl shadow-2xl opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-300 z-50 overflow-hidden transform translate-x-[-10px] group-hover/nav:translate-x-0"
             >
-              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay/30 backdrop-blur-sm flex flex-col gap-1">
+              <div class="px-4 py-3 border-b border-surface-border bg-surface-overlay flex flex-col gap-1">
                 <h3 class="text-[11px] font-bold text-white/90 uppercase tracking-widest flex items-center gap-2 mb-1">
                   <span v-html="item.icon" class="w-4 h-4 text-accent"></span>
                   Empréstimos Ativos
@@ -237,6 +243,10 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
                 <div class="flex justify-between text-[10px] font-bold uppercase">
                   <span class="text-expense">A Pagar: {{ brl(loansData.totalActiveAmountReceived) }}</span>
                   <span class="text-income">A Receber: {{ brl(loansData.totalActiveAmountGiven) }}</span>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold uppercase mt-1 pt-1 border-t border-surface-border">
+                  <span class="text-muted">Já Pagos:</span>
+                  <span class="text-green-500">{{ brl(totalPaidLoansAmount) }}</span>
                 </div>
               </div>
               <ul class="p-2 space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">

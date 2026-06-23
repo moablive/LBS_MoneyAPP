@@ -160,8 +160,7 @@ watch(() => props.transaction, async (t) => {
             Carregando...
           </div>
           <div v-else-if="receiptBlobUrl">
-            <button v-if="!isPdf" @click="showFullscreenReceipt = true" class="px-3 py-1.5 bg-surface-base border border-surface-border text-white hover:bg-income/10 hover:text-income hover:border-income/30 rounded-lg text-sm font-medium transition-all">Ver Comprovante</button>
-            <a v-else :href="receiptBlobUrl" target="_blank" class="px-3 py-1.5 bg-surface-base border border-surface-border text-white hover:bg-income/10 hover:text-income hover:border-income/30 rounded-lg text-sm font-medium transition-all inline-block">Abrir PDF</a>
+            <button @click="showFullscreenReceipt = true" class="px-3 py-1.5 bg-surface-base border border-surface-border text-white hover:bg-income/10 hover:text-income hover:border-income/30 rounded-lg text-sm font-medium transition-all">Ver Comprovante</button>
           </div>
           <div v-else class="text-sm text-expense">
             Erro ao carregar
@@ -196,14 +195,21 @@ watch(() => props.transaction, async (t) => {
     <transition name="modal">
       <div 
         v-if="showFullscreenReceipt && receiptBlobUrl" 
-        class="fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 cursor-zoom-out"
+        class="fixed inset-0 flex items-center justify-center bg-black/95 p-4 cursor-zoom-out"
         style="z-index: 9999;"
         @click="showFullscreenReceipt = false"
       >
         <img 
+          v-if="!isPdf"
           :src="receiptBlobUrl" 
           class="max-w-full max-h-full object-contain rounded-xl shadow-2xl" 
         />
+        <iframe
+          v-else
+          :src="receiptBlobUrl"
+          class="w-full h-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl bg-white"
+          title="Comprovante PDF"
+        ></iframe>
         <button 
           @click.stop="showFullscreenReceipt = false"
           class="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 hover:bg-black/80 p-2 rounded-full transition-colors"

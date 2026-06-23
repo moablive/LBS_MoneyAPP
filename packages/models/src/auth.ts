@@ -1,12 +1,6 @@
-import { z } from 'zod';
-
-export const loginSchema = z
-  .object({
-    email: z.string().trim().toLowerCase().email(),
-    password: z.string().min(1),
-  })
-  .strict();
-export type LoginInput = z.infer<typeof loginSchema>;
+// Authentication is delegated to LoginHub. MoneyAPP no longer validates
+// credentials or issues user tokens — these types describe only the local
+// view of an authenticated user (profile + MoneyAPP-specific settings).
 
 export interface UserSettings {
   requireReceipts: boolean;
@@ -17,12 +11,6 @@ export interface User {
   name: string;
   email: string;
   settings: UserSettings;
-  defaultPassword?: boolean;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
 }
 
 export interface AuthState {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, asc, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, isNull, lt, sql } from 'drizzle-orm';
 import { createTransactionSchema, transactionFiltersSchema, updateTransactionSchema } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
 const { accounts, transactions, categories } = schema;
@@ -19,7 +19,7 @@ transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (
     const from = f.from ?? monthRange?.start;
     const to = f.to ?? monthRange?.end;
 
-    const conds = [eq(transactions.userId, userId)];
+    const conds = [eq(transactions.userId, userId), isNull(transactions.loanId)];
     if (from) conds.push(gte(transactions.occurredAt, from));
     if (to) conds.push(lt(transactions.occurredAt, to));
     if (f.type) conds.push(eq(transactions.type, f.type));

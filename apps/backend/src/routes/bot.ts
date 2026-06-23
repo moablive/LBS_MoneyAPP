@@ -3,14 +3,16 @@ import { and, desc, eq, isNull, isNotNull, sql } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
 import argon2 from 'argon2';
 
-import { requireAuth } from '../middleware/auth.js';
+import { requireBotKey } from '../middleware/auth.js';
+import { ensureDefaultCategories } from '@moneyapp/services';
 
 const { users, transactions, categories, accounts, loans } = schema;
 
 export const botRouter = Router();
 
-// Middleware para garantir autenticação via JWT
-botRouter.use(requireAuth);
+// Service-to-service guard: the bot presents BOT_SERVICE_KEY (x-api-key).
+// End-user credentials are validated by the bot against LoginHub directly.
+botRouter.use(requireBotKey);
 
 // 1. Obter usuário pelo Telegram ID
 botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
@@ -46,82 +48,30 @@ botRouter.get('/users/all', async (_req, res, next) => {
   }
 });
 
-// 1.6. Convidar usuário
-botRouter.post('/invite', async (req, res, next) => {
+// 2. Vincular o Telegram a um usuário já autenticado no LoginHub.
+//    O bot valida e-mail+senha NO LOGINHUB antes de chamar aqui; este endpoint
+//    apenas grava o telegram_id (casando por e-mail) e provisiona a linha local
+//    + categorias padrão se for o primeiro acesso do usuário ao MoneyAPP.
+botRouter.post('/link-telegram', async (req, res, next) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      res.status(400).json({ error: 'missing_email' });
+    const { email, telegramId, name } = req.body as { email?: string; telegramId?: string; name?: string };
+
+    if (!email || !telegramId) {
+      res.status(400).json({ error: 'missing_fields' });
       return;
     }
 
     const emailLower = email.toLowerCase().trim();
 
-    const existing = await db.query.users.findFirst({ where: eq(schema.users.email, emailLower) });
-    if (existing) {
-      res.status(400).json({ error: 'user_already_exists' });
-      return;
-    }
-
-    const crypto = await import('node:crypto');
-    const temporaryPassword = crypto.randomBytes(6).toString('hex');
-    const passwordHash = await argon2.hash(temporaryPassword);
-    
-    const name = emailLower.split('@')[0];
-
-    await db.insert(schema.users).values({
-      email: emailLower,
-      name,
-      passwordHash,
-      defaultPassword: true,
-    });
-
-    res.json({
-      success: true,
-      email: emailLower,
-      temporaryPassword,
-      telegramLink: 'https://t.me/awl_money_bot'
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// 2. Fazer login do usuário pelo bot (valida email e senha e vincula o telegramId)
-botRouter.post('/login', async (req, res, next) => {
-  try {
-    const { email, password, telegramId } = req.body;
-    
-    if (!email || !password || !telegramId) {
-      res.status(400).json({ error: 'missing_fields' });
-      return;
-    }
-
-    const [user] = await db
-      .select({ id: users.id, passwordHash: users.passwordHash, defaultPassword: users.defaultPassword })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-
+    let user = await db.query.users.findFirst({ where: eq(users.email, emailLower) });
     if (!user) {
-      res.status(401).json({ error: 'invalid_credentials' });
-      return;
+      const displayName = name?.trim() || emailLower.split('@')[0]!;
+      const [created] = await db.insert(users).values({ email: emailLower, name: displayName }).returning();
+      user = created!;
+      await ensureDefaultCategories(user.id);
     }
 
-    if (user.defaultPassword) {
-      res.status(403).json({ error: 'needs_password_change' });
-      return;
-    }
-
-    const isMatch = await argon2.verify(user.passwordHash, password);
-
-    if (!isMatch) {
-      res.status(401).json({ error: 'invalid_credentials' });
-      return;
-    }
-
-    // Vincula o telegram ID
-    await db.update(users).set({ telegramId }).where(eq(users.id, user.id));
+    await db.update(users).set({ telegramId, updatedAt: new Date() }).where(eq(users.id, user.id));
 
     res.json({ id: user.id });
   } catch (err) {
@@ -423,7 +373,7 @@ botRouter.get('/loans/summary', async (req, res, next) => {
       amount: Number(i.amount),
       date: i.date.toISOString(),
     }));
-    
+
     const totalActiveAmountGiven = activeItems.filter((i) => i.type === 'given').reduce((acc, i) => acc + i.amount, 0);
     const totalActiveAmountReceived = activeItems.filter((i) => i.type === 'received').reduce((acc, i) => acc + i.amount, 0);
     const totalActiveAmountFGTS = activeItems.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + i.amount, 0);
@@ -438,4 +388,3 @@ botRouter.get('/loans/summary', async (req, res, next) => {
     next(err);
   }
 });
-

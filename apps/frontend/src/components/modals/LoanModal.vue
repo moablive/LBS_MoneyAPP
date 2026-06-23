@@ -4,6 +4,14 @@ import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { LoanItem, Account, Category } from '@moneyapp/models';
 import { useAuthStore } from '../../stores/auth';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
+import { onKeyStroke } from '@vueuse/core';
+
+onKeyStroke('Escape', (e) => {
+  if (show.value) {
+    e.preventDefault();
+    show.value = false;
+  }
+});
 
 const { confirm, alert } = useConfirmDialog();
 
@@ -14,7 +22,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'saved'): void;
+  (e: 'saved', status?: string): void;
   (e: 'deleted'): void;
 }>();
 
@@ -153,7 +161,7 @@ async function save() {
     } else {
       await api.post('/loans', payload);
     }
-    emit('saved');
+    emit('saved', form.value.status);
     show.value = false;
   } catch (error) {
     await alert('Erro ao salvar empréstimo.');
@@ -161,6 +169,15 @@ async function save() {
   } finally {
     loading.value = false;
   }
+}
+
+async function handlePagoClick() {
+  const hasExistingReceipt = !!props.loanToEdit?.hasReceipt;
+  if (!receiptFile.value && !hasExistingReceipt && !receiptBlobUrl.value) {
+    await alert('É obrigatório anexar um comprovante antes de marcar como pago.');
+    return;
+  }
+  form.value.status = 'paid';
 }
 
 async function destroy() {
@@ -182,7 +199,7 @@ async function destroy() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
     <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center bg-surface-raised">
         <h2 v-if="props.loanToEdit?.status === 'paid'" class="flex-1 text-sm font-semibold text-expense">Empréstimo Finalizado</h2>
@@ -269,7 +286,7 @@ async function destroy() {
               Ativo
             </button>
             <button
-              @click="form.status = 'paid'"
+              @click="handlePagoClick"
               class="px-4 py-2.5 rounded-xl border border-surface-border font-medium transition-colors"
               :class="form.status === 'paid' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-surface-overlay text-muted'"
             >
@@ -294,9 +311,9 @@ async function destroy() {
           
           <!-- View Existing Receipt -->
           <div v-if="loadingReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
-          <div v-else-if="receiptBlobUrl" class="mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64">
+          <div v-else-if="receiptBlobUrl" class="mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64" :class="{ 'h-64': isPdf }">
             <img v-if="!isPdf" :src="receiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
-            <a v-else :href="receiptBlobUrl" target="_blank" class="px-4 py-2 bg-accent rounded-xl text-white font-medium text-sm hover:bg-accent/90 transition-colors">Visualizar PDF Anexado</a>
+            <iframe v-else :src="receiptBlobUrl" class="w-full h-full rounded" title="Comprovante PDF"></iframe>
           </div>
 
           <!-- Upload New Receipt -->

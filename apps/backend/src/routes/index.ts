@@ -10,7 +10,6 @@ import { investmentsRouter } from './investments';
 import { loansRouter } from './loans';
 import { sharesRouter } from './shares';
 import { botRouter } from './bot';
-import { calendarRouter } from './calendar';
 
 export const apiRouter = Router();
 
@@ -25,4 +24,3 @@ apiRouter.use('/loans', loansRouter);
 apiRouter.use('/dashboard', dashboardRouter);
 apiRouter.use('/shares', sharesRouter);
 apiRouter.use('/bot', botRouter);
-apiRouter.use('/calendar', calendarRouter);

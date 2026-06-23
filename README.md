@@ -49,7 +49,7 @@
 ![Drizzle](https://img.shields.io/badge/Drizzle_ORM-C5F74F?style=flat-square&logoColor=black)
 ![Zod](https://img.shields.io/badge/Zod-3E67B1?style=flat-square&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white)
-![argon2](https://img.shields.io/badge/argon2-7A8499?style=flat-square)
+![LoginHUB](https://img.shields.io/badge/LoginHUB-7A8499?style=flat-square)
 
 </td>
 <td>
@@ -227,7 +227,7 @@ erDiagram
 
 | Entidade | Campos-chave |
 | -------- | ------------ |
-| **users** | `id`, `name`, `email`, `passwordHash` |
+| **users** | `id`, `name`, `email` |
 | **categories** | `id`, `userId`, `name`, `type`, `color` |
 | **accounts** | `id`, `userId`, `name`, `type`, `currentBalance`, `freezeBalance`, `bankCode` |
 | **loans** | `id`, `amount`, `type`, `status`, `accountId`, `categoryId` |
@@ -299,24 +299,20 @@ erDiagram
 
 ## 🔐 Autenticação, Senhas e Convites
 
-O MoneyAPP possui uma regra estrita de segurança para o **primeiro acesso** e convites, garantindo que usuários recém-criados ou contas configuradas via `.env` alterem suas senhas imediatamente antes de usarem a API ou o Bot do Telegram.
+O MoneyAPP delega toda a gestão de usuários, senhas e autenticação para o **LoginHUB**.
+O aplicativo não gerencia mais credenciais locais, master users via `.env`, ou convites diretamente.
 
-### Como Convidar Novos Usuários
+### Criação e Convite de Usuários
 
-Agora o MoneyAPP possui uma gestão de usuários integrada e simplificada. O administrador do sistema pode convidar outras pessoas (esposa, sócio, família) de duas maneiras:
+O administrador do sistema cria os usuários diretamente no painel do LoginHUB (designando a eles acesso ao app MoneyAPP).
+- O LoginHUB envia o e-mail de convite com a senha temporária e links de acesso.
+- No primeiro acesso ao MoneyAPP com essa senha, o fluxo do LoginHUB intercepta exigindo a troca de senha.
+- Após definida a senha definitiva, o usuário pode acessar normalmente o sistema.
 
-1. **Pelo Painel Web**: Acesse "Configurações" > "Gestão de Usuários", clique em "Convidar Pessoas", informe o e-mail e gere uma senha temporária.
-2. **Pelo Telegram Bot**: No menu principal do bot, clique em "👥 Convidar Pessoas", informe o e-mail e o bot retornará o acesso pronto para envio.
+### Vínculo com o Bot do Telegram
 
-> **Importante**: O único usuário que permanece configurado estaticamente via arquivo `.env` é o **Usuário Master** (administrador do sistema). Todos os demais usuários convidados são armazenados diretamente no banco de dados.
-
-### Obrigatoriedade de Troca de Senha e Telegram
-
-- **Mudança Obrigatória**: Ao realizar o login no **painel web** com a senha temporária gerada no convite, o usuário será interceptado por uma tela obrigatória de alteração de senha.
-- **Senha Personalizada**: Ao redefinir a senha, a flag no banco muda para `default_password = false`. A partir desse momento, a senha é considerada forte e gerenciada exclusivamente pelo usuário.
-- **Vínculo com o Bot do Telegram**: É **expressamente bloqueado** usar o bot do Telegram enquanto o `default_password` for `true`. O usuário convidado DEVE acessar o painel web primeiro, mudar a senha e, só então, ir até o Telegram (`/login`) usando o email e a **nova senha personalizada**. O bot registrará o `telegramId` e liberará os relatórios e notificações automáticas.
-
-Para **forçar o reset de uma senha perdida**, o administrador pode usar a opção "Resetar Senha" na Gestão de Usuários do Painel Web para gerar uma nova senha temporária para aquele usuário.
+- É **expressamente bloqueado** usar o bot do Telegram com uma senha temporária. O usuário convidado DEVE acessar o painel web primeiro, mudar a senha e, só então, ir até o Telegram (`/login`) usando o email e a **nova senha personalizada**.
+- O bot registrará o seu `telegramId` e liberará os relatórios e notificações automáticas.
 
 ---
 
@@ -351,7 +347,8 @@ cp .env.example .env
 # Edite .env:
 #   → JWT_SECRET       string aleatória de 32+ chars
 #   → DATABASE_URL     connection string (entre aspas simples!)
-#   → MASTER_USER_*    credenciais do primeiro login
+#   → LOGINHUB_API_URL URL da API do LoginHub
+#   → BOT_SERVICE_KEY  Chave de comunicação entre serviços para bot
 
 # 3️⃣  Instale dependências
 pnpm install
@@ -415,11 +412,10 @@ docker compose --env-file .env up -d --build
 
 | Aspecto | Implementação |
 | ------- | ------------- |
-| **Tokens** | JWT Bearer — retornado no login, enviado via header `Authorization` |
-| **Hashing** | argon2 (memory-hard, preferido sobre bcrypt) |
-| **Master User** | Upsert automático na inicialização via `MASTER_USER_EMAIL` + `MASTER_USER_PASSWORD` |
-| **Rotação de senha** | Troque a env var e reinicie o container — o hash é regenerado |
-| **userId** | Extraído **apenas** de `req.user.id` (JWT) — nunca do body/query |
+| **Identidade** | Centralizada no LoginHUB (IDP) |
+| **Tokens** | JWT Bearer emitido pelo LoginHUB, verificado via `JWT_SECRET` compartilhado |
+| **Comunicação Bot** | Autenticação inter-serviços via `x-api-key` (`BOT_SERVICE_KEY`) |
+| **userId** | Extraído **apenas** de `req.user.id` (provisionado do payload JWT) — nunca do body/query |
 | **Segurança HTTP** | Helmet (headers), CORS configurável via env |
 
 ---

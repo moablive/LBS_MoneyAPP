@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { refDebounced } from '@vueuse/core';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import LoanModal from '../components/modals/LoanModal.vue';
@@ -9,10 +9,11 @@ import { PaperClipIcon as Paperclip, CheckCircleIcon as CheckCircle2, ClockIcon 
 import type { LoanSummaryResponse, LoanItem } from '@moneyapp/models';
 
 const route = useRoute();
+const router = useRouter();
 
 const data = ref<LoanSummaryResponse | null>(null);
 const loading = ref(true);
-const tab = ref<'all' | 'given' | 'received' | 'fgts'>('all');
+const tab = ref<'all' | 'given' | 'received' | 'fgts' | 'paid'>('all');
 const search = ref('');
 const debouncedSearch = refDebounced(search, 300);
 
@@ -47,6 +48,7 @@ watch(() => route.params.type, (newType) => {
   if (newType === 'receber') tab.value = 'given';
   else if (newType === 'pagar') tab.value = 'received';
   else if (newType === 'fgts') tab.value = 'fgts';
+  else if (newType === 'pagos') tab.value = 'paid';
   else tab.value = 'all';
 }, { immediate: true });
 
@@ -54,15 +56,18 @@ const filteredItems = computed(() => {
   const term = debouncedSearch.value.trim().toLowerCase();
   return loans.value
     .filter((it) => {
-      // Empréstimos pagos "saem" deste atalho APENAS quando migraram para uma
-      // categoria: ao pagar (com categoria + comprovante) o backend cria a
-      // transação espelho, então eles passam a viver no Livro Caixa. Um pago
-      // sem categoria (ex.: legado, sem transação espelho) continua visível
-      // aqui para não sumir de todos os lugares.
-      if (it.status === 'paid' && it.categoryId) return false;
-      if (tab.value === 'given' && it.type !== 'given') return false;
-      if (tab.value === 'received' && it.type !== 'received') return false;
-      if (tab.value === 'fgts' && it.type !== 'fgts') return false;
+      if (tab.value === 'paid') {
+        if (it.status !== 'paid') return false;
+      } else {
+        // Empréstimos pagos "saem" deste atalho APENAS quando migraram para uma
+        // categoria: ao pagar (com categoria + comprovante) o backend cria a
+        // transação espelho. Eles continuam visíveis em 'all' ou abas normais 
+        // caso não tenham categoria, mas com a aba "Pagos", deixamos aqui:
+        if (it.status === 'paid' && it.categoryId) return false;
+        if (tab.value === 'given' && it.type !== 'given') return false;
+        if (tab.value === 'received' && it.type !== 'received') return false;
+        if (tab.value === 'fgts' && it.type !== 'fgts') return false;
+      }
       if (term && !it.description.toLowerCase().includes(term)) return false;
       return true;
     })
@@ -91,6 +96,10 @@ const groupedLoans = computed(() => {
   return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
 });
 
+const totalPaidAmount = computed(() => {
+  return loans.value.filter(i => i.status === 'paid').reduce((acc, i) => acc + Number(i.amount), 0);
+});
+
 function openCreateModal() {
   loanToEdit.value = null;
   showModal.value = true;
@@ -100,6 +109,13 @@ function openEditModal(item: LoanItem) {
   loanToEdit.value = item;
   showModal.value = true;
 }
+
+function onLoanSaved(status?: string) {
+  loadData();
+  if (status === 'paid' && tab.value !== 'paid') {
+    router.push('/emprestimos/pagos');
+  }
+}
 </script>
 
 <template>
@@ -107,7 +123,7 @@ function openEditModal(item: LoanItem) {
     <div class="mx-auto max-w-7xl px-6 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">{{ tab === 'given' ? 'Emprestei (A Receber)' : tab === 'received' ? 'Peguei (A Pagar)' : tab === 'fgts' ? 'Governamental (FGTS)' : 'Empréstimos' }}</h1>
+          <h1 class="text-2xl font-semibold tracking-tight">{{ tab === 'given' ? 'Emprestei (A Receber)' : tab === 'received' ? 'Peguei (A Pagar)' : tab === 'fgts' ? 'Governamental (FGTS)' : tab === 'paid' ? 'Pagos' : 'Empréstimos' }}</h1>
           <p class="text-sm text-muted">Controle seus empréstimos.</p>
         </div>
         <div class="flex items-center gap-3">
@@ -121,7 +137,7 @@ function openEditModal(item: LoanItem) {
       <!-- Main Panel Stats & Filters -->
       <main class="card !p-0 overflow-hidden divide-y divide-surface-border mb-8">
         <!-- Panel Header / Stats -->
-        <div class="p-4 bg-surface-raised/30 grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div class="p-4 bg-surface-raised/30 grid grid-cols-2 sm:grid-cols-6 gap-4">
           <div>
             <div class="text-[10px] uppercase tracking-wide text-muted">Ativos</div>
             <div v-if="loading" class="skeleton h-6 w-12 mt-1" />
@@ -131,6 +147,11 @@ function openEditModal(item: LoanItem) {
             <div class="text-[10px] uppercase tracking-wide text-muted">Pagos</div>
             <div v-if="loading" class="skeleton h-6 w-12 mt-1" />
             <div v-else class="text-xl font-semibold tabular-nums">{{ data?.paidCount ?? 0 }}</div>
+          </div>
+          <div class="sm:text-right group relative">
+            <div class="text-[10px] uppercase tracking-wide text-muted">Total Pago</div>
+            <div v-if="loading" class="skeleton h-6 w-24 mt-1 sm:ml-auto" />
+            <div v-else class="text-xl font-semibold tabular-nums text-emerald-400">{{ brl(totalPaidAmount) }}</div>
           </div>
           <div class="sm:text-right group relative">
             <div class="text-[10px] uppercase tracking-wide text-muted">A Receber</div>
@@ -272,7 +293,7 @@ function openEditModal(item: LoanItem) {
       v-model:show="showModal"
       :loanToEdit="loanToEdit"
       :defaultType="tab === 'received' ? 'received' : 'given'"
-      @saved="loadData"
+      @saved="onLoanSaved"
       @deleted="loadData"
     />
   </AppShell>

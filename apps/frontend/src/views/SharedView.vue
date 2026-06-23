@@ -205,7 +205,7 @@ const formatTime = (iso: string) => {
 
     <!-- Receipt Modal -->
     <div v-if="selectedReceipt" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeReceipt"></div>
+      <div class="absolute inset-0 bg-black/90" @click="closeReceipt"></div>
       <div class="relative w-full max-w-3xl bg-surface-raised rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
         <div class="flex items-center justify-between p-4 border-b border-surface-border">
           <h3 class="font-bold text-white">Comprovante</h3>

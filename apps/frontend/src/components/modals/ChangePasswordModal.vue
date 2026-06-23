@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { api } from '@moneyapp/api-client';
 import { useAuthStore } from '../../stores/auth';
 import Modal from './Modal.vue';
 
@@ -13,8 +12,8 @@ const submitting = ref(false);
 
 const open = ref(false);
 
-watch(() => authStore.user?.defaultPassword, (isDefault) => {
-  if (isDefault) {
+watch(() => authStore.requirePasswordChange, (mustChange) => {
+  if (mustChange) {
     open.value = true;
   }
 }, { immediate: true });
@@ -32,13 +31,8 @@ async function submit() {
 
   submitting.value = true;
   try {
-    await api.post('/users/me/password', { newPassword: newPassword.value });
-    
-    // Update local state so it doesn't prompt again
-    if (authStore.user) {
-      authStore.user.defaultPassword = false;
-      authStore.persist();
-    }
+    await authStore.changePassword(newPassword.value);
+    // LoginHub aceitou: requirePasswordChange já foi zerado no store.
     open.value = false;
   } catch (err: any) {
     error.value = err.message || 'Ocorreu um erro ao alterar a senha.';

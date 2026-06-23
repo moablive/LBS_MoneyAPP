@@ -37,13 +37,13 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 120 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  // Identity (password) lives in LoginHub. This table only mirrors the profile
+  // and owns all MoneyAPP financial data via FKs. `telegramId` is MoneyAPP-local
+  // linkage written by the bot after LoginHub validates the user.
   telegramId: varchar('telegram_id', { length: 50 }).unique(),
-  defaultPassword: boolean('default_password').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   settings: jsonb('settings').default({ requireReceipts: true }).notNull(),
-  calendarSyncToken: varchar('calendar_sync_token', { length: 128 }).unique(),
 });
 
 // -------- categories ---------------------------------------------------------

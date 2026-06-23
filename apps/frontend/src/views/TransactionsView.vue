@@ -399,7 +399,7 @@ async function handleDelete(t: Transaction | null) {
     />
 
     <!-- Share Modal -->
-    <div v-if="shareModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div v-if="shareModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
       <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
         <div>
           <h3 class="text-xl font-bold text-white mb-2">Link Compartilhado Criado!</h3>

@@ -2,7 +2,15 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { api } from '@moneyapp/api-client';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
+import { onKeyStroke } from '@vueuse/core';
 import type { CreateSubscriptionInput, SubscriptionItem, UpdateSubscriptionInput, Account } from '@moneyapp/models';
+
+onKeyStroke('Escape', (e) => {
+  if (show.value) {
+    e.preventDefault();
+    show.value = false;
+  }
+});
 
 const { confirm } = useConfirmDialog();
 
@@ -134,7 +142,7 @@ async function remove() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="show = false"></div>
+    <div class="absolute inset-0 bg-black/60" @click="show = false"></div>
     <div class="relative bg-surface-raised border border-surface-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
       <header class="px-5 py-4 border-b border-surface-border flex justify-between items-center bg-surface-overlay/30">
         <h2 class="text-lg font-medium">

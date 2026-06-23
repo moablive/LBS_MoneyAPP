@@ -11,48 +11,7 @@ const requireReceipts = ref(auth.user?.settings?.requireReceipts ?? true);
 const saving = ref(false);
 const message = ref('');
 
-// --- Calendar Token ---
-const calendarToken = ref<string | null>(null);
-const generatingToken = ref(false);
 
-const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const calendarUrl = computed(() => {
-  if (!calendarToken.value) return '';
-  return `${backendUrl.replace('/api', '')}/api/calendar/${calendarToken.value}.ics`;
-});
-
-const loadCalendarToken = async () => {
-  try {
-    const res = await api.get<{token: string}>('/users/me/calendar-token');
-    calendarToken.value = res.token;
-  } catch {
-    // Ignore if no token
-  }
-};
-
-const generateCalendarToken = async () => {
-  generatingToken.value = true;
-  try {
-    const res = await api.post<{token: string}>('/users/me/calendar-token', {});
-    calendarToken.value = res.token;
-  } catch {
-    message.value = 'Erro ao gerar link de sincronização.';
-    setTimeout(() => { message.value = '' }, 3000);
-  } finally {
-    generatingToken.value = false;
-  }
-};
-
-const copyCalendarUrl = async () => {
-  if (!calendarUrl.value) return;
-  try {
-    await navigator.clipboard.writeText(calendarUrl.value);
-    message.value = 'Link copiado!';
-    setTimeout(() => { message.value = '' }, 3000);
-  } catch {
-    message.value = 'Erro ao copiar.';
-  }
-};
 
 // --- Contas: congelar saldo (conta histórica) ---
 const accounts = ref<Account[]>([]);
@@ -73,7 +32,6 @@ onMounted(async () => {
   } finally {
     loadingAccounts.value = false;
   }
-  await loadCalendarToken();
 });
 
 // Switch marcado = "afeta o saldo" (freezeBalance = false).
@@ -108,57 +66,8 @@ async function save() {
   }
 }
 
-// --- Gestão de Usuários ---
-const userAction = ref<'invite' | 'reset' | null>(null);
-const userEmail = ref('');
-const userActionLoading = ref(false);
-const userActionResult = ref<string | null>(null);
-const userActionError = ref<string | null>(null);
-
-async function submitUserAction() {
-  if (!userEmail.value) return;
-  userActionLoading.value = true;
-  userActionResult.value = null;
-  userActionError.value = null;
-
-  try {
-    const endpoint = userAction.value === 'invite' ? '/users/invite' : '/users/reset-password';
-    const res = await api.post<{ email: string; temporaryPassword: string; telegramLink: string }>(endpoint, { email: userEmail.value });
-    
-    userActionResult.value = `Seu acesso ao MoneyAPP foi liberado!\nAcesse: ${window.location.origin}\nLogin: ${res.email}\nSenha temporária: ${res.temporaryPassword}\n\nNo seu primeiro acesso, o sistema exigirá a criação de uma senha definitiva.\nApós criar sua nova senha, você poderá se conectar ao nosso assistente no Telegram clicando aqui: ${res.telegramLink}`;
-  } catch (err: any) {
-    userActionError.value = err.message || 'Ocorreu um erro na solicitação. Verifique se o e-mail está correto.';
-  } finally {
-    userActionLoading.value = false;
-  }
-}
-
-const copyActionResult = async () => {
-  if (!userActionResult.value) return;
-  try {
-    await navigator.clipboard.writeText(userActionResult.value);
-    message.value = 'Mensagem copiada!';
-    setTimeout(() => { message.value = '' }, 3000);
-  } catch {
-    message.value = 'Erro ao copiar.';
-  }
-};
-
-const canShare = computed(() => !!navigator.share);
-
-const shareActionResult = async () => {
-  if (!userActionResult.value || !navigator.share) return;
-  try {
-    await navigator.share({
-      title: 'Acesso MoneyAPP',
-      text: userActionResult.value,
-    });
-  } catch (err: any) {
-    if (err.name !== 'AbortError') {
-      message.value = 'Erro ao compartilhar.';
-    }
-  }
-};
+// Convite e reset de senha são gerenciados centralmente no LoginHub
+// (painel admin). O MoneyAPP não cria nem reseta credenciais.
 
 function logout() {
   auth.logout();
@@ -185,7 +94,7 @@ function logout() {
 
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6">
       <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Comprovantes</h2>
-      
+
       <div class="flex items-center justify-between gap-4">
         <div>
           <p class="text-slate-100 font-medium">Exigir comprovantes em transações pagas</p>
@@ -272,131 +181,6 @@ function logout() {
           </div>
         </li>
       </ul>
-    </div>
-
-    <!-- Seção de Integração de Calendário -->
-    <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Sincronização com Calendário</h2>
-      <div class="flex flex-col gap-4">
-        <div>
-          <p class="text-slate-100 font-medium">Exportar Próximos Lançamentos (iCal)</p>
-          <p class="text-sm text-muted mt-1">Gere um link secreto para adicionar seus lançamentos pendentes no Google Agenda ou Apple Calendar. Eles serão atualizados automaticamente todos os dias.</p>
-        </div>
-        
-        <div v-if="calendarToken" class="mt-2 space-y-3">
-          <div class="flex items-center gap-2 bg-surface-overlay/50 border border-surface-border p-3 rounded-xl overflow-hidden">
-            <span class="text-xs text-slate-300 truncate flex-1 font-mono select-all">{{ calendarUrl }}</span>
-            <button @click="copyCalendarUrl" class="px-3 py-1.5 bg-surface-base hover:bg-surface-border text-xs font-medium text-white rounded-lg transition-colors shrink-0 flex items-center gap-1.5 border border-surface-border">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              Copiar
-            </button>
-          </div>
-          
-          <div class="flex items-center gap-3 mt-4">
-            <a :href="`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(calendarUrl)}`" target="_blank" class="flex-1 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 rounded-xl font-medium transition-colors text-sm text-center flex justify-center items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              Google Agenda
-            </a>
-            <a :href="calendarUrl.replace('https://', 'webcal://').replace('http://', 'webcal://')" class="flex-1 px-4 py-2 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors text-sm text-center flex justify-center items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path><path d="M10 2c1 .5 2 2 2 5"></path></svg>
-              Apple Calendar
-            </a>
-          </div>
-
-          <div class="pt-4 border-t border-surface-border">
-            <button @click="generateCalendarToken" :disabled="generatingToken" class="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50 transition-colors">
-              Gerar Novo Link (Revoga o anterior)
-            </button>
-          </div>
-        </div>
-        
-        <div v-else class="mt-2">
-          <button @click="generateCalendarToken" :disabled="generatingToken" class="px-5 py-2.5 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-8.31l-4.28 4.28"/></svg>
-            {{ generatingToken ? 'Gerando...' : 'Gerar Link de Sincronização' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção de Gestão de Usuários -->
-    <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Gestão de Usuários</h2>
-      
-      <div v-if="!userAction" class="flex gap-3">
-        <button @click="userAction = 'invite'" class="px-4 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors">
-          Convidar Pessoas
-        </button>
-        <button @click="userAction = 'reset'" class="px-4 py-2 bg-surface-overlay border border-surface-border hover:bg-surface-border text-white rounded-xl font-medium transition-colors">
-          Resetar Senha
-        </button>
-      </div>
-
-      <div v-else class="space-y-4">
-        <h3 class="text-slate-100 font-medium">{{ userAction === 'invite' ? 'Convidar Novo Usuário' : 'Resetar Senha de Usuário' }}</h3>
-        <p class="text-sm text-muted">
-          {{ userAction === 'invite' ? 'Informe o e-mail da pessoa que deseja convidar. Uma senha temporária será gerada.' : 'Informe o e-mail do usuário existente para gerar uma nova senha temporária.' }}
-        </p>
-
-        <form @submit.prevent="submitUserAction" class="flex flex-col sm:flex-row gap-3 mt-3">
-          <input 
-            v-model="userEmail" 
-            type="email" 
-            required 
-            placeholder="E-mail do usuário"
-            class="flex-1 bg-surface-overlay border border-surface-border rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accent"
-          />
-          <div class="flex gap-2">
-            <button 
-              type="submit" 
-              :disabled="userActionLoading" 
-              class="flex-1 sm:flex-none px-5 py-2 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-            >
-              {{ userActionLoading ? 'Gerando...' : 'Gerar' }}
-            </button>
-            <button 
-              type="button" 
-              @click="userAction = null; userEmail = ''; userActionResult = null; userActionError = null" 
-              class="flex-1 sm:flex-none px-4 py-2 bg-surface-overlay hover:bg-surface-border border border-surface-border text-white rounded-xl font-medium transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-
-        <p v-if="userActionError" class="text-sm text-red-400 mt-2">{{ userActionError }}</p>
-
-        <div v-if="userActionResult" class="mt-4">
-          <p class="text-sm font-medium text-emerald-400 mb-2">Sucesso! Copie a mensagem abaixo:</p>
-          <div class="relative">
-            <textarea 
-              readonly 
-              :value="userActionResult" 
-              rows="6"
-              class="w-full bg-surface-overlay/50 border border-emerald-500/30 rounded-xl px-4 py-3 text-xs font-mono text-slate-300 resize-none focus:outline-none pr-32"
-            ></textarea>
-            <div class="absolute top-2 right-2 flex flex-col gap-2">
-              <button 
-                v-if="canShare"
-                @click="shareActionResult"
-                type="button"
-                class="px-3 py-1.5 bg-surface-base hover:bg-surface-border border border-surface-border text-xs text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                Compartilhar
-              </button>
-              <button 
-                @click="copyActionResult"
-                type="button"
-                class="px-3 py-1.5 bg-surface-base hover:bg-surface-border border border-surface-border text-xs text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                Copiar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Seção de Conta -->

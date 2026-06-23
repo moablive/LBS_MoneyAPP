@@ -34,10 +34,10 @@
   }
   .modal-shell {
     @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center
-           bg-black/60 backdrop-blur-md;
+           bg-black/80;
   }
   .modal-panel {
-    @apply w-full sm:max-w-lg bg-surface-overlay/90 backdrop-blur-xl border border-surface-border
+    @apply w-full sm:max-w-lg bg-surface-overlay border border-surface-border
            rounded-t-3xl sm:rounded-3xl p-6 shadow-modal
            transition-transform duration-200 ease-smooth;
   }

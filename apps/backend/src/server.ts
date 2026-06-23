@@ -1,9 +1,7 @@
 import { createApp } from './app';
-import { bootstrapMasterUser, env } from '@moneyapp/services';
+import { env } from '@moneyapp/services';
 
 async function main() {
-  await bootstrapMasterUser();
-
   const app = createApp();
   const server = app.listen(env.PORT, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
