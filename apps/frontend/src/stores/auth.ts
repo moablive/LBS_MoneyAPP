@@ -1,16 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { AuthState, User } from '@moneyapp/models';
+import type { User, PersistedState } from '@moneyapp/models';
 
 const STORAGE_KEY = 'moneyapp.auth';
-
-// Central identity provider (LoginHub) and the MoneyAPP backend.
 const LOGINHUB_API = import.meta.env.VITE_LOGINHUB_API_URL as string;
 const BACKEND_API = import.meta.env.VITE_API_BASE_URL as string;
 
-interface PersistedState extends AuthState {
-  requirePasswordChange?: boolean;
-}
 
 function load(): PersistedState {
   if (typeof localStorage === 'undefined') return { token: null, user: null };

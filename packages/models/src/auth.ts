@@ -18,6 +18,10 @@ export interface AuthState {
   user: User | null;
 }
 
+export interface PersistedState extends AuthState {
+  requirePasswordChange?: boolean;
+}
+
 /**
  * Payload of a LoginHub-issued user token. MoneyAPP no longer mints user
  * tokens — it only verifies the ones LoginHub signs (shared JWT_SECRET).
