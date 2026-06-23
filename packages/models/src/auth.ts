@@ -17,3 +17,14 @@ export interface AuthState {
   token: string | null;
   user: User | null;
 }
+
+/**
+ * Payload of a LoginHub-issued user token. MoneyAPP no longer mints user
+ * tokens — it only verifies the ones LoginHub signs (shared JWT_SECRET).
+ */
+export interface LoginHubPayload {
+  sub: string; // LoginHub user id (integer, as string)
+  email: string;
+  app_id?: string;
+  role?: string;
+}

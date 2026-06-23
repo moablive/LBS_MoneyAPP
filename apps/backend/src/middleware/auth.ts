@@ -1,17 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '@moneyapp/services';
-
-/**
- * Payload of a LoginHub-issued user token. MoneyAPP no longer mints user
- * tokens — it only verifies the ones LoginHub signs (shared JWT_SECRET).
- */
-export interface LoginHubPayload {
-  sub: string; // LoginHub user id (integer, as string)
-  email: string;
-  app_id?: string;
-  role?: string;
-}
+import { LoginHubPayload } from '@moneyapp/models';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
