@@ -1,8 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
 import { env } from '@moneyapp/services';
-import { db, schema } from '@moneyapp/db';
 
 /**
  * Payload of a LoginHub-issued user token. MoneyAPP no longer mints user
@@ -24,8 +22,6 @@ declare global {
   }
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * Verify the Bearer token against the (LoginHub) JWT secret. Returns the
  * decoded payload, or `null` when the header is missing/malformed/invalid.
@@ -42,29 +38,12 @@ export function verifyBearer(req: Request): LoginHubPayload | null {
   }
 }
 
-/** Resolve a MoneyAPP user (UUID) and attach it to the request. */
-async function attachUser(
-  res: Response,
-  next: NextFunction,
-  where: ReturnType<typeof eq>,
-  req: Request,
-): Promise<void> {
-  const user = await db.query.users.findFirst({ where, columns: { id: true, email: true } });
-  if (!user) {
-    res.status(401).json({ error: 'user_not_provisioned' });
-    return;
-  }
-  req.user = { id: user.id, email: user.email };
-  next();
-}
-
 /**
  * Authenticate a user request. Two accepted identities:
  *
  *  1. **Web user** — a LoginHub-issued Bearer JWT. Identity is owned by
- *     LoginHub; we map its `email` to the local MoneyAPP user (provisioned at
- *     first login via `POST /auth/bootstrap`).
- *  2. **Trusted bot** — `x-api-key: BOT_SERVICE_KEY` plus `x-user-id: <uuid>`,
+ *     LoginHub.
+ *  2. **Trusted bot** — `x-api-key: BOT_SERVICE_KEY` plus `x-user-id: <id>`,
  *     the bot acting on behalf of a Telegram-linked user. The bot validated the
  *     user against LoginHub before linking, so we trust the delegated id.
  */
@@ -74,22 +53,24 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const apiKey = req.headers['x-api-key'];
     if (typeof apiKey === 'string' && apiKey === env.BOT_SERVICE_KEY) {
       const onBehalfOf = req.headers['x-user-id'];
-      if (typeof onBehalfOf !== 'string' || !UUID_RE.test(onBehalfOf)) {
+      if (typeof onBehalfOf !== 'string' || !onBehalfOf) {
         res.status(401).json({ error: 'unauthorized' });
         return;
       }
-      await attachUser(res, next, eq(schema.users.id, onBehalfOf), req);
+      req.user = { id: onBehalfOf, email: '' }; // Bot might not send email
+      next();
       return;
     }
 
     // 2) Web user, LoginHub token.
     const payload = verifyBearer(req);
-    const email = payload?.email?.toLowerCase().trim();
-    if (!email) {
+    if (!payload?.sub || !payload?.email) {
       res.status(401).json({ error: 'unauthorized' });
       return;
     }
-    await attachUser(res, next, eq(schema.users.email, email), req);
+    
+    req.user = { id: payload.sub, email: payload.email };
+    next();
   } catch (err) {
     next(err);
   }

@@ -6,7 +6,7 @@ import argon2 from 'argon2';
 import { requireBotKey } from '../middleware/auth.js';
 import { ensureDefaultCategories } from '@moneyapp/services';
 
-const { users, transactions, categories, accounts, loans } = schema;
+const { userSettings, transactions, categories, accounts, loans } = schema;
 
 export const botRouter = Router();
 
@@ -19,9 +19,9 @@ botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
   try {
     const { telegramId } = req.params;
     const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.telegramId, telegramId))
+      .select({ id: userSettings.id })
+      .from(userSettings)
+      .where(eq(userSettings.telegramId, telegramId))
       .limit(1);
 
     if (!user) {
@@ -38,9 +38,9 @@ botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
 botRouter.get('/users/all', async (_req, res, next) => {
   try {
     const rows = await db
-      .select({ id: users.id, email: users.email, telegramId: users.telegramId })
-      .from(users)
-      .where(isNotNull(users.telegramId));
+      .select({ id: userSettings.id,  telegramId: userSettings.telegramId })
+      .from(userSettings)
+      .where(isNotNull(userSettings.telegramId));
 
     res.json(rows);
   } catch (err) {
@@ -54,26 +54,23 @@ botRouter.get('/users/all', async (_req, res, next) => {
 //    + categorias padrão se for o primeiro acesso do usuário ao MoneyAPP.
 botRouter.post('/link-telegram', async (req, res, next) => {
   try {
-    const { email, telegramId, name } = req.body as { email?: string; telegramId?: string; name?: string };
+    const { userId, telegramId } = req.body as { userId?: string; telegramId?: string };
 
-    if (!email || !telegramId) {
+    if (!userId || !telegramId) {
       res.status(400).json({ error: 'missing_fields' });
       return;
     }
 
-    const emailLower = email.toLowerCase().trim();
-
-    let user = await db.query.users.findFirst({ where: eq(users.email, emailLower) });
-    if (!user) {
-      const displayName = name?.trim() || emailLower.split('@')[0]!;
-      const [created] = await db.insert(users).values({ email: emailLower, name: displayName }).returning();
-      user = created!;
-      await ensureDefaultCategories(user.id);
+    let settings = await db.query.userSettings.findFirst({ where: eq(userSettings.id, userId) });
+    if (!settings) {
+      const [created] = await db.insert(userSettings).values({ id: userId, telegramId }).returning();
+      settings = created!;
+      await ensureDefaultCategories(userId);
+    } else {
+      await db.update(userSettings).set({ telegramId }).where(eq(userSettings.id, userId));
     }
 
-    await db.update(users).set({ telegramId, updatedAt: new Date() }).where(eq(users.id, user.id));
-
-    res.json({ id: user.id });
+    res.json({ id: userId });
   } catch (err) {
     next(err);
   }

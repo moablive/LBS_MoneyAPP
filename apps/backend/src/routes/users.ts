@@ -12,7 +12,7 @@ usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
     const { requireReceipts } = req.body;
     const userId = req.user!.id;
 
-    const user = await db.query.users.findFirst({ where: eq(schema.users.id, userId) });
+    const user = await db.query.userSettings.findFirst({ where: eq(schema.userSettings.id, userId) });
     if (!user) {
       res.status(404).json({ error: 'not_found' });
       return;
@@ -24,9 +24,9 @@ usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
       requireReceipts: typeof requireReceipts === 'boolean' ? requireReceipts : true,
     };
 
-    await db.update(schema.users)
-      .set({ settings: newSettings, updatedAt: new Date() })
-      .where(eq(schema.users.id, userId));
+    await db.update(schema.userSettings)
+      .set({ settings: newSettings })
+      .where(eq(schema.userSettings.id, userId));
 
     res.json(newSettings);
   } catch (err) {

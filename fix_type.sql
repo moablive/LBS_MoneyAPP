@@ -1,0 +1,10 @@
+BEGIN;
+ALTER TABLE user_settings ALTER COLUMN id TYPE varchar(50) USING id::varchar;
+ALTER TABLE categories ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE accounts ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE transactions ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE subscriptions ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE investments ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE loans ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+ALTER TABLE shared_links ALTER COLUMN user_id TYPE varchar(50) USING user_id::varchar;
+COMMIT;
