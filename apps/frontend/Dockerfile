@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 ARG VITE_API_BASE_URL
 ARG VITE_LOGINHUB_API_URL
+ARG VITE_LOGINHUB_APP_ID
 
 FROM node:20-alpine AS build
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
@@ -18,6 +19,8 @@ ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ARG VITE_LOGINHUB_API_URL
 ENV VITE_LOGINHUB_API_URL=$VITE_LOGINHUB_API_URL
+ARG VITE_LOGINHUB_APP_ID
+ENV VITE_LOGINHUB_APP_ID=$VITE_LOGINHUB_APP_ID
 RUN pnpm --filter @moneyapp/frontend run build
 
 FROM nginx:1.27-alpine AS runtime
