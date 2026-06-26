@@ -43,6 +43,7 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_LOGINHUB_API_URL: ${VITE_LOGINHUB_API_URL}
+        VITE_LOGINHUB_APP_ID: ${VITE_LOGINHUB_APP_ID}
     container_name: app_moneyapp_frontend
     depends_on:
       app_moneyapp_backend:

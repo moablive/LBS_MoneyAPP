@@ -5,6 +5,9 @@ import type { User, PersistedState } from '@moneyapp/models';
 const STORAGE_KEY = 'moneyapp.auth';
 const LOGINHUB_API = import.meta.env.VITE_LOGINHUB_API_URL as string;
 const BACKEND_API = import.meta.env.VITE_API_BASE_URL as string;
+// ID do MoneyAPP no LoginHub (tenant). Sem isso, se o mesmo e-mail existir
+// em outro app, o LoginHub responde 409 AMBIGUOUS_EMAIL.
+const LOGINHUB_APP_ID = import.meta.env.VITE_LOGINHUB_APP_ID as string | undefined;
 
 
 function load(): PersistedState {
@@ -38,14 +41,22 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login(email: string, password: string) {
     // 1) Authenticate against LoginHub (the single source of identity).
+    // Sempre enviar app_id para evitar 409 AMBIGUOUS_EMAIL quando o mesmo e-mail
+    // estiver cadastrado em outros apps do LoginHub.
+    const payload: { email: string; password: string; app_id?: string } = { email, password };
+    if (LOGINHUB_APP_ID) payload.app_id = LOGINHUB_APP_ID;
+
     const res = await fetch(`${LOGINHUB_API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      // 401 = bad credentials, 403 = app suspended.
-      throw new Error(res.status === 401 ? 'invalid_credentials' : 'login_failed');
+      // 401 = bad credentials, 403 = app suspended, 409 = e-mail ambíguo (não deve
+      // acontecer se app_id está configurado, mas tratamos por segurança).
+      if (res.status === 401) throw new Error('invalid_credentials');
+      if (res.status === 409) throw new Error('ambiguous_email');
+      throw new Error('login_failed');
     }
     const data = (await res.json()) as {
       token: string;
