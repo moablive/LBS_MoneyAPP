@@ -81,7 +81,9 @@ CRUD completo de receitas e despesas com filtros por período, tipo, categoria e
 Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total. Cartões de crédito têm suas faturas isoladas no painel "Cartões", separadas do "Saldo Atual" geral, garantindo que dívidas não se misturem com o dinheiro disponível.
 
 ### 🤝 Empréstimos
-Controle de empréstimos concedidos, recebidos e FGTS, com status (ativo/pago), parcelas e comprovantes. Marcar como **pago** exige categoria + comprovante e **espelha** o lançamento no Livro Caixa (transação vinculada via `loanId`); o empréstimo pago sai do atalho de empréstimos.
+Controle de empréstimos concedidos, recebidos e FGTS, com status (ativo/pago), parcelas, valor de retorno esperado e comprovantes. 
+- **Transação Inicial Automática:** Ao criar um empréstimo ativo em uma conta, o montante já debita (ou credita) instantaneamente no saldo da conta.
+- **Quitação:** Marcar como **pago** exige comprovante e gera uma segunda transação (Transação de Quitação) que credita (ou debita) o **valor de retorno**, consolidando eventuais lucros/juros no seu Livro Caixa de forma totalmente automática. O empréstimo pago sai do atalho de empréstimos e passa a ser exibido riscado.
 
 </td>
 <td width="50%">
