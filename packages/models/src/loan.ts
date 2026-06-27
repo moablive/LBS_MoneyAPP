@@ -10,6 +10,7 @@ export const loanSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, 'A descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
+  expectedAmount: z.number().positive().optional(),
   date: z.string(), // ISO Date
   type: loanTypeEnum,
   status: loanStatusEnum,
@@ -25,6 +26,7 @@ export const createLoanSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, 'A descrição é obrigatória'),
   amount: z.number().positive('O valor deve ser positivo'),
+  expectedAmount: z.number().positive().optional(),
   date: z.string(), // ISO Date
   type: loanTypeEnum,
   status: loanStatusEnum.default('active'),

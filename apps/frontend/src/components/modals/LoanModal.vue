@@ -31,6 +31,7 @@ const loading = ref(false);
 const form = ref({
   description: '',
   amount: '',
+  expectedAmount: '',
   accountId: null as string | null,
   installments: 1,
   date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
@@ -64,6 +65,7 @@ function resetForm() {
     form.value = {
       description: props.loanToEdit.description,
       amount: String(props.loanToEdit.amount),
+      expectedAmount: (props.loanToEdit as any).expectedAmount ? String((props.loanToEdit as any).expectedAmount) : '',
       accountId: props.loanToEdit.accountId || null,
       installments: 1,
       date: props.loanToEdit.date.split('T')[0] as string,
@@ -75,6 +77,7 @@ function resetForm() {
     form.value = {
       description: '',
       amount: '',
+      expectedAmount: '',
       accountId: null,
       installments: 1,
       date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
@@ -143,6 +146,7 @@ async function save() {
   const payload = {
     description: form.value.description,
     amount: Number(String(form.value.amount).replace(',', '.')),
+    expectedAmount: form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : undefined,
     accountId: form.value.accountId || undefined,
     date: new Date(form.value.date as string).toISOString(),
     type: form.value.type,
@@ -221,7 +225,7 @@ async function destroy() {
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Valor</label>
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor Recebido' : 'Valor Emprestado' }}</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
               <input
@@ -231,6 +235,20 @@ async function destroy() {
                 :disabled="props.loanToEdit?.status === 'paid'"
                 class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
                 placeholder="0,00"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor a Pagar' : 'Valor que vai voltar' }}</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
+              <input
+                v-model="form.expectedAmount"
+                type="number"
+                step="0.01"
+                :disabled="props.loanToEdit?.status === 'paid'"
+                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
+                placeholder="Opcional"
               />
             </div>
           </div>

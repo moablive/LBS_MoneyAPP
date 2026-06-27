@@ -1,0 +1,1 @@
+ALTER TABLE "loans" ADD COLUMN "expected_amount" numeric(14, 2);

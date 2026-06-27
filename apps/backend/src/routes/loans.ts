@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
-const { loans, transactions, accounts } = schema;
+const { loans, transactions, accounts, categories } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createLoanSchema, updateLoanSchema, type LoanSummaryResponse } from '@moneyapp/models';
@@ -20,13 +20,30 @@ function applyBalanceDelta(
     .set({
       currentBalance: sql`${accounts.currentBalance} + ${String(delta)}::numeric`,
     })
-    // Frozen accounts keep a historical balance — skip the mutation for them.
     .where(and(eq(accounts.id, accountId), eq(accounts.loginhubId, loginhubId), eq(accounts.freezeBalance, false)));
 }
 
 function negate(value: string): string {
   if (value.startsWith('-')) return value.slice(1);
   return `-${value}`;
+}
+
+async function ensureCategory(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  loginhubId: number,
+  type: 'expense' | 'income'
+) {
+  const existing = await tx.query.categories.findFirst({
+    where: and(eq(categories.loginhubId, loginhubId), eq(categories.type, type), eq(categories.name, 'Empréstimos')),
+  });
+  if (existing) return existing.id;
+  const [created] = await tx.insert(categories).values({
+    loginhubId,
+    name: 'Empréstimos',
+    type,
+    color: '#3b82f6',
+  }).returning();
+  return created!.id;
 }
 
 loansRouter.get('/summary', requireAuth, async (req, res, next) => {
@@ -39,6 +56,7 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
         loginhubId: loans.loginhubId,
         description: loans.description,
         amount: loans.amount,
+        expectedAmount: loans.expectedAmount,
         date: loans.date,
         type: loans.type,
         status: loans.status,
@@ -57,6 +75,7 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
       loginhubId: r.loginhubId,
       description: r.description,
       amount: Number(r.amount),
+      expectedAmount: r.expectedAmount ? Number(r.expectedAmount) : undefined,
       date: r.date.toISOString(),
       type: r.type,
       status: r.status,
@@ -70,13 +89,15 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
     const activeItems = items.filter((i) => i.status === 'active');
     const paidItems = items.filter((i) => i.status === 'paid');
     
-    const totalAmountGiven = items.filter((i) => i.type === 'given').reduce((acc, i) => acc + i.amount, 0);
-    const totalAmountReceived = items.filter((i) => i.type === 'received').reduce((acc, i) => acc + i.amount, 0);
-    const totalAmountFGTS = items.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + i.amount, 0);
+    // Total amounts for all items
+    const totalAmountGiven = items.filter((i) => i.type === 'given').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
+    const totalAmountReceived = items.filter((i) => i.type === 'received').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
+    const totalAmountFGTS = items.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
 
-    const totalActiveAmountGiven = activeItems.filter((i) => i.type === 'given').reduce((acc, i) => acc + i.amount, 0);
-    const totalActiveAmountReceived = activeItems.filter((i) => i.type === 'received').reduce((acc, i) => acc + i.amount, 0);
-    const totalActiveAmountFGTS = activeItems.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + i.amount, 0);
+    // Total amounts for active items
+    const totalActiveAmountGiven = activeItems.filter((i) => i.type === 'given').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
+    const totalActiveAmountReceived = activeItems.filter((i) => i.type === 'received').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
+    const totalActiveAmountFGTS = activeItems.filter((i) => i.type === 'fgts').reduce((acc, i) => acc + (i.expectedAmount ?? i.amount), 0);
 
     const body: LoanSummaryResponse = {
       activeCount: activeItems.length,
@@ -107,7 +128,10 @@ loansRouter.post(
       const installmentsCount = data.installments ?? 1;
 
       if (installmentsCount > 1) {
+        // ... (For simplicity, assume installments don't have expectedAmount logic or just divide both)
         const perInstallmentAmount = data.amount / installmentsCount;
+        const perInstallmentExpected = data.expectedAmount ? data.expectedAmount / installmentsCount : perInstallmentAmount;
+        
         const recordsToInsert: any[] = [];
 
         for (let i = 1; i <= installmentsCount; i++) {
@@ -118,6 +142,7 @@ loansRouter.post(
             loginhubId,
             description: `${data.description} (${i}/${installmentsCount})`,
             amount: perInstallmentAmount.toString(),
+            expectedAmount: perInstallmentExpected.toString(),
             date: installmentDate,
             type: data.type,
             status: data.status,
@@ -131,15 +156,35 @@ loansRouter.post(
         const newLoans = await db.transaction(async (tx) => {
           const created = await tx.insert(loans).values(recordsToInsert).returning();
           
-          // sync transactions for any that are created as 'paid'
           for (const l of created) {
-            if (l.status === 'paid' && l.categoryId) {
-              const txType = l.type === 'received' ? 'expense' : 'income';
-              const signedAmount = txType === 'expense' ? `-${l.amount}` : l.amount;
+            // INITIAL TRANSACTION
+            if (l.accountId) {
+              const initTxType = l.type === 'received' ? 'income' : 'expense';
+              const initSignedAmount = initTxType === 'expense' ? `-${l.amount}` : l.amount;
+              const catId = await ensureCategory(tx, loginhubId, initTxType);
               await tx.insert(transactions).values({
                 loginhubId,
                 loanId: l.id,
-                description: l.description,
+                description: `Empréstimo (Saída): ${l.description}`,
+                amount: initSignedAmount,
+                type: initTxType,
+                status: 'paid',
+                occurredAt: l.date,
+                categoryId: catId,
+                accountId: l.accountId,
+              });
+              await applyBalanceDelta(tx, loginhubId, l.accountId, initSignedAmount);
+            }
+
+            // SETTLEMENT TRANSACTION
+            if (l.status === 'paid' && l.categoryId) {
+              const txType = l.type === 'received' ? 'expense' : 'income';
+              const expectedStr = l.expectedAmount ?? l.amount;
+              const signedAmount = txType === 'expense' ? `-${expectedStr}` : expectedStr;
+              await tx.insert(transactions).values({
+                loginhubId,
+                loanId: l.id,
+                description: `Empréstimo (Quitação): ${l.description}`,
                 amount: signedAmount,
                 type: txType,
                 status: 'paid',
@@ -171,19 +216,41 @@ loansRouter.post(
               accountId: data.accountId ?? null,
               categoryId: data.categoryId ?? null,
               amount: data.amount.toString(),
+              expectedAmount: data.expectedAmount ? data.expectedAmount.toString() : data.amount.toString(),
               date: new Date(data.date),
               receiptBase64: data.receipt?.base64 ?? null,
               receiptMimeType: data.receipt?.mimeType ?? null,
             })
             .returning();
 
-          if (created && created.status === 'paid' && created.categoryId) {
-            const txType = created.type === 'received' ? 'expense' : 'income';
-            const signedAmount = txType === 'expense' ? `-${created.amount}` : created.amount;
+          // INITIAL TRANSACTION
+          if (created && created.accountId) {
+            const initTxType = created.type === 'received' ? 'income' : 'expense';
+            const initSignedAmount = initTxType === 'expense' ? `-${created.amount}` : created.amount;
+            const catId = await ensureCategory(tx, loginhubId, initTxType);
             await tx.insert(transactions).values({
               loginhubId,
               loanId: created.id,
-              description: created.description,
+              description: `Empréstimo (Saída): ${created.description}`,
+              amount: initSignedAmount,
+              type: initTxType,
+              status: 'paid',
+              occurredAt: created.date,
+              categoryId: catId,
+              accountId: created.accountId,
+            });
+            await applyBalanceDelta(tx, loginhubId, created.accountId, initSignedAmount);
+          }
+
+          // SETTLEMENT TRANSACTION
+          if (created && created.status === 'paid' && created.categoryId) {
+            const txType = created.type === 'received' ? 'expense' : 'income';
+            const expectedStr = created.expectedAmount ?? created.amount;
+            const signedAmount = txType === 'expense' ? `-${expectedStr}` : expectedStr;
+            await tx.insert(transactions).values({
+              loginhubId,
+              loanId: created.id,
+              description: `Empréstimo (Quitação): ${created.description}`,
               amount: signedAmount,
               type: txType,
               status: 'paid',
@@ -208,6 +275,7 @@ loansRouter.post(
         res.status(201).json({
           ...newLoan,
           amount: Number(newLoan.amount),
+          expectedAmount: newLoan.expectedAmount ? Number(newLoan.expectedAmount) : undefined,
           date: newLoan.date.toISOString(),
           createdAt: newLoan.createdAt.toISOString(),
           updatedAt: newLoan.updatedAt.toISOString(),
@@ -233,6 +301,7 @@ loansRouter.put(
       if (data.accountId !== undefined) updateData.accountId = data.accountId;
       if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
       if (data.amount !== undefined) updateData.amount = data.amount.toString();
+      if (data.expectedAmount !== undefined) updateData.expectedAmount = data.expectedAmount?.toString();
       if (data.date !== undefined) updateData.date = new Date(data.date);
       if (data.receipt !== undefined) {
         updateData.receiptBase64 = data.receipt?.base64 ?? null;
@@ -249,30 +318,71 @@ loansRouter.put(
 
         if (!updatedLoan) return null;
 
-        const existingTx = await tx.query.transactions.findFirst({
+        const allTxs = await tx.query.transactions.findMany({
           where: and(eq(transactions.loanId, updatedLoan.id)),
         });
 
-        if (updatedLoan.status === 'paid' && updatedLoan.categoryId) {
-          const txType = updatedLoan.type === 'received' ? 'expense' : 'income';
-          const signedAmount = txType === 'expense' ? `-${updatedLoan.amount}` : updatedLoan.amount;
+        const initTxType = updatedLoan.type === 'received' ? 'income' : 'expense';
+        const settlementTxType = updatedLoan.type === 'received' ? 'expense' : 'income';
 
-          if (existingTx) {
-            // Revert old balance
-            if (existingTx.accountId) {
-              await applyBalanceDelta(tx, loginhubId, existingTx.accountId, negate(existingTx.amount));
+        const initialTx = allTxs.find(t => t.type === initTxType);
+        const settlementTx = allTxs.find(t => t.type === settlementTxType);
+
+        // 1. UPDATE OR DELETE INITIAL TX
+        if (updatedLoan.accountId) {
+          const initSignedAmount = initTxType === 'expense' ? `-${updatedLoan.amount}` : updatedLoan.amount;
+          if (initialTx) {
+            // Revert old, apply new
+            if (initialTx.accountId) {
+              await applyBalanceDelta(tx, loginhubId, initialTx.accountId, negate(initialTx.amount));
             }
-            // Update transaction
+            await tx.update(transactions).set({
+              amount: initSignedAmount,
+              accountId: updatedLoan.accountId,
+              occurredAt: updatedLoan.date,
+            }).where(eq(transactions.id, initialTx.id));
+            await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, initSignedAmount);
+          } else {
+            // Create initial if it didn't exist
+            const catId = await ensureCategory(tx, loginhubId, initTxType);
+            await tx.insert(transactions).values({
+              loginhubId,
+              loanId: updatedLoan.id,
+              description: `Empréstimo (Saída): ${updatedLoan.description}`,
+              amount: initSignedAmount,
+              type: initTxType,
+              status: 'paid',
+              occurredAt: updatedLoan.date,
+              categoryId: catId,
+              accountId: updatedLoan.accountId,
+            });
+            await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, initSignedAmount);
+          }
+        } else if (initialTx) {
+          // Account removed, delete initial tx
+          if (initialTx.accountId) {
+            await applyBalanceDelta(tx, loginhubId, initialTx.accountId, negate(initialTx.amount));
+          }
+          await tx.delete(transactions).where(eq(transactions.id, initialTx.id));
+        }
+
+        // 2. UPDATE OR CREATE SETTLEMENT TX
+        if (updatedLoan.status === 'paid' && updatedLoan.categoryId) {
+          const expectedStr = updatedLoan.expectedAmount ?? updatedLoan.amount;
+          const signedAmount = settlementTxType === 'expense' ? `-${expectedStr}` : expectedStr;
+
+          if (settlementTx) {
+            if (settlementTx.accountId) {
+              await applyBalanceDelta(tx, loginhubId, settlementTx.accountId, negate(settlementTx.amount));
+            }
             await tx.update(transactions).set({
               amount: signedAmount,
-              type: txType,
               occurredAt: updatedLoan.date,
               categoryId: updatedLoan.categoryId,
               accountId: updatedLoan.accountId,
               receiptBase64: updatedLoan.receiptBase64,
               receiptMimeType: updatedLoan.receiptMimeType,
-            }).where(eq(transactions.id, existingTx.id));
-            // Apply new balance
+            }).where(eq(transactions.id, settlementTx.id));
             if (updatedLoan.accountId) {
               await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
             }
@@ -280,9 +390,9 @@ loansRouter.put(
             await tx.insert(transactions).values({
               loginhubId,
               loanId: updatedLoan.id,
-              description: updatedLoan.description,
+              description: `Empréstimo (Quitação): ${updatedLoan.description}`,
               amount: signedAmount,
-              type: txType,
+              type: settlementTxType,
               status: 'paid',
               occurredAt: updatedLoan.date,
               categoryId: updatedLoan.categoryId,
@@ -294,12 +404,11 @@ loansRouter.put(
               await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
             }
           }
-        } else if (existingTx) {
-          // If it was changed to active, or category removed, delete the tx and revert balance
-          if (existingTx.accountId) {
-            await applyBalanceDelta(tx, loginhubId, existingTx.accountId, negate(existingTx.amount));
+        } else if (settlementTx) {
+          if (settlementTx.accountId) {
+            await applyBalanceDelta(tx, loginhubId, settlementTx.accountId, negate(settlementTx.amount));
           }
-          await tx.delete(transactions).where(eq(transactions.id, existingTx.id));
+          await tx.delete(transactions).where(eq(transactions.id, settlementTx.id));
         }
 
         return updatedLoan;
@@ -312,6 +421,7 @@ loansRouter.put(
       res.json({
         ...updated,
         amount: Number(updated.amount),
+        expectedAmount: updated.expectedAmount ? Number(updated.expectedAmount) : undefined,
         date: updated.date.toISOString(),
         createdAt: updated.createdAt.toISOString(),
         updatedAt: updated.updatedAt.toISOString(),

@@ -97,7 +97,7 @@ const groupedLoans = computed(() => {
 });
 
 const totalPaidAmount = computed(() => {
-  return loans.value.filter(i => i.status === 'paid').reduce((acc, i) => acc + Number(i.amount), 0);
+  return loans.value.filter(i => i.status === 'paid').reduce((acc, i) => acc + Number((i as any).expectedAmount || i.amount), 0);
 });
 
 function openCreateModal() {
@@ -195,7 +195,7 @@ function onLoanSaved(status?: string) {
           <div class="flex justify-between items-center bg-surface-overlay/30 px-4 py-2 border-b border-surface-border">
             <span class="text-xs font-semibold text-muted capitalize">{{ formatDay(day) }}</span>
             <span class="tabular-nums font-bold text-xs text-muted">
-              {{ brl(list.reduce((acc, r) => acc + Number(r.amount), 0)) }}
+              {{ brl(list.reduce((acc, r) => acc + Number((r as any).expectedAmount || r.amount), 0)) }}
             </span>
           </div>
           <div class="hidden sm:grid grid-cols-[1.5fr_2fr_1fr_0.5fr_1fr] gap-4 px-4 py-2 bg-surface-base border-b border-surface-border text-[10px] font-bold text-muted uppercase tracking-wider">
@@ -209,7 +209,7 @@ function onLoanSaved(status?: string) {
             <li
               v-for="item in list"
               :key="item.id"
-              v-memo="[item.id, item.status, item.amount, item.description]"
+              v-memo="[item.id, item.status, item.amount, (item as any).expectedAmount, item.description]"
               class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_0.5fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
@@ -261,17 +261,19 @@ function onLoanSaved(status?: string) {
               </div>
 
               <!-- Right: Amount -->
-              <div class="hidden sm:block tabular-nums font-semibold text-sm text-right truncate" :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')">
-                {{ brl(item.amount) }}
+              <div class="hidden sm:flex flex-col items-end tabular-nums font-semibold text-sm text-right truncate" :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')">
+                <div v-if="(item as any).expectedAmount && (item as any).expectedAmount !== item.amount" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
+                <div>{{ brl((item as any).expectedAmount || item.amount) }}</div>
               </div>
 
               <!-- Mobile view right side -->
               <div class="flex sm:hidden items-center justify-end gap-3 min-w-0 shrink-0">
                 <div
-                  class="tabular-nums font-semibold text-sm text-right"
+                  class="flex flex-col items-end tabular-nums font-semibold text-sm text-right"
                   :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')"
                 >
-                  {{ brl(item.amount) }}
+                  <div v-if="(item as any).expectedAmount && (item as any).expectedAmount !== item.amount" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
+                  <div>{{ brl((item as any).expectedAmount || item.amount) }}</div>
                 </div>
                 <div 
                   class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[72px] shrink-0"

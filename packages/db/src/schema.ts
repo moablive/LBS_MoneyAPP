@@ -206,6 +206,7 @@ export const loans = pgTable(
     }),
     description: varchar("description", { length: 255 }).notNull(),
     amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    expectedAmount: numeric("expected_amount", { precision: 14, scale: 2 }),
     date: timestamp("date", { withTimezone: true }).notNull(),
     type: loanTypeEnum("type").notNull(),
     status: loanStatusEnum("status").default("active").notNull(),
