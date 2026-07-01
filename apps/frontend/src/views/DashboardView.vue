@@ -348,11 +348,12 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
 };
 
 const loadData = () => {
-  const fromDate = new Date();
+  const today = new Date();
+  
+  const fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
   fromDate.setHours(0, 0, 0, 0);
 
-  const toDate = new Date(fromDate);
-  toDate.setDate(toDate.getDate() + 60);
+  const toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   toDate.setHours(23, 59, 59, 999);
   
   const fromParam = fromDate.toISOString();
