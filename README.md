@@ -71,8 +71,10 @@
 <tr>
 <td width="50%">
 
-### 📊 Dashboard
-Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências. A lista de **Próximos Lançamentos** conta com uma modal de ação rápida ao clicar, roteando automaticamente pagamentos para suas modais específicas (faturas, assinaturas, empréstimos ou transações).
+### 📊 Dashboard & Calendário
+Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências. 
+- **Próximos Lançamentos (60 dias):** A lista de controle projeta exatamente **60 dias** no futuro, duplicando assinaturas recorrentes e exibindo os itens de forma **decrescente** (lançamentos mais distantes no topo e os mais próximos da data de hoje no rodapé). Conta com modal de ação rápida ao clicar.
+- **Calendário:** Exibição em grade dos lançamentos diários. Dias com múltiplas transações são agrupados num botão de resumo (ex: "5 Lançamentos"), que abre uma **Modal Detalhada** do dia para visualização limpa e focada.
 
 ### 💳 Transações
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).

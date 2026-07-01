@@ -7,6 +7,7 @@ import DashboardAccounts from '../components/dashboard/DashboardAccounts.vue';
 import DashboardCreditCards from '../components/dashboard/DashboardCreditCards.vue';
 import DashboardCategories from '../components/dashboard/DashboardCategories.vue';
 import DashboardUpcoming from '../components/dashboard/DashboardUpcoming.vue';
+import DashboardControl from '../components/dashboard/DashboardControl.vue';
 import Modal from '../components/modals/Modal.vue';
 import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyapp/models';
 
@@ -17,6 +18,7 @@ const LoanModal = defineAsyncComponent(() => import('../components/modals/LoanMo
 const PayInvoiceModal = defineAsyncComponent(() => import('../components/modals/PayInvoiceModal.vue'));
 const SubscriptionModal = defineAsyncComponent(() => import('../components/modals/SubscriptionModal.vue'));
 const ConfirmPaymentModal = defineAsyncComponent(() => import('../components/modals/ConfirmPaymentModal.vue'));
+const DateSelectionModal = defineAsyncComponent(() => import('../components/modals/DateSelectionModal.vue'));
 
 const summary = ref<DashboardSummaryResponse | null>(null);
 const ranking = ref<CategoryRankingResponse | null>(null);
@@ -29,6 +31,50 @@ const loadingSummary = ref(true);
 const loadingRanking = ref(true);
 const loadingAccounts = ref(true);
 const loadingUpcoming = ref(true);
+
+const plannedControlDates = ref<Record<string, string>>(JSON.parse(localStorage.getItem('plannedControlDates') || '{}'));
+
+const upcomingList = computed(() => upcomingTransactions.value.filter(t => !plannedControlDates.value[t.id]));
+const controlList = computed(() => upcomingTransactions.value.filter(t => plannedControlDates.value[t.id]).map(t => ({...t, occurredAt: plannedControlDates.value[t.id]}))
+  .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())
+);
+
+let draggedItem: any = null;
+const showDateSelectionModal = ref(false);
+const itemForPlanning = ref<any | null>(null);
+
+function onDragStart(ev: DragEvent, item: any) {
+  draggedItem = item;
+  if (ev.dataTransfer) {
+    ev.dataTransfer.effectAllowed = 'move';
+    ev.dataTransfer.setData('text/plain', item.id);
+  }
+}
+
+function onDropOnControl(ev: DragEvent) {
+  if (!draggedItem) return;
+  itemForPlanning.value = draggedItem;
+  showDateSelectionModal.value = true;
+  draggedItem = null;
+}
+
+function onDropOnUpcoming(ev: DragEvent) {
+  if (!draggedItem) return;
+  if (plannedControlDates.value[draggedItem.id]) {
+    delete plannedControlDates.value[draggedItem.id];
+    localStorage.setItem('plannedControlDates', JSON.stringify(plannedControlDates.value));
+  }
+  draggedItem = null;
+}
+
+function confirmPlanDate(dateStr: string) {
+  if (itemForPlanning.value) {
+    plannedControlDates.value[itemForPlanning.value.id] = new Date(`${dateStr}T12:00:00Z`).toISOString();
+    localStorage.setItem('plannedControlDates', JSON.stringify(plannedControlDates.value));
+  }
+  itemForPlanning.value = null;
+  showDateSelectionModal.value = false;
+}
 
 const showEditAccount = ref(false);
 const editingAccount = ref<any | null>(null);
@@ -207,7 +253,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
   loadingUpcoming.value = true;
   try {
     const [transactionsRes, categoriesRes, loansRes, subscriptionsRes] = await Promise.all([
-      api.get<any[]>(`/transactions?status=pending&sort=date_asc&limit=100&from=${fromParam}&to=${toParam}`),
+      api.get<any[]>(`/transactions?status=pending&sort=date_desc&limit=200&from=${fromParam}&to=${toParam}`),
       api.get<any[]>('/categories'),
       api.get<any>('/loans/summary'),
       api.get<any>('/subscriptions/summary'),
@@ -263,25 +309,29 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
     const upcomingSubscriptions = (subscriptionsRes?.items || []).filter((sub: any) => {
       if (sub.status !== 'active') return false;
       return true;
-    }).map((sub: any) => {
+    }).flatMap((sub: any) => {
+      const subs = [];
       let subDate = new Date(today.getFullYear(), today.getMonth(), sub.billingDay || 1, 12, 0, 0);
       if (subDate < today) {
          subDate.setMonth(subDate.getMonth() + 1);
       }
-      return {
-        id: `sub-${sub.id}`,
-        description: sub.description,
-        amount: sub.type === 'expense' ? -Math.abs(Number(sub.amount)) : Math.abs(Number(sub.amount)),
-        type: sub.type || 'expense',
-        occurredAt: subDate.toISOString(),
-        categoryId: sub.categoryId,
-        isSubscription: true,
-        customIconUrl: sub.customIconUrl ?? '/banks/generic.svg',
-        originalItem: sub
-      };
-    }).filter((sub: any) => {
-       const d = new Date(sub.occurredAt);
-       return d >= fromDate && d <= toDate;
+      
+      while (subDate <= toDate) {
+        subs.push({
+          id: `sub-${sub.id}-${subDate.toISOString().slice(0, 7)}`,
+          description: sub.description,
+          amount: sub.type === 'expense' ? -Math.abs(Number(sub.amount)) : Math.abs(Number(sub.amount)),
+          type: sub.type || 'expense',
+          occurredAt: subDate.toISOString(),
+          categoryId: sub.categoryId,
+          isSubscription: true,
+          customIconUrl: sub.customIconUrl ?? '/banks/generic.svg',
+          originalItem: sub
+        });
+        subDate = new Date(subDate);
+        subDate.setMonth(subDate.getMonth() + 1);
+      }
+      return subs;
     });
 
     upcomingTransactions.value = [...transactionsRes, ...upcomingLoans, ...creditCardInvoices, ...upcomingSubscriptions]
@@ -289,12 +339,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
          const monthStr = t.occurredAt.slice(0, 7);
          return !dismissedKeys.value.includes(`${t.id}_${monthStr}`);
       })
-      .sort((a, b) => {
-      const dayA = Number(a.occurredAt.slice(8, 10));
-      const dayB = Number(b.occurredAt.slice(8, 10));
-      if (dayA !== dayB) return dayA - dayB;
-      return new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
-    });
+      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
   } catch (e) {
     console.error(e);
   } finally {
@@ -345,7 +390,7 @@ onUnmounted(() => {
       />
 
       <!-- Bottom row: Accounts, CreditCards, Categories, Upcoming -->
-      <section class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-6">
+      <section class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-5 gap-6">
         <DashboardAccounts 
           :accounts="accounts"
           :loading="loadingAccounts"
@@ -361,12 +406,24 @@ onUnmounted(() => {
           :loading="loadingRanking"
         />
         <DashboardUpcoming 
-          :upcomingTransactions="upcomingTransactions"
+          :upcomingTransactions="upcomingList"
           :categoriesMap="categoriesMap"
           :loading="loadingUpcoming"
           @action="handleActionItem"
           @pay="handlePayUpcoming"
           @dismiss="handleDismissUpcoming"
+          @dragstart="onDragStart"
+          @drop="onDropOnUpcoming"
+        />
+        <DashboardControl 
+          :upcomingTransactions="controlList"
+          :categoriesMap="categoriesMap"
+          :loading="loadingUpcoming"
+          @action="handleActionItem"
+          @pay="handlePayUpcoming"
+          @dismiss="handleDismissUpcoming"
+          @dragstart="onDragStart"
+          @drop="onDropOnControl"
         />
       </section>
     </div>
@@ -494,6 +551,12 @@ onUnmounted(() => {
         </div>
       </div>
     </Modal>
+    <DateSelectionModal
+      v-model:open="showDateSelectionModal"
+      :itemName="itemForPlanning?.description"
+      :defaultDate="itemForPlanning?.occurredAt"
+      @confirm="confirmPlanDate"
+    />
   </AppShell>
 </template>
 
