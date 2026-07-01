@@ -132,10 +132,6 @@ watch(show, async (val) => {
 
 async function save() {
   if (form.value.status === 'paid') {
-    if (!form.value.categoryId) {
-      await alert('É necessário selecionar uma categoria para marcar como pago.');
-      return;
-    }
     const hasExistingReceipt = !!props.loanToEdit?.hasReceipt;
     if (!receiptFile.value && !hasExistingReceipt) {
       await alert('É necessário anexar um comprovante para marcar como pago.');
@@ -313,16 +309,6 @@ async function destroy() {
           </div>
         </div>
 
-        <div v-if="form.status === 'paid'">
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Categoria</label>
-          <select
-            v-model="form.categoryId"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer"
-          >
-            <option :value="null">Nenhuma</option>
-            <option v-for="cat in categories.filter(c => c.type === (form.type === 'received' ? 'expense' : 'income'))" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-          </select>
-        </div>
 
         <div>
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante</label>

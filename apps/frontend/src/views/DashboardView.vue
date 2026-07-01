@@ -307,7 +307,7 @@ const loadData = () => {
   fromDate.setHours(0, 0, 0, 0);
 
   const toDate = new Date(fromDate);
-  toDate.setMonth(toDate.getMonth() + 1);
+  toDate.setDate(toDate.getDate() + 60);
   toDate.setHours(23, 59, 59, 999);
   
   const fromParam = fromDate.toISOString();

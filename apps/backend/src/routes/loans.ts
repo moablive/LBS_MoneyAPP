@@ -177,10 +177,11 @@ loansRouter.post(
             }
 
             // SETTLEMENT TRANSACTION
-            if (l.status === 'paid' && l.categoryId) {
+            if (l.status === 'paid') {
               const txType = l.type === 'received' ? 'expense' : 'income';
               const expectedStr = l.expectedAmount ?? l.amount;
               const signedAmount = txType === 'expense' ? `-${expectedStr}` : expectedStr;
+              const catId = l.categoryId || await ensureCategory(tx, loginhubId, txType);
               await tx.insert(transactions).values({
                 loginhubId,
                 loanId: l.id,
@@ -189,7 +190,7 @@ loansRouter.post(
                 type: txType,
                 status: 'paid',
                 occurredAt: l.date,
-                categoryId: l.categoryId,
+                categoryId: catId,
                 accountId: l.accountId,
                 receiptBase64: l.receiptBase64,
                 receiptMimeType: l.receiptMimeType,
@@ -243,10 +244,11 @@ loansRouter.post(
           }
 
           // SETTLEMENT TRANSACTION
-          if (created && created.status === 'paid' && created.categoryId) {
+          if (created && created.status === 'paid') {
             const txType = created.type === 'received' ? 'expense' : 'income';
             const expectedStr = created.expectedAmount ?? created.amount;
             const signedAmount = txType === 'expense' ? `-${expectedStr}` : expectedStr;
+            const catId = created.categoryId || await ensureCategory(tx, loginhubId, txType);
             await tx.insert(transactions).values({
               loginhubId,
               loanId: created.id,
@@ -255,7 +257,7 @@ loansRouter.post(
               type: txType,
               status: 'paid',
               occurredAt: created.date,
-              categoryId: created.categoryId,
+              categoryId: catId,
               accountId: created.accountId,
               receiptBase64: created.receiptBase64,
               receiptMimeType: created.receiptMimeType,
@@ -367,9 +369,10 @@ loansRouter.put(
         }
 
         // 2. UPDATE OR CREATE SETTLEMENT TX
-        if (updatedLoan.status === 'paid' && updatedLoan.categoryId) {
+        if (updatedLoan.status === 'paid') {
           const expectedStr = updatedLoan.expectedAmount ?? updatedLoan.amount;
           const signedAmount = settlementTxType === 'expense' ? `-${expectedStr}` : expectedStr;
+          const catId = updatedLoan.categoryId || await ensureCategory(tx, loginhubId, settlementTxType);
 
           if (settlementTx) {
             if (settlementTx.accountId) {
@@ -378,7 +381,7 @@ loansRouter.put(
             await tx.update(transactions).set({
               amount: signedAmount,
               occurredAt: updatedLoan.date,
-              categoryId: updatedLoan.categoryId,
+              categoryId: catId,
               accountId: updatedLoan.accountId,
               receiptBase64: updatedLoan.receiptBase64,
               receiptMimeType: updatedLoan.receiptMimeType,
@@ -395,7 +398,7 @@ loansRouter.put(
               type: settlementTxType,
               status: 'paid',
               occurredAt: updatedLoan.date,
-              categoryId: updatedLoan.categoryId,
+              categoryId: catId,
               accountId: updatedLoan.accountId,
               receiptBase64: updatedLoan.receiptBase64,
               receiptMimeType: updatedLoan.receiptMimeType,
