@@ -326,7 +326,7 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 
 O bot do Telegram foi **extraído para o seu próprio repositório**: **[moablive/MoneyAPP_BOT](https://github.com/moablive/MoneyAPP_BOT)** (deploy standalone em `server/telegram-bots/MoneyAPP_BOT`, no padrão dos demais bots do servidor).
 
-Ele é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Stack, variáveis de ambiente e deploy estão documentados no README daquele repositório.
+Ele é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Stack, variáveis de ambiente e deploy estão documentados no README daquele repositório. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias**.
 
 ---
 
