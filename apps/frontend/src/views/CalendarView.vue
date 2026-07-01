@@ -261,9 +261,11 @@ const isToday = (date: Date) => {
                 <button 
                   v-if="txs.length > 0"
                   @click="selectedDay = day.date"
-                  class="w-full text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent transition-colors py-2 px-2 rounded-lg text-center border border-accent/20"
+                  class="w-full font-semibold bg-accent/10 hover:bg-accent/20 text-accent transition-colors py-1 sm:py-2 px-1 rounded-lg text-center border border-accent/20 leading-tight flex flex-col sm:flex-row items-center justify-center gap-0 sm:gap-1"
                 >
-                  {{ txs.length }} Lançamento{{ txs.length !== 1 ? 's' : '' }}
+                  <span class="text-sm sm:text-xs">{{ txs.length }}</span>
+                  <span class="hidden sm:inline text-xs">Lançamento{{ txs.length !== 1 ? 's' : '' }}</span>
+                  <span class="sm:hidden text-[9px] uppercase tracking-wider mt-0.5">item{{ txs.length !== 1 ? 's' : '' }}</span>
                 </button>
               </template>
             </div>
