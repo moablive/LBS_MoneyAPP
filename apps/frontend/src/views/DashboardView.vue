@@ -7,7 +7,7 @@ import DashboardAccounts from '../components/dashboard/DashboardAccounts.vue';
 import DashboardCreditCards from '../components/dashboard/DashboardCreditCards.vue';
 import DashboardCategories from '../components/dashboard/DashboardCategories.vue';
 import DashboardUpcoming from '../components/dashboard/DashboardUpcoming.vue';
-import DashboardControl from '../components/dashboard/DashboardControl.vue';
+import DashboardMensalidades from '../components/dashboard/DashboardMensalidades.vue';
 import Modal from '../components/modals/Modal.vue';
 import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyapp/models';
 
@@ -18,13 +18,14 @@ const LoanModal = defineAsyncComponent(() => import('../components/modals/LoanMo
 const PayInvoiceModal = defineAsyncComponent(() => import('../components/modals/PayInvoiceModal.vue'));
 const SubscriptionModal = defineAsyncComponent(() => import('../components/modals/SubscriptionModal.vue'));
 const ConfirmPaymentModal = defineAsyncComponent(() => import('../components/modals/ConfirmPaymentModal.vue'));
-const DateSelectionModal = defineAsyncComponent(() => import('../components/modals/DateSelectionModal.vue'));
+
 
 const summary = ref<DashboardSummaryResponse | null>(null);
 const ranking = ref<CategoryRankingResponse | null>(null);
 const accounts = ref<any[]>([]);
 const subscriptionsSummary = ref<any | null>(null);
 const upcomingTransactions = ref<any[]>([]);
+const mensalidadesList = ref<any[]>([]);
 const categories = ref<any[]>([]);
 
 const loadingSummary = ref(true);
@@ -32,49 +33,7 @@ const loadingRanking = ref(true);
 const loadingAccounts = ref(true);
 const loadingUpcoming = ref(true);
 
-const plannedControlDates = ref<Record<string, string>>(JSON.parse(localStorage.getItem('plannedControlDates') || '{}'));
-
-const upcomingList = computed(() => upcomingTransactions.value.filter(t => !plannedControlDates.value[t.id]));
-const controlList = computed(() => upcomingTransactions.value.filter(t => plannedControlDates.value[t.id]).map(t => ({...t, occurredAt: plannedControlDates.value[t.id]}))
-  .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())
-);
-
-let draggedItem: any = null;
-const showDateSelectionModal = ref(false);
-const itemForPlanning = ref<any | null>(null);
-
-function onDragStart(ev: DragEvent, item: any) {
-  draggedItem = item;
-  if (ev.dataTransfer) {
-    ev.dataTransfer.effectAllowed = 'move';
-    ev.dataTransfer.setData('text/plain', item.id);
-  }
-}
-
-function onDropOnControl(ev: DragEvent) {
-  if (!draggedItem) return;
-  itemForPlanning.value = draggedItem;
-  showDateSelectionModal.value = true;
-  draggedItem = null;
-}
-
-function onDropOnUpcoming(ev: DragEvent) {
-  if (!draggedItem) return;
-  if (plannedControlDates.value[draggedItem.id]) {
-    delete plannedControlDates.value[draggedItem.id];
-    localStorage.setItem('plannedControlDates', JSON.stringify(plannedControlDates.value));
-  }
-  draggedItem = null;
-}
-
-function confirmPlanDate(dateStr: string) {
-  if (itemForPlanning.value) {
-    plannedControlDates.value[itemForPlanning.value.id] = new Date(`${dateStr}T12:00:00Z`).toISOString();
-    localStorage.setItem('plannedControlDates', JSON.stringify(plannedControlDates.value));
-  }
-  itemForPlanning.value = null;
-  showDateSelectionModal.value = false;
-}
+const upcomingList = computed(() => upcomingTransactions.value);
 
 const showEditAccount = ref(false);
 const editingAccount = ref<any | null>(null);
@@ -97,6 +56,7 @@ const itemToPay = ref<any | null>(null);
 const showConfirmDismiss = ref(false);
 const itemToDismiss = ref<any | null>(null);
 const dismissedKeys = ref<string[]>(JSON.parse(localStorage.getItem('dismissedUpcoming') || '[]'));
+const customDatesUpcoming = ref<Record<string, string>>(JSON.parse(localStorage.getItem('customDatesUpcoming') || '{}'));
 
 const showPayInvoice = ref(false);
 const payingAccount = ref<any | null>(null);
@@ -106,6 +66,9 @@ const creditCardActionItem = ref<any | null>(null);
 
 const showUpcomingActionModal = ref(false);
 const upcomingActionItem = ref<any | null>(null);
+
+const showChangeDateModal = ref(false);
+const changeDateValue = ref('');
 
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -119,6 +82,26 @@ function choosePayUpcoming() {
   if (upcomingActionItem.value) {
     handlePayUpcoming(upcomingActionItem.value);
   }
+}
+
+function chooseEditUpcoming() {
+  showUpcomingActionModal.value = false;
+  if (!upcomingActionItem.value) return;
+  
+  changeDateValue.value = upcomingActionItem.value.occurredAt.slice(0, 10);
+  showChangeDateModal.value = true;
+}
+
+function saveCustomDate() {
+  if (!upcomingActionItem.value || !changeDateValue.value) return;
+  const item = upcomingActionItem.value;
+  
+  const newDate = new Date(`${changeDateValue.value}T12:00:00Z`).toISOString();
+  customDatesUpcoming.value[item.itemKey] = newDate;
+  localStorage.setItem('customDatesUpcoming', JSON.stringify(customDatesUpcoming.value));
+  
+  showChangeDateModal.value = false;
+  loadData();
 }
 
 function chooseDismissUpcoming() {
@@ -149,8 +132,8 @@ function handlePayUpcoming(item: any) {
     loanToEdit.value = item.originalItem;
     showLoanModal.value = true;
   } else if (item.isSubscription) {
-    subscriptionToEdit.value = item.originalItem;
-    showSubscriptionModal.value = true;
+    itemToPay.value = item;
+    showConfirmPayment.value = true;
   } else {
     transactionToView.value = item;
     showTransactionDetails.value = true;
@@ -164,8 +147,7 @@ function handleDismissUpcoming(item: any) {
 
 function confirmDismiss() {
   if (!itemToDismiss.value) return;
-  const monthStr = itemToDismiss.value.occurredAt.slice(0, 7);
-  const key = `${itemToDismiss.value.id}_${monthStr}`;
+  const key = itemToDismiss.value.itemKey;
   if (!dismissedKeys.value.includes(key)) dismissedKeys.value.push(key);
   localStorage.setItem('dismissedUpcoming', JSON.stringify(dismissedKeys.value));
   showConfirmDismiss.value = false;
@@ -253,7 +235,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
   loadingUpcoming.value = true;
   try {
     const [transactionsRes, categoriesRes, loansRes, subscriptionsRes] = await Promise.all([
-      api.get<any[]>(`/transactions?status=pending&sort=date_desc&limit=200&from=${fromParam}&to=${toParam}`),
+      api.get<any[]>(`/transactions?sort=date_desc&limit=200&from=${fromParam}&to=${toParam}`),
       api.get<any[]>('/categories'),
       api.get<any>('/loans/summary'),
       api.get<any>('/subscriptions/summary'),
@@ -268,12 +250,23 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
     }).map((loan: any) => {
       const type = loan.type === 'received' ? 'expense' : 'income';
       const amount = type === 'expense' ? -Math.abs(Number(loan.amount)) : Math.abs(Number(loan.amount));
+      const originalDateStr = loan.date;
+      const monthStr = originalDateStr.slice(0, 7);
+      const itemKey = `${loan.id}_${monthStr}`;
+      
+      let displayDate = originalDateStr;
+      if (customDatesUpcoming.value[itemKey]) {
+        displayDate = customDatesUpcoming.value[itemKey];
+      }
+      
       return {
         id: loan.id,
         description: loan.description,
         amount: amount,
         type: type,
-        occurredAt: loan.date,
+        occurredAt: displayDate,
+        originalOccurredAt: originalDateStr,
+        itemKey: itemKey,
         categoryId: null,
         isLoan: true,
         loanType: loan.type,
@@ -291,53 +284,91 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
         if (dueDate < today) {
            dueDate.setMonth(dueDate.getMonth() + 1);
         }
+        
+        const originalDateStr = dueDate.toISOString();
+        const monthStr = originalDateStr.slice(0, 7);
+        const itemKey = `cc-${card.id}_${monthStr}`;
+        
+        let displayDate = originalDateStr;
+        if (customDatesUpcoming.value[itemKey]) {
+          displayDate = customDatesUpcoming.value[itemKey];
+        }
+        
         return {
           id: `cc-${card.id}`,
           description: `Fatura ${card.name}`,
           amount: -Math.abs(Number(card.currentBalance)),
           type: 'expense',
-          occurredAt: dueDate.toISOString(),
+          occurredAt: displayDate,
+          originalOccurredAt: originalDateStr,
+          itemKey: itemKey,
           categoryId: null,
           isCreditCard: true,
           account: card
         };
       })
       .filter(cc => {
-         const d = new Date(cc.occurredAt);
+         const d = new Date(cc.originalOccurredAt);
          return d >= fromDate && d <= toDate;
       });
     const upcomingSubscriptions = (subscriptionsRes?.items || []).filter((sub: any) => {
       if (sub.status !== 'active') return false;
       return true;
-    }).flatMap((sub: any) => {
-      const subs = [];
+    }).map((sub: any) => {
+      const hasPaid = transactionsRes.some(t => t.subscriptionId === sub.id && t.status === 'paid');
+      
       let subDate = new Date(today.getFullYear(), today.getMonth(), sub.billingDay || 1, 12, 0, 0);
-      if (subDate < today) {
-         subDate.setMonth(subDate.getMonth() + 1);
+      
+      const originalDateStr = subDate.toISOString();
+      const monthStr = originalDateStr.slice(0, 7);
+      const itemKey = `sub-${sub.id}-${monthStr}_${monthStr}`;
+      
+      const isDismissed = dismissedKeys.value.includes(itemKey);
+      const isPaid = hasPaid || isDismissed;
+      
+      let displayDate = originalDateStr;
+      if (customDatesUpcoming.value[itemKey]) {
+        displayDate = customDatesUpcoming.value[itemKey];
       }
       
-      while (subDate <= toDate) {
-        subs.push({
-          id: `sub-${sub.id}-${subDate.toISOString().slice(0, 7)}`,
-          description: sub.description,
-          amount: sub.type === 'expense' ? -Math.abs(Number(sub.amount)) : Math.abs(Number(sub.amount)),
-          type: sub.type || 'expense',
-          occurredAt: subDate.toISOString(),
-          categoryId: sub.categoryId,
-          isSubscription: true,
-          customIconUrl: sub.customIconUrl ?? '/banks/generic.svg',
-          originalItem: sub
-        });
-        subDate = new Date(subDate);
-        subDate.setMonth(subDate.getMonth() + 1);
+      return {
+        id: `sub-${sub.id}-${monthStr}`,
+        description: sub.description,
+        amount: sub.type === 'expense' ? -Math.abs(Number(sub.amount)) : Math.abs(Number(sub.amount)),
+        type: sub.type || 'expense',
+        occurredAt: displayDate,
+        originalOccurredAt: originalDateStr,
+        itemKey: itemKey,
+        categoryId: sub.categoryId,
+        isSubscription: true,
+        customIconUrl: sub.customIconUrl ?? '/banks/generic.svg',
+        originalItem: sub,
+        statusTag: isPaid ? 'paid' : 'pending'
+      };
+    }).sort((a: any, b: any) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+    
+    mensalidadesList.value = upcomingSubscriptions;
+
+    const pendingTransactions = transactionsRes.filter((t: any) => t.status === 'pending').map(t => {
+      const originalDateStr = t.occurredAt;
+      const monthStr = originalDateStr.slice(0, 7);
+      const itemKey = `${t.id}_${monthStr}`;
+      
+      let displayDate = originalDateStr;
+      if (customDatesUpcoming.value[itemKey]) {
+        displayDate = customDatesUpcoming.value[itemKey];
       }
-      return subs;
+      return {
+        ...t,
+        occurredAt: displayDate,
+        originalOccurredAt: originalDateStr,
+        itemKey: itemKey
+      };
     });
 
-    upcomingTransactions.value = [...transactionsRes, ...upcomingLoans, ...creditCardInvoices, ...upcomingSubscriptions]
+    upcomingTransactions.value = [...pendingTransactions, ...upcomingLoans, ...creditCardInvoices]
       .filter((t: any) => {
-         const monthStr = t.occurredAt.slice(0, 7);
-         return !dismissedKeys.value.includes(`${t.id}_${monthStr}`);
+         return !dismissedKeys.value.includes(t.itemKey);
       })
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
   } catch (e) {
@@ -413,18 +444,14 @@ onUnmounted(() => {
           @action="handleActionItem"
           @pay="handlePayUpcoming"
           @dismiss="handleDismissUpcoming"
-          @dragstart="onDragStart"
-          @drop="onDropOnUpcoming"
         />
-        <DashboardControl 
-          :upcomingTransactions="controlList"
+        <DashboardMensalidades 
+          :mensalidadesList="mensalidadesList"
           :categoriesMap="categoriesMap"
           :loading="loadingUpcoming"
           @action="handleActionItem"
           @pay="handlePayUpcoming"
           @dismiss="handleDismissUpcoming"
-          @dragstart="onDragStart"
-          @drop="onDropOnControl"
         />
       </section>
     </div>
@@ -486,26 +513,31 @@ onUnmounted(() => {
     />
 
     <Modal :open="showCreditCardActionModal" title="Opções do Cartão" @close="showCreditCardActionModal = false">
-      <div class="space-y-4">
-        <div class="p-4 bg-surface-overlay border border-surface-border rounded-xl">
-          <p class="text-sm font-semibold text-white truncate">{{ creditCardActionItem?.name }}</p>
-          <p class="text-lg font-bold text-expense mt-1 font-display" v-if="creditCardActionItem">
+      <div class="space-y-6">
+        <div class="relative p-5 rounded-2xl overflow-hidden shadow-lg border border-surface-border/50 bg-gradient-to-br from-surface-overlay to-surface-raised/80 group">
+          <div class="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1 flex items-center gap-2">
+             Cartão de Crédito
+          </p>
+          <p class="text-base font-medium text-white truncate relative z-10">{{ creditCardActionItem?.name }}</p>
+          <p class="text-3xl font-bold text-expense mt-2 font-display tracking-tight relative z-10" v-if="creditCardActionItem">
             {{ brl(Math.abs(Number(creditCardActionItem.currentBalance))) }}
           </p>
         </div>
         
-        <div class="flex flex-col gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button @click="choosePayCreditCardInvoice" 
-                  class="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl transition-colors shadow-lg"
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   :disabled="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0"
-                  :class="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0 ? 'bg-surface-border text-muted cursor-not-allowed opacity-50' : 'bg-accent text-white hover:bg-accent/80 shadow-accent/20'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Pagar Fatura
+                  :class="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0 ? 'bg-surface-border text-muted cursor-not-allowed opacity-50' : 'bg-gradient-to-b from-accent/90 to-accent hover:from-accent hover:to-accent/90 shadow-accent/25'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span class="text-white font-bold tracking-wide">Pagar Fatura</span>
           </button>
           
-          <button @click="chooseEditCreditCard" class="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-surface-overlay border border-surface-border text-white hover:bg-surface-raised transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-            Editar Cartão
+          <button @click="chooseEditCreditCard" 
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            <span class="text-sm font-medium">Editar Cartão</span>
           </button>
         </div>
       </div>
@@ -525,39 +557,69 @@ onUnmounted(() => {
       @paid="loadData"
     />
 
-    <Modal :open="showUpcomingActionModal" title="Opções do Lançamento" @close="showUpcomingActionModal = false">
-      <div class="space-y-4">
-        <div class="p-4 bg-surface-overlay border border-surface-border rounded-xl">
-          <p class="text-sm font-semibold text-white truncate">{{ upcomingActionItem?.description }}</p>
-          <p class="text-lg font-bold mt-1 font-display" :class="upcomingActionItem?.type === 'expense' ? 'text-expense' : 'text-income'" v-if="upcomingActionItem">
+    <Modal :open="showUpcomingActionModal" :title="upcomingActionItem?.isSubscription ? 'Opções da Assinatura' : 'Opções do Lançamento'" @close="showUpcomingActionModal = false">
+      <div class="space-y-6">
+        <div class="relative p-5 rounded-2xl overflow-hidden shadow-lg border border-surface-border/50 bg-gradient-to-br from-surface-overlay to-surface-raised/80 group">
+          <div class="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1 flex items-center gap-2">
+             <span v-if="upcomingActionItem?.isSubscription">Assinatura Mensal</span>
+             <span v-else-if="upcomingActionItem?.isCreditCard">Fatura de Cartão</span>
+             <span v-else>Lançamento Recorrente</span>
+          </p>
+          <p class="text-base font-medium text-white truncate relative z-10">{{ upcomingActionItem?.description }}</p>
+          <p class="text-3xl font-bold mt-2 font-display tracking-tight relative z-10" :class="upcomingActionItem?.type === 'expense' ? 'text-expense' : 'text-income'" v-if="upcomingActionItem">
             {{ brl(Math.abs(Number(upcomingActionItem.amount))) }}
           </p>
+          
+           <div class="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-base/50 text-xs text-white/80 border border-surface-border/50">
+             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+             <span v-if="upcomingActionItem?.occurredAt">
+               {{ new Date(upcomingActionItem.occurredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' }) }}
+             </span>
+           </div>
         </div>
         
-        <div class="flex flex-col gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button @click="choosePayUpcoming" 
-                  class="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl transition-colors shadow-lg"
-                  :class="upcomingActionItem?.type === 'expense' ? 'bg-expense hover:bg-expense/80 shadow-expense/20' : 'bg-income hover:bg-income/80 shadow-income/20'"
-                  >
-            <span class="text-white">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </span>
-            <span class="text-white font-medium">Pagar Lançamento</span>
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                  :class="upcomingActionItem?.type === 'expense' ? 'bg-gradient-to-b from-expense/90 to-expense hover:from-expense hover:to-expense/90 shadow-expense/25' : 'bg-gradient-to-b from-income/90 to-income hover:from-income hover:to-income/90 shadow-income/25'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span class="text-white font-bold tracking-wide">Pagar Lançamento</span>
           </button>
           
-          <button @click="chooseDismissUpcoming" class="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-surface-overlay border border-surface-border text-white hover:bg-surface-raised transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            Pular Mês
+          <button @click="chooseEditUpcoming" 
+                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+            <span class="text-sm font-medium">Mudar Data</span>
+          </button>
+          
+          <button @click="chooseDismissUpcoming" 
+                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors" v-if="!upcomingActionItem?.isSubscription"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income group-hover:text-income transition-colors" v-else><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span class="text-sm font-medium" v-if="upcomingActionItem?.isSubscription">Já Paguei</span>
+            <span class="text-sm font-medium" v-else>Pular Mês</span>
           </button>
         </div>
       </div>
     </Modal>
-    <DateSelectionModal
-      v-model:open="showDateSelectionModal"
-      :itemName="itemForPlanning?.description"
-      :defaultDate="itemForPlanning?.occurredAt"
-      @confirm="confirmPlanDate"
-    />
+    
+    <Modal :open="showChangeDateModal" title="Data Auxiliar de Pagamento" @close="showChangeDateModal = false">
+      <div class="space-y-4">
+        <p class="text-sm text-muted">
+          Selecione a data em que você planeja pagar este lançamento (apenas para organizar o seu painel este mês):
+        </p>
+        <input
+          v-model="changeDateValue"
+          type="date"
+          class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark]"
+        />
+        <div class="flex justify-end gap-2 pt-2">
+          <button @click="showChangeDateModal = false" class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100">Cancelar</button>
+          <button @click="saveCustomDate" class="px-4 py-2 rounded-xl bg-accent text-white font-medium">Salvar Data Auxiliar</button>
+        </div>
+      </div>
+    </Modal>
   </AppShell>
 </template>
 

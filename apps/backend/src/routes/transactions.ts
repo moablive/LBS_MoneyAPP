@@ -51,6 +51,7 @@ transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (
         occurredAt: transactions.occurredAt,
         categoryId: transactions.categoryId,
         accountId: transactions.accountId,
+        subscriptionId: transactions.subscriptionId,
         hasReceipt: sql<boolean>`${transactions.receiptBase64} is not null`.as('has_receipt'),
         createdAt: transactions.createdAt,
       })

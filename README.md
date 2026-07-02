@@ -73,7 +73,7 @@
 
 ### 📊 Dashboard & Calendário
 Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências. 
-- **Próximos Lançamentos (60 dias):** A lista de controle projeta exatamente **60 dias** no futuro, duplicando assinaturas recorrentes e exibindo os itens de forma **decrescente** (lançamentos mais distantes no topo e os mais próximos da data de hoje no rodapé). Conta com modal de ação rápida ao clicar.
+- **Próximos Lançamentos (60 dias):** A lista de controle projeta exatamente **60 dias** no futuro, duplicando assinaturas recorrentes e exibindo os itens de forma **decrescente** (lançamentos mais distantes no topo e os mais próximos da data de hoje no rodapé). Conta com modal de ação rápida ao clicar, permitindo definir uma **Data Auxiliar de Pagamento** para organizar visualmente o lançamento no mês sem alterar a data de vencimento real da entidade.
 - **Calendário:** Exibição em grade dos lançamentos diários. Dias com múltiplas transações são agrupados num botão de resumo (ex: "5 Lançamentos"), que abre uma **Modal Detalhada** do dia para visualização limpa e focada.
 
 ### 💳 Transações

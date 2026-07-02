@@ -24,6 +24,9 @@ const eligibleAccounts = computed(() => {
   return accounts.value;
 });
 
+const bankAccounts = computed(() => eligibleAccounts.value.filter(a => a.type !== 'credit_card'));
+const creditCards = computed(() => eligibleAccounts.value.filter(a => a.type === 'credit_card'));
+
 watch(open, async (v) => {
   if (!v) return;
   
@@ -85,7 +88,8 @@ async function submit() {
         occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
         description: props.item.description,
         type: props.item.type,
-        status: 'paid'
+        status: 'paid',
+        ...(props.item.isSubscription ? { subscriptionId: props.item.originalItem.id } : {})
       };
       await api.post('/transactions', payload);
     } else {
@@ -143,8 +147,13 @@ async function submit() {
             required
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
           >
-            <option value="" disabled>Selecione a conta...</option>
-            <option v-for="a in eligibleAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+            <option value="" disabled>— sem conta —</option>
+            <optgroup label="Contas" v-if="bankAccounts.length > 0">
+              <option v-for="a in bankAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+            </optgroup>
+            <optgroup label="Cartões de Crédito" v-if="creditCards.length > 0">
+              <option v-for="a in creditCards" :key="a.id" :value="a.id">{{ a.name }}</option>
+            </optgroup>
           </select>
         </label>
       </div>
