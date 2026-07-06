@@ -96,6 +96,7 @@ const totalUpcoming = computed(() => {
                 <img v-if="t.isCreditCard && t.account?.customIconUrl" :src="t.account.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
                 <img v-else-if="t.isSubscription && t.customIconUrl" :src="t.customIconUrl" class="w-4 h-4 rounded-sm object-contain" />
                 <svg v-else-if="t.isCreditCard" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                <svg v-else-if="t.isTodoTask" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
               </div>
               <div class="flex items-center gap-2 mt-0.5 min-w-0 flex-1">
                 <span class="truncate" :title="t.description">{{ t.description }}</span>
@@ -112,6 +113,9 @@ const totalUpcoming = computed(() => {
                   <template v-if="t.isLoan">
                     {{ t.loanType === 'received' ? 'Empréstimo a pagar' : t.loanType === 'fgts' ? 'FGTS a receber' : 'Empréstimo a receber' }}
                   </template>
+                  <template v-else-if="t.isTodoTask">
+                    {{ t.task?.completedAt ? 'Tarefa Concluída' : 'Tarefa Pendente' }}
+                  </template>
                   <template v-else-if="t.isSubscription">
                     Assinatura
                   </template>
@@ -124,7 +128,13 @@ const totalUpcoming = computed(() => {
                 </span>
               </div>
               <span class="font-bold text-sm shrink-0" :class="t.type === 'expense' ? 'text-expense' : 'text-income'">
-                {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
+                <template v-if="t.isTodoTask">
+                  <svg v-if="t.task?.completedAt" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span v-else class="text-muted text-xs">Tarefa</span>
+                </template>
+                <template v-else>
+                  {{ t.type === 'expense' && !t.amount.toString().startsWith('-') ? '-' : '' }}{{ brl(t.amount) }}
+                </template>
               </span>
             </div>
           </div>

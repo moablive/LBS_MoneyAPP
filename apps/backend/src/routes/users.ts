@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { eq } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
 import { requireAuth } from '../middleware/auth.js';
@@ -7,7 +7,7 @@ export const usersRouter = Router();
 
 // Password lifecycle (set/change/reset) and invites are owned by LoginHub.
 // MoneyAPP only keeps app-specific profile settings.
-usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
+usersRouter.patch('/me/settings', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { requireReceipts } = req.body;
     const loginhubId = req.user!.loginhubId;
@@ -21,7 +21,8 @@ usersRouter.patch('/me/settings', requireAuth, async (req, res, next) => {
     // Merge existing settings with incoming ones
     const newSettings = {
       ...(user.settings as any),
-      requireReceipts: typeof requireReceipts === 'boolean' ? requireReceipts : true,
+      ...(typeof requireReceipts === 'boolean' && { requireReceipts }),
+      ...(typeof req.body.showTodoAppEvents === 'boolean' && { showTodoAppEvents: req.body.showTodoAppEvents }),
     };
 
     await db.update(schema.userSettings)
