@@ -298,6 +298,15 @@ erDiagram
 <tr><td><code>GET</code></td><td><code>/api/dashboard/categories/ranking</code></td><td><code>categoryRankingQuerySchema</code></td></tr>
 <tr><td><code>GET</code></td><td><code>/api/dashboard/spending-evolution</code></td><td>cumulative line series</td></tr>
 <tr><td><code>GET</code></td><td><code>/api/dashboard/projection</code></td><td>projeção baseada em recorrências</td></tr>
+<tr><td>👤 <strong>Users</strong></td><td><code>PATCH</code></td><td><code>/api/users/me/settings</code></td><td><code>{ requireReceipts?, showTodoAppEvents? }</code> — merge no JSONB <code>user_settings.settings</code></td></tr>
+<tr><td>📅 <strong>Calendar</strong></td><td><code>GET</code></td><td><code>/api/calendar</code></td><td><code>?start&amp;end</code> — transações + empréstimos do período, itens <code>{ id, title, date, amount, type, status, category, color }</code>. Consumido pelo <strong>TodoAPP</strong> (identidade delegada)</td></tr>
+<tr><td>🔗 <strong>Integrations</strong></td><td><code>GET</code></td><td><code>/api/integrations/todoapp/tasks</code></td><td><code>?start&amp;end</code> — tarefas do TodoAPP do usuário (via <code>telegramId</code>); ver <a href="#-integração-com-todoapp">Integração com TodoAPP</a></td></tr>
+<tr><td rowspan="6">🤖 <strong>Bot</strong> (interno, <code>x-api-key</code>)</td><td><code>GET</code></td><td><code>/api/bot/users/by-telegram/:id</code></td><td>lookup <code>loginhubId</code> por <code>telegramId</code></td></tr>
+<tr><td><code>GET</code></td><td><code>/api/bot/users/all</code></td><td>usuários com Telegram vinculado</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/bot/link-telegram</code></td><td>vincula <code>telegramId</code> ↔ <code>loginhubId</code></td></tr>
+<tr><td><code>GET</code></td><td><code>/api/bot/summaries/by-category</code></td><td>resumo por categoria</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/bot/dashboard/summary</code></td><td>saldo atual</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/bot/loans/summary</code></td><td>resumo de empréstimos</td></tr>
 </table>
 
 ---
@@ -326,6 +335,30 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
 
 O bot do Telegram (`app_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias**.
+
+> [!IMPORTANT]
+> O bot tem um **`.env` próprio** em `apps/bot/MoneyAPP_BOT/.env` (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `GROQ_API_KEY`, `BOT_SERVICE_KEY`, `OLLAMA_*`). O `docker-compose.yml` da raiz aponta o `env_file` do serviço do bot para esse arquivo — **não** para o `.env` da raiz (que não tem essas variáveis; usar o da raiz derruba o bot em crash-loop na validação Zod).
+
+---
+
+## 🔗 Integração com TodoAPP
+
+> Documentação completa (fluxos, contratos, troubleshooting): `documentacao/integracao-todoapp-moneyapp.md` no repo de docs do servidor.
+
+A integração é **bidirecional em leitura** e toda **interna** à rede Docker `awl_network` (backend → backend, nada exposto no Cloudflare):
+
+| Direção | Fluxo |
+| ------- | ----- |
+| **Todo → Money** (dashboard) | `DashboardView` → `GET /api/integrations/todoapp/tasks?start&end` → backend resolve `telegramId` em `user_settings` → `GET http://app_todoapp_backend:3000/api/bot/tasks?telegramId&start&end` com `x-api-key: BOT_SERVICE_KEY`. As tarefas aparecem em **Próximos Lançamentos** (toggle "TodoAPP", `amount: 0`, check verde quando concluídas) |
+| **Money → Todo** (calendário) | O backend do TodoAPP chama `GET /api/calendar?start&end` com identidade delegada (`x-api-key` + `x-user-id: <loginhubId no Money>`) e exibe os lançamentos no calendário |
+
+**Pontos-chave:**
+
+- ⚠️ O `loginhub_id` é **por app** (MoneyAPP = app 3, TodoAPP = app 4): o mesmo e-mail tem IDs diferentes em cada app. A junção entre apps é feita pelo **`telegramId`**.
+- `BOT_SERVICE_KEY` deve ser **idêntico** nos `.env` do MoneyAPP e do TodoAPP (e no `.env` do bot).
+- O toggle do usuário persiste em `user_settings.settings.showTodoAppEvents` (JSONB, via `PATCH /api/users/me/settings`) + localStorage.
+- Falha do TodoAPP **não** quebra o dashboard: o fetch tem `.catch(() => [])`.
+- `CORS_ORIGIN` inclui `https://todo.astralwavelabel.com`.
 
 ---
 

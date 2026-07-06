@@ -60,7 +60,9 @@ services:
       dockerfile: Dockerfile
     container_name: app_moneyapp_bot
     env_file:
-    - .env
+    # O bot tem seu próprio .env (TELEGRAM_BOT_TOKEN, LOGINHUB_*, GROQ_API_KEY,
+    # BOT_SERVICE_KEY...) — o .env da raiz não contém essas variáveis.
+    - apps/bot/MoneyAPP_BOT/.env
     environment:
       NODE_ENV: production
       BACKEND_URL: http://moneyapp_backend:3000/api
