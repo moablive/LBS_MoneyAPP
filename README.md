@@ -164,7 +164,7 @@ moneyapp/
 │   │   │   └── server.ts          # HTTP server entrypoint
 │   │   └── Dockerfile
 │   │
-│   └── 📂 bot/  → extraído para repositório próprio (github.com/moablive/MoneyAPP_BOT)
+│   └── 📂 bot/               # Telegram Bot (app_moneyapp_bot)
 │
 ├── 📂 packages/
 │   ├── 📂 api-client/            # Cliente HTTP e fetch wrappers

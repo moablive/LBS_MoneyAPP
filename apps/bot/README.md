@@ -1,6 +1,6 @@
 <div align="center">
-  <h1>💰 MoneyAPP bot (@awl_money_bot)</h1>
-  <p>Bot de Telegram do MoneyAPP (Telegraf + TypeScript) — cliente HTTP do backend, extraído do monorepo <a href="https://github.com/moablive/MoneyAPP">MoneyAPP</a> para repositório próprio, no padrão standalone dos demais bots em <code>telegram-bots/</code>.</p>
+  <h1>💰 MoneyAPP Bot (@awl_money_bot)</h1>
+  <p>Bot de Telegram do MoneyAPP (Telegraf + TypeScript) — cliente HTTP do backend. Agora integrado nativamente no ecossistema e deploy do <b>MoneyAPP</b> principal.</p>
 
   <a href="https://t.me/awl_money_bot"><b>🔗 Acessar: @awl_money_bot</b></a>
 
@@ -13,72 +13,66 @@
 
 <br/>
 
-## Arquitetura
+## 🏗️ Arquitetura
 
-O bot é um **cliente HTTP do backend** — não acessa o banco diretamente. Toda
-leitura/escrita passa por `moneyapp_backend:3000/api` na rede Docker externa
-`awl_network`. A identidade do usuário agora é validada no **LoginHub** e o
-bot comunica-se com o backend usando uma `BOT_SERVICE_KEY`.
+O bot atua como um **cliente HTTP** do backend — ele não acessa o banco de dados diretamente. Toda
+leitura e escrita passa pela API interna (`app_moneyapp_backend:3000/api`) através da rede Docker externa
+`awl_network`. A identidade dos usuários é gerida via **LoginHub** e o
+bot comunica-se com o backend do MoneyAPP de forma autenticada usando a `BOT_SERVICE_KEY`.
 
+```mermaid
+flowchart LR
+  Telegram((Telegram)) <--> BOT[app_moneyapp_bot]
+  BOT -- "HTTP /api" --> API[app_moneyapp_backend]
+  API <--> DB[(awlsrvDB_postgres)]
+  BOT -. "Valida convites" .-> LoginHub
 ```
-Telegram  ⇄  moneyapp_bot  ──HTTP /api──▶  moneyapp_backend  ⇄  awlsrvDB_postgres
-                 ↓          (awl_network)
-             LoginHub
-```
 
-### Código vendorizado (`src/vendor/`)
+### 📦 Integração com o Monorepo
 
-No monorepo o bot dependia de dois workspace packages. Como aqui é standalone,
-eles foram **copiados** para `src/vendor/` e religados via `paths` do
-`tsconfig.json`:
-
-- `@moneyapp/api-client` → `src/vendor/api-client` — cliente HTTP (`fetch`) das rotas `/bot/*` e `/shares/*` do backend.
-- `@moneyapp/models` → `src/vendor/models` — schemas/tipos zod compartilhados.
-
-Ambos são puros (sem acesso a banco). Se o **contrato da API do backend mudar**,
-re-sincronize essas duas pastas a partir do monorepo (`packages/api-client/src`
-e `packages/models/src`).
+O bot foi unificado ao repositório principal do MoneyAPP e é orquestrado pelo `docker-compose.yml` da raiz do projeto (como serviço `app_moneyapp_bot`). Ele foi ajustado para compilar e subir em sincronia com o Frontend e Backend, mantendo as configurações centralizadas.
 
 ## 👥 Convites e Gestão de Acessos
 
-O bot suporta a criação de convites com geração de senhas temporárias.
-Os usuários administradores podem acessar o menu **"👥 Convidar Pessoas"** no bot, inserir o e-mail do convidado e receber a senha gerada e o link de convite. Isso utiliza o endpoint `/bot/invite` do backend e dispensa a necessidade de adicionar usuários manualmente no arquivo `.env`.
+O bot suporta a criação e gestão de convites.
+Usuários administradores podem acessar o menu **"👥 Convidar Pessoas"** no bot, inserir o e-mail do convidado e receber imediatamente a senha temporária gerada e o link de convite. Isso aciona o endpoint `/bot/invite` do backend, dispensando a necessidade de gerenciar usuários manualmente no arquivo `.env`.
 
-> ⚠️ O usuário convidado precisará obrigatoriamente realizar o primeiro login no Painel Web do MoneyAPP para alterar sua senha antes de poder interagir com o bot.
+> ⚠️ O usuário convidado precisará obrigatoriamente realizar o seu primeiro login no **Painel Web do MoneyAPP** (para alterar a senha temporária) antes de conseguir interagir com o bot.
 
 ## 🤖 Inteligência Artificial (Voz e Visão)
 
-O bot possui integrações de IA avançadas para criação de transações:
+O bot conta com integrações avançadas de Inteligência Artificial (IA) local e em nuvem para criar transações de forma mágica:
 
 1. **Voz para Transação**:
-   Envie um áudio (ex: "Gastei 50 reais de pão na padaria usando o cartão nubank") e o bot fará:
-   - **Transcrição**: Usando o modelo Whisper (via Groq API).
-   - **Entendimento (NLU)**: Usando LLM local (Ollama - texto) para extrair valor, descrição, categoria e conta.
+   Grave e envie um áudio (ex: *"Gastei 50 reais de pão na padaria usando o cartão nubank"*). O bot fará:
+   - **Transcrição (STT)**: Usando o modelo Whisper (via Groq API) para altíssima velocidade.
+   - **Entendimento (NLU)**: Usando LLM local (Ollama) para extrair estruturadamente: valor, descrição, categoria e conta.
 
-2. **OCR de Comprovantes**:
-   Envie a imagem de um recibo ou comprovante e o bot fará o reconhecimento visual usando um modelo LLM multimodal local (Ollama - visão), extraindo as informações para criar a transação.
+2. **OCR Inteligente de Comprovantes**:
+   Envie a foto de um recibo ou comprovante de compra. O bot usa reconhecimento visual multimodal com LLM local (Ollama - visão) para ler a nota, extrair os valores/itens e preencher os dados da transação sem você digitar nada.
 
-## Variáveis de ambiente
+## ⚙️ Variáveis de Ambiente
 
-Veja [`.env.example`](.env.example). Lidas e validadas por `src/config.ts`:
-- **Core**: `NODE_ENV`, `TELEGRAM_BOT_TOKEN`, `BOT_SERVICE_KEY`, `BACKEND_URL`
-- **LoginHub**: `LOGINHUB_API_URL`, `LOGINHUB_APP_ID`
-- **Ollama (IA Local)**: `OLLAMA_URL`, `OLLAMA_MODEL` (visão), `OLLAMA_TEXT_MODEL` (texto)
+As configurações do bot são lidas do arquivo `.env` principal localizado na raiz do monorepo.
+Variáveis exclusivas do bot:
+- **Core**: `TELEGRAM_BOT_TOKEN`, `BOT_SERVICE_KEY`
+- **Ollama (IA Local)**: `OLLAMA_URL`, `OLLAMA_MODEL` (para visão), `OLLAMA_TEXT_MODEL` (para processamento de texto)
 - **Groq**: `GROQ_API_KEY`
 
-As notificações de vencimento são enviadas **apenas via Telegram** (cron diária
-às 08:00 em `src/cron/notifications.ts`) — notificando lançamentos que vencem no **próprio dia** e os que vencem em **exatos 7 dias**. Não há mais envio por e-mail.
+As **notificações de vencimento** são enviadas de forma proativa **apenas via Telegram** (diariamente às 08:00), alertando o usuário sobre lançamentos que vencem no **próprio dia** ou em **exatos 7 dias**.
 
-## Rodar
+## 🚀 Deploy e Execução
+
+Como o bot está integrado ao `docker-compose.yml` principal, ele sobre automaticamente com o projeto:
 
 ```bash
-# Produção (Docker, na awl_network)
+# Na raiz do repositório MoneyAPP
 docker compose --env-file .env up -d --build
-
-# Desenvolvimento local
-pnpm install
-pnpm dev
 ```
 
-> ⚠️ Apenas **uma** instância pode fazer long-polling com o mesmo
-> `TELEGRAM_BOT_TOKEN` ao mesmo tempo (senão a API do Telegram retorna 409).
+Caso queira reconstruir ou reiniciar apenas o bot:
+```bash
+docker compose --env-file .env up -d --build app_moneyapp_bot
+```
+
+> ⚠️ **Atenção**: Apenas **uma instância** pode fazer *long-polling* usando o mesmo `TELEGRAM_BOT_TOKEN` simultaneamente. Múltiplas instâncias rodando com o mesmo token gerarão conflitos (HTTP 409) na API do Telegram.
