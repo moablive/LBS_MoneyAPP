@@ -62,10 +62,25 @@ function onFileChange(e: Event) {
 
 function resetForm() {
   if (props.loanToEdit) {
+    let uiAmount = String(props.loanToEdit.amount);
+    let uiExpected = (props.loanToEdit as any).expectedAmount ? String((props.loanToEdit as any).expectedAmount) : '';
+    
+    if (props.loanToEdit.type === 'received') {
+      const dbAmount = props.loanToEdit.amount;
+      const dbExpected = (props.loanToEdit as any).expectedAmount;
+      if (dbExpected) {
+        uiAmount = String(dbExpected);
+        uiExpected = String(dbAmount);
+      } else {
+        uiAmount = String(dbAmount);
+        uiExpected = '';
+      }
+    }
+
     form.value = {
       description: props.loanToEdit.description,
-      amount: String(props.loanToEdit.amount),
-      expectedAmount: (props.loanToEdit as any).expectedAmount ? String((props.loanToEdit as any).expectedAmount) : '',
+      amount: uiAmount,
+      expectedAmount: uiExpected,
       accountId: props.loanToEdit.accountId || null,
       installments: 1,
       date: props.loanToEdit.date.split('T')[0] as string,
@@ -139,10 +154,23 @@ async function save() {
     }
   }
 
+  let apiAmount = Number(String(form.value.amount).replace(',', '.'));
+  let apiExpected: number | undefined = form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : undefined;
+
+  if (form.value.type === 'received') {
+    if (form.value.expectedAmount) {
+      apiAmount = Number(String(form.value.expectedAmount).replace(',', '.'));
+      apiExpected = Number(String(form.value.amount).replace(',', '.'));
+    } else {
+      apiAmount = Number(String(form.value.amount).replace(',', '.'));
+      apiExpected = undefined;
+    }
+  }
+
   const payload = {
     description: form.value.description,
-    amount: Number(String(form.value.amount).replace(',', '.')),
-    expectedAmount: form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : undefined,
+    amount: apiAmount,
+    expectedAmount: apiExpected,
     accountId: form.value.accountId || undefined,
     date: new Date(form.value.date as string).toISOString(),
     type: form.value.type,
@@ -221,7 +249,7 @@ async function destroy() {
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor Recebido' : 'Valor Emprestado' }}</label>
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor a Pagar' : 'Valor Emprestado' }}</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
               <input
@@ -235,7 +263,7 @@ async function destroy() {
             </div>
           </div>
           <div>
-            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor a Pagar' : 'Valor que vai voltar' }}</label>
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor Recebido (Opcional)' : 'Valor que vai voltar' }}</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
               <input
