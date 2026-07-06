@@ -71,10 +71,9 @@
 <tr>
 <td width="50%">
 
-### 📊 Dashboard & Calendário
+### 📊 Dashboard
 Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e Despesas), ranking de categorias por gasto, gráfico de evolução cumulativa (mês atual vs. anterior) e **projeção mensal** baseada em recorrências. 
 - **Próximos Lançamentos (60 dias):** A lista de controle projeta exatamente **60 dias** no futuro, duplicando assinaturas recorrentes e exibindo os itens de forma **decrescente** (lançamentos mais distantes no topo e os mais próximos da data de hoje no rodapé). Conta com modal de ação rápida ao clicar, permitindo definir uma **Data Auxiliar de Pagamento** para organizar visualmente o lançamento no mês sem alterar a data de vencimento real da entidade.
-- **Calendário:** Exibição em grade dos lançamentos diários. Dias com múltiplas transações são agrupados num botão de resumo (ex: "5 Lançamentos"), que abre uma **Modal Detalhada** do dia para visualização limpa e focada.
 
 ### 💳 Transações
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).
@@ -173,7 +172,7 @@ moneyapp/
 │   ├── 📂 models/                # Zod schemas e tipos TypeScript
 │   └── 📂 services/              # Serviços core (auth, configs, criptografia)
 │
-├── docker-compose.yml            # 2 serviços (backend + frontend)
+├── docker-compose.yml            # 3 serviços (backend + frontend + bot)
 ├── pnpm-workspace.yaml
 └── tsconfig.base.json
 ```
@@ -190,12 +189,14 @@ flowchart LR
   subgraph awl_network["🐳 Docker · awl_network"]
     NGINX["nginx<br/>moneyapp_frontend:80"]
     API["Express + Drizzle<br/>moneyapp_backend:3000"]
+    BOT["Telegram Bot<br/>app_moneyapp_bot"]
     PG["PostgreSQL<br/>awlsrvDB_postgres:5432<br/>database 'moneyapp'"]
   end
 
   PWA -- "HTTPS" --> NGINX
   NGINX -- "/api/*" --> API
   API -- "pg" --> PG
+  BOT -- "HTTP /api/*" --> API
 ```
 
 > [!NOTE]
@@ -324,9 +325,7 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 
 🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
 
-O bot do Telegram foi **extraído para o seu próprio repositório**: **[moablive/MoneyAPP_BOT](https://github.com/moablive/MoneyAPP_BOT)** (deploy standalone em `server/telegram-bots/MoneyAPP_BOT`, no padrão dos demais bots do servidor).
-
-Ele é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Stack, variáveis de ambiente e deploy estão documentados no README daquele repositório. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias**.
+O bot do Telegram (`app_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias**.
 
 ---
 
@@ -381,7 +380,7 @@ pnpm dev                  # backend :3000 + frontend :5173
 
 ## 🐳 Deploy com Docker
 
-O projeto roda como **2 containers** conectados a um PostgreSQL externo na rede `awl_network`.
+O projeto roda como **3 containers** conectados a um PostgreSQL externo na rede `awl_network`.
 
 ```bash
 # Garanta que a rede Docker existe
@@ -395,6 +394,7 @@ docker compose --env-file .env up -d --build
 | --------- | ---- | ----- | ------ |
 | `moneyapp_backend` | Node 20 | `3000` (interno) | API REST + healthcheck (migrations via `pnpm db:migrate`, não no boot) |
 | `moneyapp_frontend` | nginx | `80` (interno) | Static assets + reverse proxy `/api/` → backend |
+| `app_moneyapp_bot` | Node 20 | — | Cliente HTTP Telegram Bot |
 
 > [!IMPORTANT]
 > **Ingress em produção**: O tráfego chega via **Cloudflare Tunnel** diretamente ao `moneyapp_frontend:80` dentro da `awl_network`. Nenhuma porta é exposta ao host.

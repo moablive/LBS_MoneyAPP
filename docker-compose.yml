@@ -54,6 +54,25 @@ services:
         - moneyapp_frontend
     restart: unless-stopped
 
+  app_moneyapp_bot:
+    build:
+      context: apps/bot/MoneyAPP_BOT
+      dockerfile: Dockerfile
+    container_name: app_moneyapp_bot
+    env_file:
+    - .env
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://moneyapp_backend:3000/api
+    depends_on:
+      app_moneyapp_backend:
+        condition: service_healthy
+    networks:
+      awl_network:
+        aliases:
+        - telegram_moneyapp_bot
+    restart: unless-stopped
+
 networks:
   # External — already exists on the host alongside `awlsrvDB_postgres`.
   # NOTE: the brief mentioned `awlsrv_network`, but the real network name on
