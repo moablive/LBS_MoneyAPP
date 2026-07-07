@@ -38,11 +38,15 @@ botRouter.get('/users/by-telegram/:telegramId', async (req, res, next) => {
 botRouter.get('/users/all', async (_req, res, next) => {
   try {
     const rows = await db
-      .select({ id: userSettings.loginhubId,  telegramId: userSettings.telegramId })
+      .select({ id: userSettings.loginhubId, telegramId: userSettings.telegramId, settings: userSettings.settings })
       .from(userSettings)
       .where(isNotNull(userSettings.telegramId));
 
-    res.json(rows);
+    res.json(rows.map((r) => ({
+      id: r.id,
+      telegramId: r.telegramId,
+      displayName: (r.settings as any)?.displayName ?? null,
+    })));
   } catch (err) {
     next(err);
   }

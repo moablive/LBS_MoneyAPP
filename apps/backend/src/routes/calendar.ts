@@ -49,6 +49,7 @@ calendarRouter.get('/', requireAuth, async (req, res, next) => {
         status: tx.status,
         category: tx.category?.name,
         color: tx.type === 'expense' ? '#ef4444' : '#22c55e',
+        hasReceipt: !!tx.receiptBase64,
       });
     });
 
@@ -58,10 +59,11 @@ calendarRouter.get('/', requireAuth, async (req, res, next) => {
         title: loan.description,
         date: loan.date.toISOString(),
         amount: Number(loan.expectedAmount || loan.amount),
-        type: loan.type === 'given' ? 'expense' : 'income', 
+        type: loan.type === 'given' ? 'expense' : 'income',
         status: loan.status,
         category: 'Empréstimos',
         color: loan.type === 'given' ? '#3b82f6' : '#eab308',
+        hasReceipt: !!loan.receiptBase64,
       });
     });
 

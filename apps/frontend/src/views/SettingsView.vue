@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/auth';
 const router = useRouter();
 const auth = useAuthStore();
 const requireReceipts = ref(auth.user?.settings?.requireReceipts ?? true);
+const displayName = ref<string>((auth.user?.settings as any)?.displayName ?? '');
 const saving = ref(false);
 const message = ref('');
 
@@ -56,7 +57,7 @@ async function save() {
   saving.value = true;
   message.value = '';
   try {
-    await auth.updateSettings({ requireReceipts: requireReceipts.value });
+    await auth.updateSettings({ requireReceipts: requireReceipts.value, displayName: displayName.value.trim() });
     message.value = 'Configurações salvas com sucesso!';
     setTimeout(() => { message.value = '' }, 3000);
   } catch (err) {
@@ -93,7 +94,19 @@ function logout() {
     </header>
 
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Comprovantes</h2>
+      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Preferências</h2>
+
+      <div class="mb-6">
+        <p class="text-slate-100 font-medium">Nome de exibição no bot</p>
+        <p class="text-sm text-muted mt-1 mb-2">Como o bot do Telegram deve te chamar nas notificações de vencimento.</p>
+        <input
+          v-model="displayName"
+          type="text"
+          maxlength="60"
+          placeholder="Ex.: Patrão Moab"
+          class="w-full sm:w-80 bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 text-slate-100 placeholder:text-muted/60 focus:outline-none focus:border-accent transition-colors"
+        />
+      </div>
 
       <div class="flex items-center justify-between gap-4">
         <div>

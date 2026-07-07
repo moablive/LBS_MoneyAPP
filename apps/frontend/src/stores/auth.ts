@@ -116,7 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
     persist();
   }
 
-  async function updateSettings(settings: { requireReceipts: boolean }) {
+  async function updateSettings(settings: { requireReceipts?: boolean; displayName?: string }) {
     const res = await fetch(`${BACKEND_API}/users/me/settings`, {
       method: 'PATCH',
       headers: {
