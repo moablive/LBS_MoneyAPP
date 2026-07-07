@@ -70,14 +70,7 @@ const upcomingActionItem = ref<any | null>(null);
 const showChangeDateModal = ref(false);
 const changeDateValue = ref('');
 
-const showTodoAppEvents = ref(localStorage.getItem('showTodoAppEvents') === 'true');
 
-async function toggleTodoAppEvents() {
-  showTodoAppEvents.value = !showTodoAppEvents.value;
-  localStorage.setItem('showTodoAppEvents', String(showTodoAppEvents.value));
-  api.patch('/users/me/settings', { showTodoAppEvents: showTodoAppEvents.value }).catch(console.error);
-  loadData();
-}
 
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -250,13 +243,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       api.get<any>('/subscriptions/summary'),
     ];
 
-    if (showTodoAppEvents.value) {
-      promises.push(api.get<any[]>(`/integrations/todoapp/tasks?start=${fromParam}&end=${toParam}`).catch(() => []));
-    } else {
-      promises.push(Promise.resolve([]));
-    }
-
-    const [transactionsRes, categoriesRes, loansRes, subscriptionsRes, todoTasksRes] = await Promise.all(promises);
+    const [transactionsRes, categoriesRes, loansRes, subscriptionsRes] = await Promise.all(promises);
     
     categories.value = categoriesRes;
 
@@ -383,26 +370,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       };
     });
 
-    const todoTasks = (todoTasksRes || []).map((task: any) => {
-      const originalDateStr = task.scheduledAt || task.createdAt;
-      const monthStr = originalDateStr.slice(0, 7);
-      const itemKey = `todo_${task.id}_${monthStr}`;
-      
-      return {
-        id: `todo-${task.id}`,
-        description: task.description,
-        amount: 0,
-        type: 'expense',
-        occurredAt: originalDateStr,
-        originalOccurredAt: originalDateStr,
-        itemKey: itemKey,
-        categoryId: null,
-        isTodoTask: true,
-        task: task
-      };
-    });
-
-    upcomingTransactions.value = [...pendingTransactions, ...upcomingLoans, ...creditCardInvoices, ...todoTasks]
+    upcomingTransactions.value = [...pendingTransactions, ...upcomingLoans, ...creditCardInvoices]
       .filter((t: any) => {
          return !dismissedKeys.value.includes(t.itemKey);
       })
@@ -449,14 +417,6 @@ onUnmounted(() => {
       
       <header class="flex items-center justify-between gap-4 flex-wrap mb-6">
         <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
-        <button
-          @click="toggleTodoAppEvents"
-          class="flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all"
-          :class="showTodoAppEvents ? 'border-accent bg-accent/10 text-accent' : 'border-surface-border text-muted hover:text-white hover:bg-surface-hover'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-          <span class="text-sm font-medium">TodoAPP</span>
-        </button>
       </header>
 
       <DashboardKPIs 

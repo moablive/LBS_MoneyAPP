@@ -22,7 +22,7 @@ usersRouter.patch('/me/settings', requireAuth, async (req: Request, res: Respons
     const newSettings = {
       ...(user.settings as any),
       ...(typeof requireReceipts === 'boolean' && { requireReceipts }),
-      ...(typeof req.body.showTodoAppEvents === 'boolean' && { showTodoAppEvents: req.body.showTodoAppEvents }),
+
       // Nome usado pelo bot nas notificações (string vazia limpa o nome)
       ...(typeof displayName === 'string' && { displayName: displayName.trim().slice(0, 60) || null }),
     };
