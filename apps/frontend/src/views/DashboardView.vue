@@ -585,6 +585,7 @@ onUnmounted(() => {
         
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button @click="choosePayUpcoming" 
+                  v-if="!upcomingActionItem?.isSubscription"
                   class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   :class="upcomingActionItem?.type === 'expense' ? 'bg-gradient-to-b from-expense/90 to-expense hover:from-expense hover:to-expense/90 shadow-expense/25' : 'bg-gradient-to-b from-income/90 to-income hover:from-income hover:to-income/90 shadow-income/25'">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -597,7 +598,7 @@ onUnmounted(() => {
             <span class="text-sm font-medium">Mudar Data</span>
           </button>
           
-          <button @click="chooseDismissUpcoming" 
+          <button @click="upcomingActionItem?.isSubscription ? choosePayUpcoming() : chooseDismissUpcoming()" 
                   class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors" v-if="!upcomingActionItem?.isSubscription"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income group-hover:text-income transition-colors" v-else><polyline points="20 6 9 17 4 12"></polyline></svg>

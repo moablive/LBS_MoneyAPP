@@ -4,6 +4,7 @@ import { useMediaQuery } from '@vueuse/core';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
+import { getLocalYMDHM, formatLocalYMDHM } from '../../utils/date';
 
 import { useAuthStore } from '../../stores/auth';
 import type { Transaction } from '@moneyapp/models';
@@ -19,7 +20,7 @@ const description = ref('');
 const absAmount = ref<number | null>(null);
 const type = ref<TransactionType>('expense');
 const status = ref<'paid' | 'pending'>('paid');
-const occurredAt = ref(new Date(Date.now() - 10800000).toISOString().slice(0, 16));
+const occurredAt = ref(getLocalYMDHM());
 const categoryId = ref<string | ''>('');
 const accountId = ref<string | ''>('');
 const receiptFile = ref<File | null>(null);
@@ -84,8 +85,7 @@ watch(
       absAmount.value = Math.abs(Number(props.transaction.amount));
       type.value = props.transaction.type;
       status.value = props.transaction.status || 'paid';
-      const txTime = new Date(props.transaction.occurredAt).getTime();
-      occurredAt.value = new Date(txTime - 10800000).toISOString().slice(0, 16);
+      occurredAt.value = formatLocalYMDHM(props.transaction.occurredAt);
       categoryId.value = props.transaction.categoryId;
       accountId.value = props.transaction.accountId || '';
       receiptFile.value = null;
@@ -124,7 +124,7 @@ function reset() {
   absAmount.value = null;
   type.value = props.defaultType || 'expense';
   status.value = 'paid';
-  occurredAt.value = new Date(Date.now() - 10800000).toISOString().slice(0, 16);
+  occurredAt.value = getLocalYMDHM();
   categoryId.value = '';
   accountId.value = '';
   receiptFile.value = null;
@@ -166,7 +166,7 @@ async function submit() {
       amount: signed,
       type: type.value,
       status: status.value,
-      occurredAt: new Date(`${occurredAt.value}:00-03:00`),
+      occurredAt: new Date(occurredAt.value).toISOString(),
       categoryId: categoryId.value,
       accountId: accountId.value || null,
       receipt: receiptPayload,
@@ -195,8 +195,8 @@ function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
   
-  if (file && file.size > 5 * 1024 * 1024) {
-    error.value = 'O comprovante excede o tamanho máximo de 5MB.';
+  if (file && file.size > 15 * 1024 * 1024) {
+    error.value = 'O comprovante excede o tamanho máximo de 15MB.';
     input.value = '';
     receiptFile.value = null;
     return;
@@ -302,7 +302,7 @@ function onFileChange(e: Event) {
       </div>
 
       <label class="block space-y-1">
-        <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 5MB)</span>
+        <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 15MB)</span>
         
         <div v-if="transaction?.hasReceipt && !removeExistingReceipt && !receiptFile" class="flex items-center gap-3 p-3 bg-surface-base border border-surface-border rounded-xl">
           <span class="text-sm text-white font-medium flex-1">Comprovante anexado</span>

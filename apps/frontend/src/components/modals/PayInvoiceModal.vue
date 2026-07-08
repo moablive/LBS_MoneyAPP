@@ -25,8 +25,8 @@ const receiptFile = ref<File | null>(null);
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
-  if (file && file.size > 5 * 1024 * 1024) {
-    error.value = 'O comprovante excede o tamanho máximo de 5MB.';
+  if (file && file.size > 15 * 1024 * 1024) {
+    error.value = 'O comprovante excede o tamanho máximo de 15MB.';
     input.value = '';
     receiptFile.value = null;
     return;
@@ -173,7 +173,7 @@ async function submit() {
         </label>
 
         <label class="block space-y-1">
-          <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 5MB)</span>
+          <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 15MB)</span>
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"

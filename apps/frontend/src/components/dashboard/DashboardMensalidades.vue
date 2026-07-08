@@ -38,7 +38,9 @@ const isCurrentMonth = (iso: string) => {
 };
 
 const totalUpcoming = computed(() => {
-  return props.mensalidadesList.reduce((acc, t) => acc + Number(t.amount), 0);
+  return props.mensalidadesList
+    .filter((t) => t.statusTag !== 'paid')
+    .reduce((acc, t) => acc + Number(t.amount), 0);
 });
 </script>
 

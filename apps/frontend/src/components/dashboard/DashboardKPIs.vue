@@ -25,7 +25,11 @@ function toneClass(tone: string): string {
 }
 
 function formatKpi(s: DashboardSummaryResponse, key: typeof kpis[number]['key']): string {
-  if (key === 'fixedCosts') return brl(props.subscriptionsSummary?.gastoMensal ?? 0);
+  if (key === 'fixedCosts') {
+    const mensal = props.subscriptionsSummary?.gastoMensal ?? 0;
+    const terceiros = props.subscriptionsSummary?.gastoTerceiros ?? 0;
+    return brl(mensal + terceiros);
+  }
   return brl(s[key as keyof DashboardSummaryResponse] as number);
 }
 </script>

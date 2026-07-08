@@ -228,11 +228,11 @@ async function handleDelete(t: Transaction | null) {
           <div class="order-5 flex items-center gap-2 w-full sm:w-auto">
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
-              @click="showCreate = true; createType = 'expense'"
+              @click="editingRow = null; showCreate = true; createType = 'expense'"
             >+ Despesa</button>
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-income/10 text-income border border-income/30 text-sm font-bold shadow-lg hover:bg-income/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
-              @click="showCreate = true; createType = 'income'"
+              @click="editingRow = null; showCreate = true; createType = 'income'"
             >+ Receita</button>
             <button
               class="flex items-center justify-center sm:flex-none px-3 py-2 rounded-xl bg-surface-overlay text-muted border border-surface-border text-sm font-bold shadow-lg hover:text-white transition-all hover:-translate-y-0.5 whitespace-nowrap"
@@ -385,6 +385,7 @@ async function handleDelete(t: Transaction | null) {
       :transaction="editingRow"
       :defaultType="createType"
       @created="reload"
+      @update:open="val => { if (!val) editingRow = null; }"
     />
 
     <TransactionDetailsModal

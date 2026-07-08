@@ -1,20 +1,38 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { api } from '@moneyapp/api-client';
-import type { Account, Category } from '@moneyapp/models';
+import { api, fileToBase64 } from '@moneyapp/api-client';
+import type { Account, Category, Receipt } from '@moneyapp/models';
+import { useAuthStore } from '../../stores/auth';
 import Modal from './Modal.vue';
+import { getLocalYMD } from '../../utils/date';
+
+const authStore = useAuthStore();
 
 const open = defineModel<boolean>('open', { default: false });
 const props = defineProps<{ item: any | null }>();
 const emit = defineEmits<{ (e: 'paid'): void }>();
 
 const amount = ref<number | null>(null);
-const date = ref(new Date().toISOString().slice(0, 10));
+const date = ref(getLocalYMD());
 const accountId = ref<string | ''>('');
 
 const accounts = ref<Account[]>([]);
 const submitting = ref(false);
 const error = ref<string | null>(null);
+const receiptFile = ref<File | null>(null);
+
+function onFileChange(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0] ?? null;
+  if (file && file.size > 15 * 1024 * 1024) {
+    error.value = 'O comprovante excede o tamanho máximo de 15MB.';
+    input.value = '';
+    receiptFile.value = null;
+    return;
+  }
+  error.value = null;
+  receiptFile.value = file;
+}
 
 const eligibleAccounts = computed(() => {
   if (props.item?.isCreditCard) {
@@ -35,9 +53,10 @@ watch(open, async (v) => {
   } else {
     amount.value = null;
   }
-  date.value = new Date().toISOString().slice(0, 10);
+  date.value = getLocalYMD();
   accountId.value = '';
   error.value = null;
+  receiptFile.value = null;
 
   try {
     const accs = await api.get<Account[]>('/accounts');
@@ -59,18 +78,33 @@ async function submit() {
     return;
   }
   
+  const requireReceipts = authStore.user?.settings?.requireReceipts ?? true;
+  const isControleCategory = props.item?.categoryId && 
+    (props.item?.originalItem?.category?.name?.toUpperCase().includes('CONTROLE') || false);
+
+  if (requireReceipts && !receiptFile.value && !isControleCategory) {
+    error.value = 'É obrigatório anexar um comprovante antes de confirmar o pagamento.';
+    return;
+  }
+  
   submitting.value = true;
   error.value = null;
   
   try {
+    let receiptPayload: Receipt | null | undefined = undefined;
+    if (receiptFile.value) {
+      receiptPayload = (await fileToBase64(receiptFile.value)) as Receipt;
+    }
+
     if (props.item.isCreditCard) {
       // Logic for credit card invoice
-      const payload = {
+      const payload: any = {
         amount: amount.value,
         sourceAccountId: accountId.value || null,
         categoryId: props.item.categoryId, // Will probably need to fetch "Fatura" category if not provided
         date: new Date(`${date.value}T12:00:00Z`).toISOString(),
         description: 'Pagamento de Fatura',
+        receipt: receiptPayload,
       };
       // We need a category for invoice payment. Let's fetch categories.
       const cats = await api.get<Category[]>('/categories');
@@ -79,26 +113,38 @@ async function submit() {
       
       await api.post(`/accounts/${props.item.account.id}/pay-invoice`, payload);
     } else if (props.item.isSubscription || props.item.isLoan) {
+      let finalCategoryId = props.item.categoryId || null;
+      
+      if (props.item.isSubscription) {
+        const cats = await api.get<Category[]>('/categories');
+        const assinaturasCat = cats.find(c => c.name.toUpperCase().includes('ASSINATURA'));
+        if (assinaturasCat) {
+          finalCategoryId = assinaturasCat.id;
+        }
+      }
+
       // Create a new transaction
       const payload = {
-        amount: amount.value,
+        amount: props.item.type === 'expense' ? -Math.abs(amount.value) : Math.abs(amount.value),
         accountId: accountId.value,
-        categoryId: props.item.categoryId || null,
+        categoryId: finalCategoryId,
         date: new Date(`${date.value}T12:00:00Z`).toISOString(),
         occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
         description: props.item.description,
         type: props.item.type,
         status: 'paid',
+        receipt: receiptPayload,
         ...(props.item.isSubscription ? { subscriptionId: props.item.originalItem.id } : {})
       };
       await api.post('/transactions', payload);
     } else {
       // Patch existing pending transaction
       const payload = {
-        amount: amount.value,
+        amount: props.item.type === 'expense' ? -Math.abs(amount.value) : Math.abs(amount.value),
         accountId: accountId.value,
         occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
-        status: 'paid'
+        status: 'paid',
+        ...(receiptPayload ? { receipt: receiptPayload } : {})
       };
       await api.patch(`/transactions/${props.item.id}`, payload);
     }
@@ -155,6 +201,24 @@ async function submit() {
               <option v-for="a in creditCards" :key="a.id" :value="a.id">{{ a.name }}</option>
             </optgroup>
           </select>
+        </label>
+        
+        <label class="block space-y-1">
+          <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 15MB)</span>
+          <div class="relative group">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              @change="onFileChange"
+            />
+            <div class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-3 flex items-center justify-center gap-2 group-hover:border-accent/50 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-accent transition-colors"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"/><path d="M16 16l-4-4-4 4"/></svg>
+              <span class="text-sm font-medium" :class="receiptFile ? 'text-accent' : 'text-muted group-hover:text-slate-300'">
+                {{ receiptFile ? receiptFile.name : 'Clique para escolher ou tire uma foto' }}
+              </span>
+            </div>
+          </div>
         </label>
       </div>
 

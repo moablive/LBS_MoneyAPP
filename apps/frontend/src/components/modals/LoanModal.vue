@@ -5,6 +5,7 @@ import type { LoanItem, Account, Category } from '@moneyapp/models';
 import { useAuthStore } from '../../stores/auth';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import { onKeyStroke } from '@vueuse/core';
+import { getLocalYMD } from '../../utils/date';
 
 onKeyStroke('Escape', (e) => {
   if (show.value) {
@@ -34,7 +35,7 @@ const form = ref({
   expectedAmount: '',
   accountId: null as string | null,
   installments: 1,
-  date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
+  date: getLocalYMD() as string,
   type: 'given' as 'given' | 'received' | 'fgts',
   status: 'active' as 'active' | 'paid',
   categoryId: null as string | null,
@@ -95,7 +96,7 @@ function resetForm() {
       expectedAmount: '',
       accountId: null,
       installments: 1,
-      date: new Date(Date.now() - 10800000).toISOString().slice(0, 10) as string,
+      date: getLocalYMD() as string,
       type: props.defaultType || 'given',
       status: 'active',
       categoryId: null,
@@ -248,7 +249,7 @@ async function destroy() {
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-          <div>
+          <div :class="loanToEdit && form.type !== 'given' ? 'col-span-2' : ''">
             <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor a Pagar' : 'Valor Emprestado' }}</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
@@ -262,8 +263,9 @@ async function destroy() {
               />
             </div>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor Recebido (Opcional)' : 'Valor que vai voltar' }}</label>
+
+          <div v-if="form.type === 'given'">
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Valor a Receber</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
               <input
@@ -272,10 +274,11 @@ async function destroy() {
                 step="0.01"
                 :disabled="props.loanToEdit?.status === 'paid'"
                 class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
-                placeholder="Opcional"
+                placeholder="0,00 (Opcional)"
               />
             </div>
           </div>
+
           <div v-if="!loanToEdit">
             <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Parcelas</label>
             <input
@@ -287,7 +290,6 @@ async function destroy() {
               class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
             />
           </div>
-          <div v-else></div>
         </div>
 
         <div>
@@ -301,7 +303,9 @@ async function destroy() {
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Conta (Opcional)</label>
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">
+            {{ form.type === 'given' ? 'Conta' : 'Conta (Opcional)' }}
+          </label>
           <select
             v-model="form.accountId"
             :disabled="props.loanToEdit?.status === 'paid'"

@@ -84,7 +84,7 @@ async function toggleStatus(item: SubscriptionItem) {
         <div class="flex items-center gap-3">
           <div v-if="!loading" class="text-right hidden sm:block">
             <div class="text-[10px] uppercase tracking-wider text-muted font-medium">Gasto Mensal Total</div>
-            <div class="text-xl font-semibold text-expense tabular-nums" title="Soma das despesas ativas">{{ brl(data?.gastoMensal ?? 0) }}</div>
+            <div class="text-xl font-semibold text-expense tabular-nums" title="Soma das despesas ativas">{{ brl((data?.gastoMensal ?? 0) + (data?.gastoTerceiros ?? 0)) }}</div>
           </div>
           <button
             @click="openCreateModal"
@@ -108,12 +108,12 @@ async function toggleStatus(item: SubscriptionItem) {
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Projeção Mensal</div>
           <div v-if="loading" class="skeleton h-8 w-24 sm:ml-auto" />
-          <div v-else class="text-2xl font-bold tabular-nums text-expense">{{ brl(data?.gastoMensal ?? 0) }}</div>
+          <div v-else class="text-2xl font-bold tabular-nums text-expense">{{ brl((data?.gastoMensal ?? 0) + (data?.gastoTerceiros ?? 0)) }}</div>
         </div>
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Projeção Anual</div>
           <div v-if="loading" class="skeleton h-8 w-24 sm:ml-auto" />
-          <div v-else class="text-2xl font-bold tabular-nums text-white/90">{{ brl(data?.projecaoAnual ?? 0) }}</div>
+          <div v-else class="text-2xl font-bold tabular-nums text-white/90">{{ brl(((data?.gastoMensal ?? 0) + (data?.gastoTerceiros ?? 0)) * 12) }}</div>
         </div>
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Por Terceiros</div>

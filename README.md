@@ -76,7 +76,7 @@ Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e De
 - **Próximos Lançamentos (60 dias):** A lista de controle projeta exatamente **60 dias** no futuro, duplicando assinaturas recorrentes e exibindo os itens de forma **decrescente** (lançamentos mais distantes no topo e os mais próximos da data de hoje no rodapé). Conta com modal de ação rápida ao clicar, permitindo definir uma **Data Auxiliar de Pagamento** para organizar visualmente o lançamento no mês sem alterar a data de vencimento real da entidade.
 
 ### 💳 Transações
-CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline (base64 — PNG, JPEG, WebP, PDF).
+CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline de até 15MB na interface (suportado até 30MB via API) (base64 — PNG, JPEG, WebP, PDF).
 
 ### 🏦 Contas
 Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total. Cartões de crédito têm suas faturas isoladas no painel "Cartões", separadas do "Saldo Atual" geral, garantindo que dívidas não se misturem com o dinheiro disponível.

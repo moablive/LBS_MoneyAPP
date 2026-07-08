@@ -59,11 +59,8 @@ const filteredItems = computed(() => {
       if (tab.value === 'paid') {
         if (it.status !== 'paid') return false;
       } else {
-        // Empréstimos pagos "saem" deste atalho APENAS quando migraram para uma
-        // categoria: ao pagar (com categoria + comprovante) o backend cria a
-        // transação espelho. Eles continuam visíveis em 'all' ou abas normais 
-        // caso não tenham categoria, mas com a aba "Pagos", deixamos aqui:
-        if (it.status === 'paid' && it.categoryId) return false;
+        // Empréstimos pagos saem das abas normais e ficam apenas na aba Pagos
+        if (it.status === 'paid') return false;
         if (tab.value === 'given' && it.type !== 'given') return false;
         if (tab.value === 'received' && it.type !== 'received') return false;
         if (tab.value === 'fgts' && it.type !== 'fgts') return false;
