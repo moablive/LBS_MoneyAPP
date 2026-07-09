@@ -19,7 +19,15 @@ setupApi({
   // antes de derrubar a sessão. Se renovar com sucesso, a request original
   // é retried transparentemente.
   tryRefresh: () => useAuthStore().refresh(),
-  onUnauthorized: () => useAuthStore().logout(),
+  // Sem token não há sessão a derrubar (ex.: 401 antes do login) — deixa o
+  // erro propagar. Com token, derruba a sessão E redireciona: sem o push o
+  // usuário ficava na tela atual com todas as chamadas falhando.
+  onUnauthorized: () => {
+    const auth = useAuthStore();
+    if (!auth.token) return;
+    auth.logout();
+    void router.push({ name: 'login' });
+  },
 });
 
 
