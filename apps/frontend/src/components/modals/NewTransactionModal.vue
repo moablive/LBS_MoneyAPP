@@ -166,7 +166,7 @@ async function submit() {
       amount: signed,
       type: type.value,
       status: status.value,
-      occurredAt: new Date(occurredAt.value).toISOString(),
+      occurredAt: new Date(occurredAt.value).toISOString() as any as Date,
       categoryId: categoryId.value,
       accountId: accountId.value || null,
       receipt: receiptPayload,

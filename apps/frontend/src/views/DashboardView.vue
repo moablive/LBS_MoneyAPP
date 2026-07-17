@@ -319,7 +319,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       if (sub.status !== 'active') return false;
       return true;
     }).map((sub: any) => {
-      const hasPaid = transactionsRes.some(t => t.subscriptionId === sub.id && t.status === 'paid');
+      const hasPaid = transactionsRes.some((t: any) => t.subscriptionId === sub.id && t.status === 'paid');
       
       let subDate = new Date(today.getFullYear(), today.getMonth(), sub.billingDay || 1, 12, 0, 0);
       
@@ -413,7 +413,7 @@ onUnmounted(() => {
 
 <template>
   <AppShell>
-    <div class="mx-auto max-w-7xl px-4 py-8 space-y-6 relative z-10">
+    <div class="mx-auto w-full max-w-[2000px] px-4 sm:px-6 lg:px-8 py-8 space-y-6 relative z-10">
       
       <header class="flex items-center justify-between gap-4 flex-wrap mb-6">
         <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard</h1>

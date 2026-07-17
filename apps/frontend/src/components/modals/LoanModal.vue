@@ -61,6 +61,23 @@ function onFileChange(e: Event) {
   }
 }
 
+const paymentReceiptFile = ref<File | null>(null);
+const paymentReceiptBlobUrl = ref<string | null>(null);
+const loadingPaymentReceipt = ref(false);
+const isPaymentPdf = ref(false);
+
+function onPaymentFileChange(e: Event) {
+  const input = e.target as HTMLInputElement;
+  paymentReceiptFile.value = input.files?.[0] ?? null;
+  if (paymentReceiptFile.value) {
+    form.value.status = 'paid';
+  }
+  if (paymentReceiptBlobUrl.value) {
+    URL.revokeObjectURL(paymentReceiptBlobUrl.value);
+    paymentReceiptBlobUrl.value = null;
+  }
+}
+
 function resetForm() {
   if (props.loanToEdit) {
     let uiAmount = String(props.loanToEdit.amount);
@@ -118,10 +135,19 @@ watch(show, async (val) => {
         console.error('Failed to load accounts or categories', e);
       }
     }
+    if (receiptBlobUrl.value) {
+      URL.revokeObjectURL(receiptBlobUrl.value);
+    }
+    if (paymentReceiptBlobUrl.value) {
+      URL.revokeObjectURL(paymentReceiptBlobUrl.value);
+    }
     resetForm();
     receiptFile.value = null;
     receiptBlobUrl.value = null;
     isPdf.value = false;
+    paymentReceiptFile.value = null;
+    paymentReceiptBlobUrl.value = null;
+    isPaymentPdf.value = false;
 
     if (props.loanToEdit?.hasReceipt) {
       loadingReceipt.value = true;
@@ -143,14 +169,35 @@ watch(show, async (val) => {
         loadingReceipt.value = false;
       }
     }
+
+    if (props.loanToEdit?.hasPaymentReceipt) {
+      loadingPaymentReceipt.value = true;
+      try {
+        const BASE = import.meta.env.VITE_API_BASE_URL as string;
+        const auth = useAuthStore();
+        const headers: Record<string, string> = {};
+        if (auth.token) headers.Authorization = `Bearer ${auth.token}`;
+        
+        const res = await fetch(`${BASE}/loans/${props.loanToEdit.id}/payment-receipt`, { headers });
+        if (res.ok) {
+          const blob = await res.blob();
+          isPaymentPdf.value = blob.type === 'application/pdf';
+          paymentReceiptBlobUrl.value = URL.createObjectURL(blob);
+        }
+      } catch (e) {
+        console.error('Failed to load payment receipt:', e);
+      } finally {
+        loadingPaymentReceipt.value = false;
+      }
+    }
   }
 }, { immediate: true });
 
 async function save() {
   if (form.value.status === 'paid') {
-    const hasExistingReceipt = !!props.loanToEdit?.hasReceipt;
-    if (!receiptFile.value && !hasExistingReceipt) {
-      await alert('É necessário anexar um comprovante para marcar como pago.');
+    const hasExistingPaymentReceipt = !!props.loanToEdit?.hasPaymentReceipt;
+    if (!paymentReceiptFile.value && !hasExistingPaymentReceipt) {
+      await alert('É necessário anexar um comprovante de pagamento para marcar como pago.');
       return;
     }
   }
@@ -181,6 +228,9 @@ async function save() {
     receipt: receiptFile.value
       ? ((await fileToBase64(receiptFile.value)) as { mimeType: string, base64: string })
       : undefined,
+    paymentReceipt: paymentReceiptFile.value
+      ? ((await fileToBase64(paymentReceiptFile.value)) as { mimeType: string, base64: string })
+      : undefined,
   };
 
   try {
@@ -201,9 +251,9 @@ async function save() {
 }
 
 async function handlePagoClick() {
-  const hasExistingReceipt = !!props.loanToEdit?.hasReceipt;
-  if (!receiptFile.value && !hasExistingReceipt && !receiptBlobUrl.value) {
-    await alert('É obrigatório anexar um comprovante antes de marcar como pago.');
+  const hasExistingPaymentReceipt = !!props.loanToEdit?.hasPaymentReceipt;
+  if (!paymentReceiptFile.value && !hasExistingPaymentReceipt && !paymentReceiptBlobUrl.value) {
+    await alert('É obrigatório anexar um comprovante de pagamento antes de marcar como pago.');
     return;
   }
   form.value.status = 'paid';
@@ -343,7 +393,7 @@ async function destroy() {
 
 
         <div>
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante</label>
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante do Empréstimo</label>
           
           <!-- View Existing Receipt -->
           <div v-if="loadingReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
@@ -356,8 +406,28 @@ async function destroy() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"
-            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-white"
+            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-white mb-2"
             @change="onFileChange"
+          />
+        </div>
+
+        <!-- Payment Receipt -->
+        <div v-if="loanToEdit || form.status === 'paid'" class="border-t border-surface-border/50 pt-4">
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante de Pagamento (Recebimento / Quitação)</label>
+          
+          <!-- View Existing Payment Receipt -->
+          <div v-if="loadingPaymentReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
+          <div v-else-if="paymentReceiptBlobUrl" class="mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64" :class="{ 'h-64': isPaymentPdf }">
+            <img v-if="!isPaymentPdf" :src="paymentReceiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
+            <iframe v-else :src="paymentReceiptBlobUrl" class="w-full h-full rounded" title="Comprovante de Pagamento PDF"></iframe>
+          </div>
+
+          <!-- Upload New Payment Receipt -->
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,application/pdf"
+            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-white"
+            @change="onPaymentFileChange"
           />
         </div>
       </div>

@@ -17,6 +17,7 @@ export const loanSchema = z.object({
   createdAt: z.string(), // ISO Date
   updatedAt: z.string(), // ISO Date
   hasReceipt: z.boolean(),
+  hasPaymentReceipt: z.boolean(),
 });
 
 export type Loan = z.infer<typeof loanSchema>;
@@ -32,6 +33,10 @@ export const createLoanSchema = z.object({
   status: loanStatusEnum.default('active'),
   installments: z.number().int().min(1).default(1).optional(),
   receipt: z.object({
+    mimeType: z.string(),
+    base64: z.string(),
+  }).optional(),
+  paymentReceipt: z.object({
     mimeType: z.string(),
     base64: z.string(),
   }).optional(),

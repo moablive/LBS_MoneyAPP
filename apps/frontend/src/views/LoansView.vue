@@ -206,7 +206,7 @@ function onLoanSaved(status?: string) {
             <li
               v-for="item in list"
               :key="item.id"
-              v-memo="[item.id, item.status, item.amount, (item as any).expectedAmount, item.description]"
+              v-memo="[item.id, item.status, item.amount, (item as any).expectedAmount, item.description, item.hasReceipt, item.hasPaymentReceipt]"
               class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_0.5fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
               @click="openEditModal(item)"
             >
@@ -250,11 +250,18 @@ function onLoanSaved(status?: string) {
 
               <!-- Center: Doc -->
               <div class="hidden sm:flex items-center justify-center min-w-0">
-                <Paperclip
-                  v-if="item.hasReceipt"
-                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
-                  title="Comprovante Anexado"
-                />
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <Paperclip
+                    v-if="item.hasReceipt"
+                    class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
+                    title="Comprovante de Envio Anexado"
+                  />
+                  <Paperclip
+                    v-if="item.hasPaymentReceipt"
+                    class="w-4 h-4 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0" 
+                    title="Comprovante de Pagamento Anexado"
+                  />
+                </div>
               </div>
 
               <!-- Right: Amount -->

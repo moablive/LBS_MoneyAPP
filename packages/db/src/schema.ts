@@ -212,6 +212,8 @@ export const loans = pgTable(
     status: loanStatusEnum("status").default("active").notNull(),
     receiptBase64: text("receipt_base64"),
     receiptMimeType: varchar("receipt_mime_type", { length: 255 }),
+    paymentReceiptBase64: text("payment_receipt_base64"),
+    paymentReceiptMimeType: varchar("payment_receipt_mime_type", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -74,6 +74,22 @@ function logout() {
   auth.logout();
   router.push('/login');
 }
+
+async function hardReload() {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+    }
+  }
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    for (const key of keys) {
+      await caches.delete(key);
+    }
+  }
+  window.location.reload();
+}
 </script>
 
 <template>
@@ -198,7 +214,21 @@ function logout() {
 
     <!-- Seção de Conta -->
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Conta</h2>
+      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Sistema e Conta</h2>
+      
+      <div class="flex items-center justify-between gap-4 mb-6">
+        <div>
+          <p class="text-slate-100 font-medium">Recarregar Aplicativo</p>
+          <p class="text-sm text-muted mt-1">Limpa o cache e atualiza para a versão mais recente do app (PWA).</p>
+        </div>
+        <button
+          @click="hardReload"
+          class="px-4 py-2 border border-accent/30 text-accent hover:bg-accent/10 rounded-xl font-medium transition-colors shrink-0"
+        >
+          Forçar Atualização
+        </button>
+      </div>
+
       <div class="flex items-center justify-between gap-4">
         <div>
           <p class="text-slate-100 font-medium">Encerrar sessão</p>

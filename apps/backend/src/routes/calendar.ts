@@ -64,6 +64,7 @@ calendarRouter.get('/', requireAuth, async (req, res, next) => {
         category: 'Empréstimos',
         color: loan.type === 'given' ? '#3b82f6' : '#eab308',
         hasReceipt: !!loan.receiptBase64,
+        hasPaymentReceipt: !!loan.paymentReceiptBase64,
       });
     });
 

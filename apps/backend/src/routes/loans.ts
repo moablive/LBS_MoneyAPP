@@ -65,6 +65,7 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
         createdAt: loans.createdAt,
         updatedAt: loans.updatedAt,
         hasReceipt: sql<boolean>`${loans.receiptBase64} is not null`.as('has_receipt'),
+        hasPaymentReceipt: sql<boolean>`${loans.paymentReceiptBase64} is not null`.as('has_payment_receipt'),
       })
       .from(loans)
       .where(eq(loans.loginhubId, loginhubId))
@@ -84,6 +85,7 @@ loansRouter.get('/summary', requireAuth, async (req, res, next) => {
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
       hasReceipt: r.hasReceipt,
+      hasPaymentReceipt: r.hasPaymentReceipt,
     }));
 
     const activeItems = items.filter((i) => i.status === 'active');
@@ -150,6 +152,8 @@ loansRouter.post(
             categoryId: data.categoryId ?? null,
             receiptBase64: data.receipt?.base64 ?? null,
             receiptMimeType: data.receipt?.mimeType ?? null,
+            paymentReceiptBase64: data.paymentReceipt?.base64 ?? null,
+            paymentReceiptMimeType: data.paymentReceipt?.mimeType ?? null,
           });
         }
 
@@ -172,6 +176,8 @@ loansRouter.post(
                 occurredAt: l.date,
                 categoryId: catId,
                 accountId: l.accountId,
+                receiptBase64: l.receiptBase64,
+                receiptMimeType: l.receiptMimeType,
               });
               await applyBalanceDelta(tx, loginhubId, l.accountId, initSignedAmount);
             }
@@ -192,8 +198,8 @@ loansRouter.post(
                 occurredAt: l.date,
                 categoryId: catId,
                 accountId: l.accountId,
-                receiptBase64: l.receiptBase64,
-                receiptMimeType: l.receiptMimeType,
+                receiptBase64: l.paymentReceiptBase64,
+                receiptMimeType: l.paymentReceiptMimeType,
               });
               if (l.accountId) {
                 await applyBalanceDelta(tx, loginhubId, l.accountId, signedAmount);
@@ -221,6 +227,8 @@ loansRouter.post(
               date: new Date(data.date),
               receiptBase64: data.receipt?.base64 ?? null,
               receiptMimeType: data.receipt?.mimeType ?? null,
+              paymentReceiptBase64: data.paymentReceipt?.base64 ?? null,
+              paymentReceiptMimeType: data.paymentReceipt?.mimeType ?? null,
             })
             .returning();
 
@@ -239,6 +247,8 @@ loansRouter.post(
               occurredAt: created.date,
               categoryId: catId,
               accountId: created.accountId,
+              receiptBase64: created.receiptBase64,
+              receiptMimeType: created.receiptMimeType,
             });
             await applyBalanceDelta(tx, loginhubId, created.accountId, initSignedAmount);
           }
@@ -259,8 +269,8 @@ loansRouter.post(
               occurredAt: created.date,
               categoryId: catId,
               accountId: created.accountId,
-              receiptBase64: created.receiptBase64,
-              receiptMimeType: created.receiptMimeType,
+              receiptBase64: created.paymentReceiptBase64,
+              receiptMimeType: created.paymentReceiptMimeType,
             });
             if (created.accountId) {
               await applyBalanceDelta(tx, loginhubId, created.accountId, signedAmount);
@@ -309,6 +319,10 @@ loansRouter.put(
         updateData.receiptBase64 = data.receipt?.base64 ?? null;
         updateData.receiptMimeType = data.receipt?.mimeType ?? null;
       }
+      if (data.paymentReceipt !== undefined) {
+        updateData.paymentReceiptBase64 = data.paymentReceipt?.base64 ?? null;
+        updateData.paymentReceiptMimeType = data.paymentReceipt?.mimeType ?? null;
+      }
       updateData.updatedAt = new Date();
 
       const updated = await db.transaction(async (tx) => {
@@ -342,6 +356,8 @@ loansRouter.put(
               amount: initSignedAmount,
               accountId: updatedLoan.accountId,
               occurredAt: updatedLoan.date,
+              receiptBase64: updatedLoan.receiptBase64,
+              receiptMimeType: updatedLoan.receiptMimeType,
             }).where(eq(transactions.id, initialTx.id));
             await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, initSignedAmount);
           } else {
@@ -357,6 +373,8 @@ loansRouter.put(
               occurredAt: updatedLoan.date,
               categoryId: catId,
               accountId: updatedLoan.accountId,
+              receiptBase64: updatedLoan.receiptBase64,
+              receiptMimeType: updatedLoan.receiptMimeType,
             });
             await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, initSignedAmount);
           }
@@ -383,8 +401,8 @@ loansRouter.put(
               occurredAt: updatedLoan.date,
               categoryId: catId,
               accountId: updatedLoan.accountId,
-              receiptBase64: updatedLoan.receiptBase64,
-              receiptMimeType: updatedLoan.receiptMimeType,
+              receiptBase64: updatedLoan.paymentReceiptBase64,
+              receiptMimeType: updatedLoan.paymentReceiptMimeType,
             }).where(eq(transactions.id, settlementTx.id));
             if (updatedLoan.accountId) {
               await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
@@ -400,8 +418,8 @@ loansRouter.put(
               occurredAt: updatedLoan.date,
               categoryId: catId,
               accountId: updatedLoan.accountId,
-              receiptBase64: updatedLoan.receiptBase64,
-              receiptMimeType: updatedLoan.receiptMimeType,
+              receiptBase64: updatedLoan.paymentReceiptBase64,
+              receiptMimeType: updatedLoan.paymentReceiptMimeType,
             });
             if (updatedLoan.accountId) {
               await applyBalanceDelta(tx, loginhubId, updatedLoan.accountId, signedAmount);
@@ -461,6 +479,29 @@ loansRouter.get('/:id/receipt', requireAuth, async (req, res, next) => {
     const id = req.params.id as string;
     const [row] = await db
       .select({ receiptBase64: loans.receiptBase64, receiptMimeType: loans.receiptMimeType })
+      .from(loans)
+      .where(and(eq(loans.id, id), eq(loans.loginhubId, loginhubId)));
+      
+    if (!row?.receiptBase64 || !row.receiptMimeType) {
+      res.status(404).json({ error: 'no_receipt' });
+      return;
+    }
+    const buffer = Buffer.from(row.receiptBase64, 'base64');
+    res.setHeader('Content-Type', row.receiptMimeType);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Content-Length', buffer.byteLength);
+    res.end(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+loansRouter.get('/:id/payment-receipt', requireAuth, async (req, res, next) => {
+  try {
+    const loginhubId = req.user!.loginhubId;
+    const id = req.params.id as string;
+    const [row] = await db
+      .select({ receiptBase64: loans.paymentReceiptBase64, receiptMimeType: loans.paymentReceiptMimeType })
       .from(loans)
       .where(and(eq(loans.id, id), eq(loans.loginhubId, loginhubId)));
       
