@@ -5,12 +5,16 @@ const props = defineProps<{
   mensalidadesList: any[];
   categoriesMap: Map<string, any>;
   loading: boolean;
+  selectedDate?: Date;
 }>();
 
 const emit = defineEmits<{
   (e: 'action', item: any): void;
   (e: 'pay', item: any): void;
   (e: 'dismiss', item: any): void;
+  (e: 'prevMonth'): void;
+  (e: 'nextMonth'): void;
+  (e: 'resetMonth'): void;
 }>();
 
 const brl = (n: number | string) =>
@@ -37,6 +41,13 @@ const isCurrentMonth = (iso: string) => {
   return d.getUTCFullYear() === today.getFullYear() && d.getUTCMonth() === today.getMonth();
 };
 
+const formattedCurrentSelectedMonth = computed(() => {
+  const date = props.selectedDate || new Date();
+  const num = String(date.getMonth() + 1).padStart(2, '0');
+  const name = date.toLocaleDateString('pt-BR', { month: 'long' });
+  return `MÊS ${num} • ${name}`;
+});
+
 const totalUpcoming = computed(() => {
   return props.mensalidadesList
     .filter((t) => t.statusTag !== 'paid')
@@ -49,8 +60,24 @@ const totalUpcoming = computed(() => {
     <h2 class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Assinaturas e Mensalidades</h2>
     
     <div class="flex items-start sm:items-center justify-between mb-6 flex-wrap gap-2">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <h3 class="text-lg text-white font-medium font-display">Mensalidades</h3>
+        <div class="flex items-center gap-1 bg-surface-base border border-surface-border rounded-lg p-0.5 ml-1">
+          <button
+            @click="emit('prevMonth')"
+            class="p-1 rounded hover:bg-surface-overlay text-muted hover:text-white transition-colors"
+            title="Mês Anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button
+            @click="emit('nextMonth')"
+            class="p-1 rounded hover:bg-surface-overlay text-muted hover:text-white transition-colors"
+            title="Próximo Mês"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
       </div>
       <span v-if="!loading && mensalidadesList.length > 0" class="text-sm font-bold text-expense font-display">
         Total: {{ brl(totalUpcoming) }}
@@ -61,19 +88,62 @@ const totalUpcoming = computed(() => {
       <div v-if="loading" class="space-y-4">
         <div v-for="i in 5" :key="i" class="skeleton h-12 w-full" />
       </div>
-      <div v-else-if="mensalidadesList.length === 0" class="flex-1 flex flex-col items-center justify-center py-8 border-2 border-dashed border-surface-border/50 rounded-xl">
-        <span class="text-muted text-sm font-medium">Nenhuma assinatura ativa.</span>
+      <div v-else-if="mensalidadesList.length === 0" class="flex-1 flex flex-col justify-between">
+        <div class="flex items-center gap-2 my-2 opacity-90">
+          <div class="h-px flex-1 bg-surface-border"></div>
+          <button @click.stop="emit('prevMonth')" class="p-1 rounded-lg hover:bg-surface-overlay text-muted hover:text-white transition-colors" title="Mês Anterior">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-white">
+            {{ formattedCurrentSelectedMonth }}
+          </span>
+          <button @click.stop="emit('nextMonth')" class="p-1 rounded-lg hover:bg-surface-overlay text-muted hover:text-white transition-colors" title="Próximo Mês">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <div class="h-px flex-1 bg-surface-border"></div>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-center py-8 border-2 border-dashed border-surface-border/50 rounded-xl">
+          <span class="text-muted text-sm font-medium">Nenhuma assinatura para este mês.</span>
+        </div>
       </div>
       <ul v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
       <template v-for="(t, idx) in mensalidadesList" :key="t.id">
         <div v-if="idx === 0 || t.occurredAt.slice(0,7) !== mensalidadesList[idx - 1].occurredAt.slice(0,7)" 
-             class="flex items-center gap-3 opacity-60" :class="idx === 0 ? 'mb-2' : 'mt-4 mb-2'">
+             class="flex items-center gap-2 opacity-90" :class="idx === 0 ? 'mb-2' : 'mt-4 mb-2'">
           <div class="h-px flex-1" :class="isCurrentMonth(t.occurredAt) ? 'bg-accent/50' : 'bg-surface-border'"></div>
-          <span class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"
+          
+          <button 
+            @click.stop="emit('prevMonth')" 
+            class="p-1 rounded-lg hover:bg-surface-overlay text-muted hover:text-white transition-colors cursor-pointer"
+            title="Mês Anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+
+          <span class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 select-none"
                 :class="isCurrentMonth(t.occurredAt) ? 'text-accent' : 'text-white'">
             {{ formatMonthSeparator(t.occurredAt) }}
-            <span v-if="isCurrentMonth(t.occurredAt)" class="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent text-[8px] leading-none">Hoje {{ new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }}</span>
+            <button 
+              v-if="!isCurrentMonth(t.occurredAt)" 
+              @click.stop="emit('resetMonth')"
+              class="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent hover:bg-accent/30 text-[8px] leading-none transition-colors"
+              title="Voltar para o Mês Atual"
+            >
+              Hoje
+            </button>
+            <span v-else class="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent text-[8px] leading-none">
+              Hoje {{ new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) }}
+            </span>
           </span>
+
+          <button 
+            @click.stop="emit('nextMonth')" 
+            class="p-1 rounded-lg hover:bg-surface-overlay text-muted hover:text-white transition-colors cursor-pointer"
+            title="Próximo Mês"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+
           <div class="h-px flex-1" :class="isCurrentMonth(t.occurredAt) ? 'bg-accent/50' : 'bg-surface-border'"></div>
         </div>
 

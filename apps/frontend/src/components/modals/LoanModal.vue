@@ -81,16 +81,24 @@ function onPaymentFileChange(e: Event) {
 function resetForm() {
   if (props.loanToEdit) {
     let uiAmount = String(props.loanToEdit.amount);
-    let uiExpected = (props.loanToEdit as any).expectedAmount ? String((props.loanToEdit as any).expectedAmount) : '';
+    let uiExpected = '';
     
+    const dbAmount = Number(props.loanToEdit.amount);
+    const rawExpected = (props.loanToEdit as any).expectedAmount;
+    const dbExpected = rawExpected !== undefined && rawExpected !== null ? Number(rawExpected) : null;
+
     if (props.loanToEdit.type === 'received') {
-      const dbAmount = props.loanToEdit.amount;
-      const dbExpected = (props.loanToEdit as any).expectedAmount;
-      if (dbExpected) {
+      if (dbExpected !== null && dbExpected !== dbAmount) {
         uiAmount = String(dbExpected);
         uiExpected = String(dbAmount);
       } else {
         uiAmount = String(dbAmount);
+        uiExpected = '';
+      }
+    } else {
+      if (dbExpected !== null && dbExpected !== dbAmount) {
+        uiExpected = String(dbExpected);
+      } else {
         uiExpected = '';
       }
     }
@@ -203,15 +211,20 @@ async function save() {
   }
 
   let apiAmount = Number(String(form.value.amount).replace(',', '.'));
-  let apiExpected: number | undefined = form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : undefined;
+  let apiExpected: number | null | undefined = form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : null;
+
+  if (apiExpected !== null && apiExpected === apiAmount) {
+    apiExpected = null;
+  }
 
   if (form.value.type === 'received') {
-    if (form.value.expectedAmount) {
-      apiAmount = Number(String(form.value.expectedAmount).replace(',', '.'));
-      apiExpected = Number(String(form.value.amount).replace(',', '.'));
+    if (apiExpected !== null && apiExpected !== undefined) {
+      const temp = apiAmount;
+      apiAmount = apiExpected;
+      apiExpected = temp;
     } else {
       apiAmount = Number(String(form.value.amount).replace(',', '.'));
-      apiExpected = undefined;
+      apiExpected = null;
     }
   }
 

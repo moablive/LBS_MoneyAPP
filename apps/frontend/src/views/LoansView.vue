@@ -266,8 +266,8 @@ function onLoanSaved(status?: string) {
 
               <!-- Right: Amount -->
               <div class="hidden sm:flex flex-col items-end tabular-nums font-semibold text-sm text-right truncate" :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')">
-                <div v-if="(item as any).expectedAmount && (item as any).expectedAmount !== item.amount" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
-                <div>{{ brl((item as any).expectedAmount || item.amount) }}</div>
+                <div v-if="(item as any).expectedAmount && Number((item as any).expectedAmount) !== Number(item.amount)" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
+                <div>{{ brl((item as any).expectedAmount && Number((item as any).expectedAmount) !== Number(item.amount) ? (item as any).expectedAmount : item.amount) }}</div>
               </div>
 
               <!-- Mobile view right side -->
@@ -276,8 +276,8 @@ function onLoanSaved(status?: string) {
                   class="flex flex-col items-end tabular-nums font-semibold text-sm text-right"
                   :class="item.status === 'paid' ? 'text-muted' : (item.type === 'given' ? 'text-income' : item.type === 'fgts' ? 'text-blue-400' : 'text-expense')"
                 >
-                  <div v-if="(item as any).expectedAmount && (item as any).expectedAmount !== item.amount" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
-                  <div>{{ brl((item as any).expectedAmount || item.amount) }}</div>
+                  <div v-if="(item as any).expectedAmount && Number((item as any).expectedAmount) !== Number(item.amount)" class="text-[10px] text-muted line-through font-normal -mb-1">{{ brl(item.amount) }}</div>
+                  <div>{{ brl((item as any).expectedAmount && Number((item as any).expectedAmount) !== Number(item.amount) ? (item as any).expectedAmount : item.amount) }}</div>
                 </div>
                 <div 
                   class="flex items-center justify-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md transition-opacity w-[72px] shrink-0"

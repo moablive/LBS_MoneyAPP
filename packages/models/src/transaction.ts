@@ -46,6 +46,7 @@ export const createTransactionSchema = z
     status: transactionStatusEnum.default('paid'),
     categoryId: z.string().uuid(),
     accountId: z.string().uuid().nullish(),
+    subscriptionId: z.string().uuid().nullish(),
     receipt: receiptSchema.nullable().optional(),
   })
   .strict()

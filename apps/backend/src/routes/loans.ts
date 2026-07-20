@@ -313,7 +313,15 @@ loansRouter.put(
       if (data.accountId !== undefined) updateData.accountId = data.accountId;
       if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
       if (data.amount !== undefined) updateData.amount = data.amount.toString();
-      if (data.expectedAmount !== undefined) updateData.expectedAmount = data.expectedAmount?.toString();
+      if (data.expectedAmount !== undefined) {
+        if (data.expectedAmount === null || data.expectedAmount === undefined) {
+          updateData.expectedAmount = data.amount !== undefined ? data.amount.toString() : null;
+        } else {
+          updateData.expectedAmount = data.expectedAmount.toString();
+        }
+      } else if (data.amount !== undefined) {
+        updateData.expectedAmount = data.amount.toString();
+      }
       if (data.date !== undefined) updateData.date = new Date(data.date);
       if (data.receipt !== undefined) {
         updateData.receiptBase64 = data.receipt?.base64 ?? null;

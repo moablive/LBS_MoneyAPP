@@ -18,6 +18,7 @@ const LoanModal = defineAsyncComponent(() => import('../components/modals/LoanMo
 const PayInvoiceModal = defineAsyncComponent(() => import('../components/modals/PayInvoiceModal.vue'));
 const SubscriptionModal = defineAsyncComponent(() => import('../components/modals/SubscriptionModal.vue'));
 const ConfirmPaymentModal = defineAsyncComponent(() => import('../components/modals/ConfirmPaymentModal.vue'));
+const LinkTransactionModal = defineAsyncComponent(() => import('../components/modals/LinkTransactionModal.vue'));
 
 
 const summary = ref<DashboardSummaryResponse | null>(null);
@@ -70,7 +71,7 @@ const upcomingActionItem = ref<any | null>(null);
 const showChangeDateModal = ref(false);
 const changeDateValue = ref('');
 
-
+const showLinkTransaction = ref(false);
 
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -86,12 +87,29 @@ function choosePayUpcoming() {
   }
 }
 
+function chooseLinkUpcoming() {
+  showUpcomingActionModal.value = false;
+  if (upcomingActionItem.value) {
+    showLinkTransaction.value = true;
+  }
+}
+
 function chooseEditUpcoming() {
   showUpcomingActionModal.value = false;
   if (!upcomingActionItem.value) return;
   
   changeDateValue.value = upcomingActionItem.value.occurredAt.slice(0, 10);
   showChangeDateModal.value = true;
+}
+
+function requestReceipt() {
+  if (!upcomingActionItem.value) return;
+  const item = upcomingActionItem.value;
+  const amount = brl(Math.abs(Number(item.amount)));
+  const text = `Olá! Poderia me enviar o comprovante referente a "${item.description}" no valor de ${amount}?`;
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+  showUpcomingActionModal.value = false;
 }
 
 function saveCustomDate() {
@@ -319,13 +337,15 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       if (sub.status !== 'active') return false;
       return true;
     }).map((sub: any) => {
-      const hasPaid = transactionsRes.some((t: any) => t.subscriptionId === sub.id && t.status === 'paid');
-      
-      let subDate = new Date(today.getFullYear(), today.getMonth(), sub.billingDay || 1, 12, 0, 0);
+      let subDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), sub.billingDay || 1, 12, 0, 0);
       
       const originalDateStr = subDate.toISOString();
       const monthStr = originalDateStr.slice(0, 7);
       const itemKey = `sub-${sub.id}-${monthStr}_${monthStr}`;
+
+      const hasPaid = transactionsRes.some((t: any) => {
+        return t.subscriptionId === sub.id && t.status === 'paid' && t.occurredAt.slice(0, 7) === monthStr;
+      });
       
       const isDismissed = dismissedKeys.value.includes(itemKey);
       const isPaid = hasPaid || isDismissed;
@@ -382,22 +402,45 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
   }
 };
 
-const loadData = () => {
-  const today = new Date();
-  
-  const fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
-  fromDate.setHours(0, 0, 0, 0);
+const selectedDate = ref(new Date());
 
-  const toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  toDate.setHours(23, 59, 59, 999);
-  
+function prevMonth() {
+  const d = new Date(selectedDate.value);
+  d.setMonth(d.getMonth() - 1);
+  selectedDate.value = d;
+  reloadMonthData();
+}
+
+function nextMonth() {
+  const d = new Date(selectedDate.value);
+  d.setMonth(d.getMonth() + 1);
+  selectedDate.value = d;
+  reloadMonthData();
+}
+
+function resetMonth() {
+  selectedDate.value = new Date();
+  reloadMonthData();
+}
+
+function reloadMonthData() {
+  const year = selectedDate.value.getFullYear();
+  const month = selectedDate.value.getMonth();
+
+  const fromDate = new Date(year, month, 1, 0, 0, 0, 0);
+  const toDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
   const fromParam = fromDate.toISOString();
   const toParam = toDate.toISOString();
 
+  loadUpcoming(fromParam, toParam, fromDate, toDate);
+}
+
+const loadData = () => {
   loadSummary();
   loadRanking();
   loadAccounts().then(() => {
-    loadUpcoming(fromParam, toParam, fromDate, toDate);
+    reloadMonthData();
   });
 };
 
@@ -453,9 +496,13 @@ onUnmounted(() => {
           :mensalidadesList="mensalidadesList"
           :categoriesMap="categoriesMap"
           :loading="loadingUpcoming"
+          :selectedDate="selectedDate"
           @action="handleActionItem"
           @pay="handlePayUpcoming"
           @dismiss="handleDismissUpcoming"
+          @prev-month="prevMonth"
+          @next-month="nextMonth"
+          @reset-month="resetMonth"
         />
       </section>
     </div>
@@ -589,9 +636,16 @@ onUnmounted(() => {
                   class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   :class="upcomingActionItem?.type === 'expense' ? 'bg-gradient-to-b from-expense/90 to-expense hover:from-expense hover:to-expense/90 shadow-expense/25' : 'bg-gradient-to-b from-income/90 to-income hover:from-income hover:to-income/90 shadow-income/25'">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span class="text-white font-bold tracking-wide">Pagar Lançamento</span>
+            <span class="text-white font-bold tracking-wide">{{ upcomingActionItem?.type === 'income' ? 'Confirmar Recebimento' : 'Pagar Lançamento' }}</span>
           </button>
           
+          <button @click="requestReceipt"
+                  v-if="upcomingActionItem?.type === 'income'"
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="text-sm font-medium">Pedir Comprovante</span>
+          </button>
+
           <button @click="chooseEditUpcoming" 
                   class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
@@ -604,6 +658,13 @@ onUnmounted(() => {
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income group-hover:text-income transition-colors" v-else><polyline points="20 6 9 17 4 12"></polyline></svg>
             <span class="text-sm font-medium" v-if="upcomingActionItem?.isSubscription">Já Paguei</span>
             <span class="text-sm font-medium" v-else>Pular Mês</span>
+          </button>
+
+          <button @click="chooseLinkUpcoming" 
+                  v-if="upcomingActionItem?.isSubscription"
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="text-sm font-bold text-white">Vincular Lançamento do Livro Caixa</span>
           </button>
         </div>
       </div>
@@ -625,6 +686,14 @@ onUnmounted(() => {
         </div>
       </div>
     </Modal>
+
+    <LinkTransactionModal
+      v-if="showLinkTransaction"
+      v-model:open="showLinkTransaction"
+      :subscription="upcomingActionItem"
+      :categoriesMap="categoriesMap"
+      @linked="loadData"
+    />
   </AppShell>
 </template>
 

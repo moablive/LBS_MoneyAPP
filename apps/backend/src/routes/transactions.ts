@@ -146,6 +146,7 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
       if (body.occurredAt !== undefined) patch.occurredAt = body.occurredAt;
       if (body.categoryId !== undefined) patch.categoryId = body.categoryId;
       if (body.accountId !== undefined) patch.accountId = body.accountId;
+      if (body.subscriptionId !== undefined) patch.subscriptionId = body.subscriptionId;
       if (body.receipt !== undefined) {
         patch.receiptBase64 = body.receipt?.base64 ?? null;
         patch.receiptMimeType = body.receipt?.mimeType ?? null;

@@ -101,47 +101,56 @@ async function submit() {
       const payload: any = {
         amount: amount.value,
         sourceAccountId: accountId.value || null,
-        categoryId: props.item.categoryId, // Will probably need to fetch "Fatura" category if not provided
+        categoryId: props.item.categoryId,
         date: new Date(`${date.value}T12:00:00Z`).toISOString(),
         description: 'Pagamento de Fatura',
         receipt: receiptPayload,
       };
-      // We need a category for invoice payment. Let's fetch categories.
+      
       const cats = await api.get<Category[]>('/categories');
       const faturaCat = cats.find(c => c.type === 'expense' && c.name.toUpperCase().includes('FATURA'));
       if (faturaCat) payload.categoryId = faturaCat.id;
       
       await api.post(`/accounts/${props.item.account.id}/pay-invoice`, payload);
     } else if (props.item.isSubscription || props.item.isLoan) {
-      let finalCategoryId = props.item.categoryId || null;
+      const cats = await api.get<Category[]>('/categories');
+      let finalCategoryId = props.item.categoryId || props.item.originalItem?.categoryId || null;
       
-      if (props.item.isSubscription) {
-        const cats = await api.get<Category[]>('/categories');
+      if (!finalCategoryId && props.item.isSubscription) {
         const assinaturasCat = cats.find(c => c.name.toUpperCase().includes('ASSINATURA'));
         if (assinaturasCat) {
           finalCategoryId = assinaturasCat.id;
         }
       }
 
+      if (!finalCategoryId && cats.length > 0) {
+        const matchingCat = cats.find(c => c.type === props.item.type) || cats[0];
+        finalCategoryId = matchingCat?.id || null;
+      }
+
+      if (!finalCategoryId) {
+        error.value = 'É necessário selecionar uma categoria para este lançamento.';
+        return;
+      }
+
       // Create a new transaction
-      const payload = {
-        amount: props.item.type === 'expense' ? -Math.abs(amount.value) : Math.abs(amount.value),
-        accountId: accountId.value,
-        categoryId: finalCategoryId,
-        date: new Date(`${date.value}T12:00:00Z`).toISOString(),
-        occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
+      const payload: any = {
         description: props.item.description,
+        amount: props.item.type === 'expense' ? -Math.abs(amount.value) : Math.abs(amount.value),
         type: props.item.type,
         status: 'paid',
-        receipt: receiptPayload,
-        ...(props.item.isSubscription ? { subscriptionId: props.item.originalItem.id } : {})
+        occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
+        categoryId: finalCategoryId,
+        accountId: accountId.value || undefined,
+        receipt: receiptPayload || undefined,
+        ...(props.item.isSubscription ? { subscriptionId: props.item.originalItem?.id || props.item.id?.replace(/^sub-/, '').replace(/-\d{4}-\d{2}.*$/, '') } : {})
       };
       await api.post('/transactions', payload);
     } else {
       // Patch existing pending transaction
-      const payload = {
+      const payload: any = {
         amount: props.item.type === 'expense' ? -Math.abs(amount.value) : Math.abs(amount.value),
-        accountId: accountId.value,
+        accountId: accountId.value || undefined,
         occurredAt: new Date(`${date.value}T12:00:00Z`).toISOString(),
         status: 'paid',
         ...(receiptPayload ? { receipt: receiptPayload } : {})
@@ -153,7 +162,15 @@ async function submit() {
     window.dispatchEvent(new CustomEvent('transaction-created'));
     open.value = false;
   } catch (e: any) {
-    error.value = 'Não foi possível confirmar o pagamento.';
+    console.error('Failed to confirm payment:', e);
+    const serverError = e.response?.data?.error || e.response?.data?.message || e.message;
+    if (serverError === 'receipt_required_for_fatura_payment') {
+      error.value = 'É obrigatório anexar comprovante para pagamento de fatura.';
+    } else if (typeof serverError === 'string' && serverError.length < 100) {
+      error.value = `Erro: ${serverError}`;
+    } else {
+      error.value = 'Não foi possível confirmar o pagamento.';
+    }
   } finally {
     submitting.value = false;
   }
