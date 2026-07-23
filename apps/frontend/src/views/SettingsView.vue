@@ -4,9 +4,11 @@ import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import type { Account } from '@moneyapp/models';
 import { useAuthStore } from '../stores/auth';
+import { usePush } from '../composables/usePush';
 
 const router = useRouter();
 const auth = useAuthStore();
+const push = usePush();
 const requireReceipts = ref(auth.user?.settings?.requireReceipts ?? true);
 const displayName = ref<string>((auth.user?.settings as any)?.displayName ?? '');
 const saving = ref(false);
@@ -64,6 +66,20 @@ async function save() {
     message.value = 'Erro ao salvar configurações.';
   } finally {
     saving.value = false;
+  }
+}
+
+async function togglePush(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const wantEnabled = target.checked;
+  target.checked = !wantEnabled; // Reverte visualmente enquanto aguarda
+
+  if (wantEnabled) {
+    const success = await push.enable();
+    if (success) target.checked = true;
+  } else {
+    await push.disable();
+    target.checked = false;
   }
 }
 
@@ -133,6 +149,28 @@ async function hardReload() {
           <input type="checkbox" v-model="requireReceipts" class="sr-only peer">
           <div class="w-11 h-6 bg-surface-overlay peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent border border-surface-border"></div>
         </label>
+      </div>
+
+      <div v-if="push.isSupported" class="flex items-center justify-between gap-4 mt-6 pt-6 border-t border-surface-border/60">
+        <div>
+          <p class="text-slate-100 font-medium">Notificações neste aparelho</p>
+          <p class="text-sm text-muted mt-1">Receba alertas e lembretes importantes diretamente neste navegador.</p>
+          <p v-if="push.error.value" class="text-xs text-red-400 mt-1">{{ push.error.value }}</p>
+          <p v-else-if="push.permission.value === 'denied'" class="text-xs text-amber-400 mt-1">Bloqueado. Libere nas configurações do site no seu navegador.</p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <div v-if="push.isBusy.value" class="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin"></div>
+          <label class="relative inline-flex items-center" :class="push.isBusy.value ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'">
+            <input
+              type="checkbox"
+              class="sr-only peer"
+              :checked="push.isSubscribed.value"
+              :disabled="push.isBusy.value"
+              @change="togglePush($event)"
+            />
+            <div class="w-11 h-6 bg-surface-overlay peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent border border-surface-border"></div>
+          </label>
+        </div>
       </div>
 
       <div class="mt-8 pt-4 border-t border-surface-border flex items-center justify-between">

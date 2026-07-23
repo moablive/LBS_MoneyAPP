@@ -309,7 +309,10 @@ loansRouter.put(
       const id = req.params.id as string;
       const data = req.body as import('@moneyapp/models').UpdateLoanInput;
 
-      const updateData: any = { ...data };
+      const updateData: any = {};
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.type !== undefined) updateData.type = data.type;
+      if (data.status !== undefined) updateData.status = data.status;
       if (data.accountId !== undefined) updateData.accountId = data.accountId;
       if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
       if (data.amount !== undefined) updateData.amount = data.amount.toString();

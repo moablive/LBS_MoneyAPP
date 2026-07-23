@@ -18,10 +18,13 @@ services:
       dockerfile: apps/backend/Dockerfile
     container_name: app_moneyapp_backend
     env_file:
+    - ../shared.env
     - .env
     environment:
       NODE_ENV: production
       PORT: 3000
+      # DATABASE_URL montado a partir do DB_DSN (../shared.env) + DB_NAME (.env).
+      DATABASE_URL: "${DB_DSN:?defina DB_DSN em ../shared.env}/${DB_NAME:?defina DB_NAME no .env do app}"
     networks:
       awl_network:
         aliases:
@@ -60,8 +63,9 @@ services:
       dockerfile: Dockerfile
     container_name: app_moneyapp_bot
     env_file:
-    # O bot tem seu próprio .env (TELEGRAM_BOT_TOKEN, LOGINHUB_*, GROQ_API_KEY,
-    # BOT_SERVICE_KEY...) — o .env da raiz não contém essas variáveis.
+    # Infra comum (NODE_ENV, BOT_SERVICE_KEY, GROQ_API_KEY) vem do shared; o .env
+    # do bot traz TELEGRAM_BOT_TOKEN, LOGINHUB_*, OLLAMA_* e BACKEND_URL.
+    - ../shared.env
     - apps/bot/MoneyAPP_BOT/.env
     environment:
       NODE_ENV: production

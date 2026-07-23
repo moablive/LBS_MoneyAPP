@@ -15,6 +15,9 @@ const envSchema = z.object({
     return val.split(',').map(s => s.trim());
   }),
   MAX_RECEIPT_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:admin@moneyapp.local'),
 });
 
 const parsed = envSchema.safeParse(process.env);

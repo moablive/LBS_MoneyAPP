@@ -382,3 +382,22 @@ export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
 export type SharedLink = typeof sharedLinks.$inferSelect;
 export type NewSharedLink = typeof sharedLinks.$inferInsert;
+
+// -------- pushSubscriptions --------------------------------------------------
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    loginhubId: integer("loginhub_id").notNull(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({ userIdx: index("push_subscriptions_loginhub_idx").on(t.loginhubId) })
+);
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;

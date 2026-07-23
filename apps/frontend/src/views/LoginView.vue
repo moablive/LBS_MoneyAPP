@@ -47,7 +47,7 @@ async function submit() {
       @submit.prevent="submit"
     >
       <header class="space-y-4 flex flex-col items-center mb-6">
-        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-24 w-auto object-contain" />
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain mix-blend-screen" />
         <p class="text-sm text-muted">Entre com sua conta para continuar.</p>
       </header>
 

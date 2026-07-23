@@ -11,6 +11,7 @@ import { loansRouter } from './loans';
 import { sharesRouter } from './shares';
 import { botRouter } from './bot';
 import { calendarRouter } from './calendar';
+import { pushRouter } from './push';
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
@@ -25,3 +26,4 @@ apiRouter.use('/dashboard', dashboardRouter);
 apiRouter.use('/shares', sharesRouter);
 apiRouter.use('/bot', botRouter);
 apiRouter.use('/calendar', calendarRouter);
+apiRouter.use('/push', pushRouter);

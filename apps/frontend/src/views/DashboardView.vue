@@ -33,6 +33,7 @@ const loadingSummary = ref(true);
 const loadingRanking = ref(true);
 const loadingAccounts = ref(true);
 const loadingUpcoming = ref(true);
+const loadingMensalidades = ref(true);
 
 const upcomingList = computed(() => upcomingTransactions.value);
 
@@ -251,8 +252,9 @@ const loadAccounts = async () => {
   }
 };
 
-const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, toDate: Date) => {
-  loadingUpcoming.value = true;
+const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, _toDate: Date, upcomingFromDate: Date, upcomingToDate: Date, updateUpcoming = true) => {
+  loadingMensalidades.value = true;
+  if (updateUpcoming) loadingUpcoming.value = true;
   try {
     const promises: Promise<any>[] = [
       api.get<any[]>(`/transactions?sort=date_desc&limit=200&from=${fromParam}&to=${toParam}`),
@@ -268,7 +270,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
     const upcomingLoans = loansRes.items.filter((loan: any) => {
       if (loan.status !== 'active') return false;
       const loanDate = new Date(loan.date);
-      return loanDate >= fromDate && loanDate <= toDate;
+      return loanDate >= upcomingFromDate && loanDate <= upcomingToDate;
     }).map((loan: any) => {
       const type = loan.type === 'received' ? 'expense' : 'income';
       const amount = type === 'expense' ? -Math.abs(Number(loan.amount)) : Math.abs(Number(loan.amount));
@@ -331,7 +333,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       })
       .filter(cc => {
          const d = new Date(cc.originalOccurredAt);
-         return d >= fromDate && d <= toDate;
+         return d >= upcomingFromDate && d <= upcomingToDate;
       });
     const upcomingSubscriptions = (subscriptionsRes?.items || []).filter((sub: any) => {
       if (sub.status !== 'active') return false;
@@ -390,50 +392,67 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
       };
     });
 
-    upcomingTransactions.value = [...pendingTransactions, ...upcomingLoans, ...creditCardInvoices]
-      .filter((t: any) => {
-         return !dismissedKeys.value.includes(t.itemKey);
-      })
-      .sort((a: any, b: any) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+    if (updateUpcoming) {
+      upcomingTransactions.value = [...pendingTransactions, ...upcomingLoans, ...creditCardInvoices]
+        .filter((t: any) => {
+           const d = new Date(t.originalOccurredAt);
+           return !dismissedKeys.value.includes(t.itemKey) && d >= upcomingFromDate && d <= upcomingToDate;
+        })
+        .sort((a: any, b: any) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+    }
   } catch (e) {
     console.error(e);
   } finally {
-    loadingUpcoming.value = false;
+    loadingMensalidades.value = false;
+    if (updateUpcoming) loadingUpcoming.value = false;
   }
 };
 
 const selectedDate = ref(new Date());
 
+// O botão de navegar mês pertence apenas às Mensalidades: recarrega só esse painel,
+// deixando "Próximos Lançamentos" intacto (visão fixa ancorada em hoje).
 function prevMonth() {
   const d = new Date(selectedDate.value);
   d.setMonth(d.getMonth() - 1);
   selectedDate.value = d;
-  reloadMonthData();
+  reloadMonthData(false);
 }
 
 function nextMonth() {
   const d = new Date(selectedDate.value);
   d.setMonth(d.getMonth() + 1);
   selectedDate.value = d;
-  reloadMonthData();
+  reloadMonthData(false);
 }
 
 function resetMonth() {
   selectedDate.value = new Date();
-  reloadMonthData();
+  reloadMonthData(false);
 }
 
-function reloadMonthData() {
+function reloadMonthData(updateUpcoming = true) {
   const year = selectedDate.value.getFullYear();
   const month = selectedDate.value.getMonth();
 
-  const fromDate = new Date(year, month, 1, 0, 0, 0, 0);
-  const toDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  const selectedFromDate = new Date(year, month, 1, 0, 0, 0, 0);
+  const selectedToDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-  const fromParam = fromDate.toISOString();
-  const toParam = toDate.toISOString();
+  const today = new Date();
 
-  loadUpcoming(fromParam, toParam, fromDate, toDate);
+  // "Próximos Lançamentos": sempre a partir do dia 01 do mês atual e ~60 dias pra frente,
+  // cobrindo o mês atual + os 2 meses seguintes (ex.: hoje 22/07 => meses 07, 08 e 09).
+  const upcomingFromDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+  const upcomingToDate = new Date(today.getFullYear(), today.getMonth() + 3, 0, 23, 59, 59, 999);
+
+  // Make sure we fetch enough data for both the selected month AND the upcoming window
+  const fetchFromDate = new Date(Math.min(selectedFromDate.getTime(), upcomingFromDate.getTime()));
+  const fetchToDate = new Date(Math.max(selectedToDate.getTime(), upcomingToDate.getTime()));
+
+  const fromParam = fetchFromDate.toISOString();
+  const toParam = fetchToDate.toISOString();
+
+  loadUpcoming(fromParam, toParam, selectedFromDate, selectedToDate, upcomingFromDate, upcomingToDate, updateUpcoming);
 }
 
 const loadData = () => {
@@ -492,10 +511,10 @@ onUnmounted(() => {
           @pay="handlePayUpcoming"
           @dismiss="handleDismissUpcoming"
         />
-        <DashboardMensalidades 
+        <DashboardMensalidades
           :mensalidadesList="mensalidadesList"
           :categoriesMap="categoriesMap"
-          :loading="loadingUpcoming"
+          :loading="loadingMensalidades"
           :selectedDate="selectedDate"
           @action="handleActionItem"
           @pay="handlePayUpcoming"

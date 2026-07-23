@@ -38,4 +38,12 @@ if ('serviceWorker' in navigator) {
     reloading = true;
     window.location.reload();
   });
+
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Falha ao registrar service worker:', err);
+      });
+    });
+  }
 }

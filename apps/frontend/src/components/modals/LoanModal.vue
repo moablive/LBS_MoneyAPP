@@ -211,10 +211,10 @@ async function save() {
   }
 
   let apiAmount = Number(String(form.value.amount).replace(',', '.'));
-  let apiExpected: number | null | undefined = form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : null;
+  let apiExpected: number | null | undefined = form.value.expectedAmount ? Number(String(form.value.expectedAmount).replace(',', '.')) : undefined;
 
-  if (apiExpected !== null && apiExpected === apiAmount) {
-    apiExpected = null;
+  if (apiExpected !== undefined && apiExpected === apiAmount) {
+    apiExpected = undefined;
   }
 
   if (form.value.type === 'received') {
@@ -224,7 +224,7 @@ async function save() {
       apiExpected = temp;
     } else {
       apiAmount = Number(String(form.value.amount).replace(',', '.'));
-      apiExpected = null;
+      apiExpected = undefined;
     }
   }
 
@@ -305,8 +305,7 @@ async function destroy() {
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Descrição</label>
           <input
             v-model="form.description"
-            :disabled="props.loanToEdit?.status === 'paid'"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
             placeholder="Ex: Empréstimo do João"
           />
         </div>
@@ -320,8 +319,7 @@ async function destroy() {
                 v-model="form.amount"
                 type="number"
                 step="0.01"
-                :disabled="props.loanToEdit?.status === 'paid'"
-                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
+                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
                 placeholder="0,00"
               />
             </div>
@@ -335,8 +333,7 @@ async function destroy() {
                 v-model="form.expectedAmount"
                 type="number"
                 step="0.01"
-                :disabled="props.loanToEdit?.status === 'paid'"
-                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
+                class="w-full bg-surface-overlay border border-surface-border rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
                 placeholder="0,00 (Opcional)"
               />
             </div>
@@ -349,8 +346,7 @@ async function destroy() {
               type="number"
               min="1"
               step="1"
-              :disabled="props.loanToEdit?.status === 'paid'"
-              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:opacity-50"
+              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
             />
           </div>
         </div>
@@ -360,8 +356,7 @@ async function destroy() {
           <input
             v-model="form.date"
             type="date"
-            :disabled="props.loanToEdit?.status === 'paid'"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark] disabled:opacity-50"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark]"
           />
         </div>
 
@@ -371,8 +366,7 @@ async function destroy() {
           </label>
           <select
             v-model="form.accountId"
-            :disabled="props.loanToEdit?.status === 'paid'"
-            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer disabled:opacity-50"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60 cursor-pointer"
           >
             <option :value="null">Selecionar conta...</option>
             <optgroup label="Contas" v-if="normalAccounts.length > 0">

@@ -94,7 +94,7 @@ const totalPaidLoansAmount = computed(() => {
   <div class="min-h-dvh flex bg-surface-base">
     <aside class="hidden sm:flex w-64 shrink-0 flex-col bg-surface-raised border-r border-surface-border shadow-xl z-50">
       <div class="px-6 py-6 flex flex-col items-center justify-center border-b border-white/10 mb-4 gap-3">
-        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-12 w-auto object-contain" />
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-20 w-auto object-contain mix-blend-screen" />
         <div class="text-[11px] text-slate-300 truncate max-w-full font-medium tracking-wide bg-surface-overlay px-3 py-1 rounded-full border border-surface-border shadow-inner">
           {{ auth.user?.email }}
         </div>
