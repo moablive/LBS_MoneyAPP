@@ -3,6 +3,7 @@ import { db, schema } from '@moneyapp/db';
 import { and, eq } from 'drizzle-orm';
 import { env } from '@moneyapp/services';
 import { pushSubscribeSchema, pushUnsubscribeSchema } from '@moneyapp/models';
+import { requireAuth } from '../middleware/auth.js';
 import crypto from 'crypto';
 import webpush from 'web-push';
 
@@ -12,6 +13,10 @@ if (pushConfigured) {
 }
 
 export const pushRouter = Router();
+
+// Todas as rotas de push exigem usuário autenticado (define req.user.loginhubId).
+// Sem isto, /push/subscribe respondia 401 e o app derrubava a sessão (voltava ao login).
+pushRouter.use(requireAuth);
 
 pushRouter.use((_req, res, next) => {
   if (!pushConfigured) {
