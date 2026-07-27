@@ -337,7 +337,11 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 O bot do Telegram (`app_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
 
 > [!IMPORTANT]
-> O bot tem um **`.env` próprio** em `apps/bot/MoneyAPP_BOT/.env` (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `GROQ_API_KEY`, `BOT_SERVICE_KEY`, `OLLAMA_*`). O `docker-compose.yml` da raiz aponta o `env_file` do serviço do bot para esse arquivo — **não** para o `.env` da raiz (que não tem essas variáveis; usar o da raiz derruba o bot em crash-loop na validação Zod).
+> O bot **não tem mais `.env` próprio**. Até 07/2026 ele lia `apps/bot/MoneyAPP_BOT/.env`; hoje os três serviços usam o mesmo par `env_file: [../shared.env, .env]`, e as variáveis do bot (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `LOGINHUB_APP_ID`, `OLLAMA_MODEL`, `OLLAMA_TEXT_MODEL`) moram no **`.env` da raiz do MoneyAPP**. `BOT_SERVICE_KEY`, `GROQ_API_KEY` e `OLLAMA_URL` vêm do `../shared.env`; `BACKEND_URL` vem do bloco `environment:` do compose, que tem precedência sobre `env_file`.
+>
+> Isso é seguro para o backend porque ele valida ambiente com `z.object()` **sem** `.strict()` (`packages/services/src/config/env.ts`) — chave desconhecida é descartada em silêncio, não rejeitada.
+>
+> Ao adicionar variável do bot, cuidado com `OLLAMA_MODEL`: aqui é o modelo de **visão** (OCR de comprovante), enquanto no MailAPP a mesma variável é o modelo de **texto**. Por causa dessa colisão ela nunca pode subir para o `shared.env`.
 
 ---
 
