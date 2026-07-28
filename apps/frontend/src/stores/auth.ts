@@ -3,7 +3,10 @@ import { ref, computed } from 'vue';
 import type { User, PersistedState } from '@moneyapp/models';
 
 const STORAGE_KEY = 'moneyapp.auth';
-const LOGINHUB_API = import.meta.env.VITE_LOGINHUB_API_URL as string;
+// Fallback obrigatório: sem ele, um build arg ausente virava string vazia e o
+// fetch saía como path relativo, batendo no fallback do SPA em vez da API.
+const LOGINHUB_API =
+  (import.meta.env.VITE_LOGINHUB_API_URL as string) || 'https://loginhub.astralwavelabel.com/api';
 const BACKEND_API = import.meta.env.VITE_API_BASE_URL as string;
 // ID do MoneyAPP no LoginHub (tenant). Sem isso, se o mesmo e-mail existir
 // em outro app, o LoginHub responde 409 AMBIGUOUS_EMAIL.
