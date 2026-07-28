@@ -59,14 +59,15 @@ services:
 
   app_moneyapp_bot:
     build:
-      context: apps/bot/MoneyAPP_BOT
+      context: apps/bot
       dockerfile: Dockerfile
     container_name: app_moneyapp_bot
     env_file:
     # Mesmo par de env_file dos outros serviços: infra comum no shared (NODE_ENV,
     # BOT_SERVICE_KEY, GROQ_API_KEY, OLLAMA_URL) + o .env do app, que traz
     # TELEGRAM_BOT_TOKEN, LOGINHUB_* e os modelos OLLAMA_*. Antes o bot lia um
-    # .env próprio em apps/bot/MoneyAPP_BOT/ — unificado para haver UM só .env.
+    # .env próprio quando vivia numa subpasta separada — unificado para haver UM
+    # só .env.
     - ../shared.env
     - .env
     environment:
