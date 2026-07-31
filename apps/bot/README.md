@@ -16,21 +16,21 @@
 ## 🏗️ Arquitetura
 
 O bot atua como um **cliente HTTP** do backend — ele não acessa o banco de dados diretamente. Toda
-leitura e escrita passa pela API interna (`app_moneyapp_backend:3000/api`) através da rede Docker externa
+leitura e escrita passa pela API interna (`moneyapp_backend:3000/api`) através da rede Docker externa
 `awl_network`. A identidade dos usuários é gerida via **LoginHub** e o
 bot comunica-se com o backend do MoneyAPP de forma autenticada usando a `BOT_SERVICE_KEY`.
 
 ```mermaid
 flowchart LR
-  Telegram((Telegram)) <--> BOT[app_moneyapp_bot]
-  BOT -- "HTTP /api" --> API[app_moneyapp_backend]
+  Telegram((Telegram)) <--> BOT[lbs_moneyapp_bot]
+  BOT -- "HTTP /api" --> API[lbs_moneyapp_backend]
   API <--> DB[(awlsrvDB_postgres)]
   BOT -. "Valida convites" .-> LoginHub
 ```
 
 ### 📦 Integração com o Monorepo
 
-O bot foi unificado ao repositório principal do MoneyAPP e é orquestrado pelo `docker-compose.yml` da raiz do projeto (como serviço `app_moneyapp_bot`). Ele foi ajustado para compilar e subir em sincronia com o Frontend e Backend, mantendo as configurações centralizadas.
+O bot foi unificado ao repositório principal do MoneyAPP e é orquestrado pelo `docker-compose.yml` da raiz do projeto (como serviço `lbs_moneyapp_bot`). Ele foi ajustado para compilar e subir em sincronia com o Frontend e Backend, mantendo as configurações centralizadas.
 
 ## 👥 Convites e Gestão de Acessos
 
@@ -72,7 +72,7 @@ docker compose --env-file .env up -d --build
 
 Caso queira reconstruir ou reiniciar apenas o bot:
 ```bash
-docker compose --env-file .env up -d --build app_moneyapp_bot
+docker compose --env-file .env up -d --build lbs_moneyapp_bot
 ```
 
 > ⚠️ **Atenção**: Apenas **uma instância** pode fazer *long-polling* usando o mesmo `TELEGRAM_BOT_TOKEN` simultaneamente. Múltiplas instâncias rodando com o mesmo token gerarão conflitos (HTTP 409) na API do Telegram.
