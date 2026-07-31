@@ -12,11 +12,11 @@
 # =============================================================================
 
 services:
-  app_moneyapp_backend:
+  lbs_moneyapp_backend:
     build:
       context: .
       dockerfile: apps/backend/Dockerfile
-    container_name: app_moneyapp_backend
+    container_name: lbs_moneyapp_backend
     env_file:
     - ../shared.env
     - .env
@@ -39,7 +39,7 @@ services:
       retries: 3
       start_period: 20s
 
-  app_moneyapp_frontend:
+  lbs_moneyapp_frontend:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
@@ -47,9 +47,9 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_LOGINHUB_API_URL: ${VITE_LOGINHUB_API_URL}
         VITE_LOGINHUB_APP_ID: ${VITE_LOGINHUB_APP_ID}
-    container_name: app_moneyapp_frontend
+    container_name: lbs_moneyapp_frontend
     depends_on:
-      app_moneyapp_backend:
+      lbs_moneyapp_backend:
         condition: service_healthy
     networks:
       awl_network:
@@ -57,11 +57,11 @@ services:
         - moneyapp_frontend
     restart: unless-stopped
 
-  app_moneyapp_bot:
+  lbs_moneyapp_bot:
     build:
       context: apps/bot
       dockerfile: Dockerfile
-    container_name: app_moneyapp_bot
+    container_name: lbs_moneyapp_bot
     env_file:
     # Mesmo par de env_file dos outros serviços: infra comum no shared (NODE_ENV,
     # BOT_SERVICE_KEY, GROQ_API_KEY, OLLAMA_URL) + o .env do app, que traz
@@ -73,10 +73,10 @@ services:
     environment:
       NODE_ENV: production
       # Fonte única do BACKEND_URL (precede env_file). `moneyapp_backend` é o
-      # alias de rede do serviço app_moneyapp_backend.
+      # alias de rede do serviço lbs_moneyapp_backend.
       BACKEND_URL: http://moneyapp_backend:3000/api
     depends_on:
-      app_moneyapp_backend:
+      lbs_moneyapp_backend:
         condition: service_healthy
     networks:
       awl_network:
