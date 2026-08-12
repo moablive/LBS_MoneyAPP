@@ -5,7 +5,6 @@ import { api } from '@moneyapp/api-client';
 import type { Account, SubscriptionSummaryResponse, LoanSummaryResponse } from '@moneyapp/models';
 import { useAuthStore } from '../stores/auth';
 import NewTransactionModal from './modals/NewTransactionModal.vue';
-import ChangePasswordModal from './modals/ChangePasswordModal.vue';
 import GlobalConfirmDialog from './modals/GlobalConfirmDialog.vue';
 
 const router = useRouter();
@@ -381,7 +380,6 @@ const totalPaidLoansAmount = computed(() => {
       :open="showGlobalCreate" 
       @close="showGlobalCreate = false" 
     />
-    <ChangePasswordModal />
     <GlobalConfirmDialog />
   </div>
 </template>

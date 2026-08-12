@@ -52,6 +52,7 @@ transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (
         categoryId: transactions.categoryId,
         accountId: transactions.accountId,
         subscriptionId: transactions.subscriptionId,
+        invoiceCardId: transactions.invoiceCardId,
         hasReceipt: sql<boolean>`${transactions.receiptBase64} is not null`.as('has_receipt'),
         createdAt: transactions.createdAt,
       })
@@ -283,7 +284,7 @@ function stripReceipt<T extends { receiptBase64?: string | null }>(row: T): Omit
   return { ...rest, hasReceipt: receiptBase64 != null };
 }
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(public status: number, public code: string) {
     super(code);
   }
@@ -296,7 +297,7 @@ function monthBounds(month: string): { start: Date; end: Date } {
   return { start, end };
 }
 
-async function isFaturaPaymentTx(
+export async function isFaturaPaymentTx(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   accountId: string | null,
   categoryId: string | null

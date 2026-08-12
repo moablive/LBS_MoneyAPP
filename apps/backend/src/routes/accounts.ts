@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { and, asc, eq } from 'drizzle-orm';
-import { createAccountSchema, updateAccountSchema, payInvoiceSchema } from '@moneyapp/models';
+import {
+  createAccountSchema,
+  updateAccountSchema,
+  payInvoiceSchema,
+  linkInvoicePaymentSchema,
+} from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
 const { accounts, transactions } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { applyBalanceDelta } from './transactions.js';
+import { applyBalanceDelta, isFaturaPaymentTx, HttpError } from './transactions.js';
 
 export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
@@ -152,6 +157,80 @@ accountsRouter.post('/:id/pay-invoice', validate(payInvoiceSchema), async (req, 
 
     res.status(201).json(result);
   } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- link-invoice-payment ---------------------------------------------
+// Same outcome as `pay-invoice`, except the money-out side already exists in the
+// cash book: the user points at that transaction instead of typing a new one.
+accountsRouter.post('/:id/link-invoice-payment', validate(linkInvoicePaymentSchema), async (req, res, next) => {
+  try {
+    const loginhubId = req.user!.loginhubId;
+    const creditCardId = req.params.id!;
+    const body = req.body as import('@moneyapp/models').LinkInvoicePaymentInput;
+
+    const result = await db.transaction(async (tx) => {
+      const card = await tx.query.accounts.findFirst({
+        where: and(eq(accounts.id, creditCardId), eq(accounts.loginhubId, loginhubId)),
+      });
+      if (!card) throw new HttpError(404, 'card_not_found');
+      if (card.type !== 'credit_card') throw new HttpError(422, 'account_is_not_a_credit_card');
+
+      const source = await tx.query.transactions.findFirst({
+        where: and(eq(transactions.id, body.transactionId), eq(transactions.loginhubId, loginhubId)),
+      });
+      if (!source) throw new HttpError(404, 'transaction_not_found');
+      if (source.invoiceCardId) throw new HttpError(409, 'transaction_already_linked');
+      if (source.subscriptionId) throw new HttpError(409, 'transaction_linked_to_subscription');
+      if (source.type !== 'expense') throw new HttpError(422, 'transaction_must_be_an_expense');
+      // An expense already sitting on the card is a purchase (or a FATURA entry
+      // that settled the invoice on its own) — linking it would double count.
+      if (source.accountId === creditCardId) throw new HttpError(422, 'transaction_belongs_to_the_card');
+
+      // 1. Flag the existing entry and settle it when it was still pending.
+      const [linked] = await tx
+        .update(transactions)
+        .set({ invoiceCardId: creditCardId, status: 'paid', updatedAt: new Date() })
+        .where(and(eq(transactions.id, source.id), eq(transactions.loginhubId, loginhubId)))
+        .returning({ id: transactions.id, invoiceCardId: transactions.invoiceCardId });
+
+      if (source.status === 'pending' && source.accountId) {
+        const sourceIsFatura = await isFaturaPaymentTx(tx, source.accountId, source.categoryId);
+        const delta = sourceIsFatura ? Math.abs(Number(source.amount)) : Number(source.amount);
+        await applyBalanceDelta(tx, loginhubId, source.accountId, delta);
+      }
+
+      // 2. Counterpart on the credit card (income) so the debt drops and the
+      //    payment stays visible in the card's statement, exactly as pay-invoice.
+      const [ccTx] = await tx
+        .insert(transactions)
+        .values({
+          loginhubId,
+          // Keeps the origin readable in the statement without looking like a
+          // duplicate of the user's own line. `description` is varchar(255).
+          description: `Pagamento de Fatura · ${source.description}`.slice(0, 255),
+          amount: Math.abs(Number(source.amount)).toFixed(2), // income is positive
+          type: 'income',
+          status: 'paid',
+          occurredAt: source.occurredAt,
+          categoryId: source.categoryId,
+          accountId: creditCardId,
+          invoiceCardId: creditCardId,
+        })
+        .returning({ id: transactions.id, amount: transactions.amount });
+
+      await applyBalanceDelta(tx, loginhubId, creditCardId, ccTx!.amount);
+
+      return { linked, ccTx };
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ error: err.code });
+      return;
+    }
     next(err);
   }
 });

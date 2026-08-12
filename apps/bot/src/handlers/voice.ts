@@ -49,6 +49,21 @@ async function parseTransactionWithOllama(transcription: string, availableCatego
   const categoryNames = availableCategories.map(c => c.name).join(', ');
   const accountNames = availableAccounts.map(a => a.name).join(', ');
 
+  // Datas de referência pré-computadas, em horário LOCAL. Dois motivos:
+  // 1) Modelos pequenos erram aritmética de data. Aferido em 07/2026 no
+  //    server_ollama: qwen2.5vl:7b calculando sozinho acertava 1/4 ("ontem" e
+  //    "anteontem" voltavam como hoje, "semana passada" também); recebendo as
+  //    datas prontas vai 4/4. llama3.1:latest fica 4/4 nos dois casos, então a
+  //    mudança é neutra para ele e obrigatória para o VL.
+  // 2) O `toISOString()` que havia aqui é UTC: depois das 21h no fuso -03 o
+  //    "hoje" informado ao modelo já era o dia seguinte, e toda transação por
+  //    voz da noite entrava com data adiantada.
+  const TZ = 'America/Sao_Paulo';
+  const now = new Date();
+  const localDate = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: TZ });
+  const daysAgo = (n: number) => localDate(new Date(now.getTime() - n * 86_400_000));
+  const nowLocal = now.toLocaleString('sv-SE', { timeZone: TZ }).replace(' ', 'T');
+
   const systemPrompt = `
 Você é um assistente financeiro que extrai dados de transações a partir de áudios e gera respostas EXCLUSIVAMENTE em JSON, sem texto adicional.
 Dada a transcrição de áudio do usuário, você deve identificar:
@@ -57,7 +72,15 @@ Dada a transcrição de áudio do usuário, você deve identificar:
 3. "type": O tipo da transação. Deve ser obrigatoriamente "expense" (para despesas, gastos, pagamentos) ou "income" (para receitas, ganhos, recebimentos).
 4. "categoryName": O nome da categoria que melhor se encaixa, baseando-se nestas opções disponíveis: [${categoryNames}]. Se não se encaixar perfeitamente, retorne null.
 5. "accountName": O nome da conta/cartão que foi utilizado, baseando-se nestas opções disponíveis: [${accountNames}]. Se não se encaixar perfeitamente, retorne null.
-6. "occurredAt": A data e hora da transação, no formato ISO 8601 (YYYY-MM-DDTHH:mm:ss). Se a data não for mencionada (ex: "gastei ontem", "ganhei hoje"), calcule com base em "hoje". Hoje é ${new Date().toISOString()}.
+6. "occurredAt": A data e hora da transação, no formato ISO 8601 (YYYY-MM-DDTHH:mm:ss).
+Agora é ${nowLocal} (fuso ${TZ}).
+Datas de referência JÁ CALCULADAS — use exatamente uma destas, não faça aritmética de data:
+  hoje = ${daysAgo(0)}
+  ontem = ${daysAgo(1)}
+  anteontem = ${daysAgo(2)}
+  semana passada = ${daysAgo(7)}
+  mês passado = ${daysAgo(30)}
+Se a data não for mencionada, use hoje.
 
 Exemplo de saída esperada:
 {
@@ -66,7 +89,7 @@ Exemplo de saída esperada:
   "type": "expense",
   "categoryName": "Alimentação",
   "accountName": "Cartão Nubank",
-  "occurredAt": "2023-12-01T10:00:00.000Z"
+  "occurredAt": "2023-12-01T10:00:00"
 }
 
 Transcrição do usuário: "${transcription}"

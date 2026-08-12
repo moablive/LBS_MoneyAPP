@@ -162,6 +162,13 @@ export const transactions = pgTable(
     loanId: uuid("loan_id").references(() => loans.id, {
       onDelete: "set null",
     }),
+    // Set when this cash-book entry settles a credit card invoice: points at
+    // the card whose debt it paid off. Filled either by the card's counterpart
+    // row (`accountId` === `invoiceCardId`) or by an existing entry the user
+    // linked through `POST /accounts/:id/link-invoice-payment`.
+    invoiceCardId: uuid("invoice_card_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
     receiptBase64: text("receipt_base64"),
     receiptMimeType: varchar("receipt_mime_type", { length: 80 }),
     createdAt: timestamp("created_at", { withTimezone: true })

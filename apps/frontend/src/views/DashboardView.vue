@@ -73,6 +73,8 @@ const showChangeDateModal = ref(false);
 const changeDateValue = ref('');
 
 const showLinkTransaction = ref(false);
+// Set when the link modal is settling a card invoice instead of a subscription.
+const linkingCreditCard = ref<any | null>(null);
 
 const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -90,9 +92,12 @@ function choosePayUpcoming() {
 
 function chooseLinkUpcoming() {
   showUpcomingActionModal.value = false;
-  if (upcomingActionItem.value) {
-    showLinkTransaction.value = true;
-  }
+  if (!upcomingActionItem.value) return;
+  // A fatura row carries the card in `account` — link against the card itself.
+  linkingCreditCard.value = upcomingActionItem.value.isCreditCard
+    ? upcomingActionItem.value.account
+    : null;
+  showLinkTransaction.value = true;
 }
 
 function chooseEditUpcoming() {
@@ -211,6 +216,14 @@ function choosePayCreditCardInvoice() {
   showCreditCardActionModal.value = false;
   if (creditCardActionItem.value) {
     payInvoice(creditCardActionItem.value);
+  }
+}
+
+function chooseLinkCreditCard() {
+  showCreditCardActionModal.value = false;
+  if (creditCardActionItem.value) {
+    linkingCreditCard.value = creditCardActionItem.value;
+    showLinkTransaction.value = true;
   }
 }
 
@@ -604,7 +617,14 @@ onUnmounted(() => {
             <span class="text-white font-bold tracking-wide">Pagar Fatura</span>
           </button>
           
-          <button @click="chooseEditCreditCard" 
+          <button @click="chooseLinkCreditCard"
+                  :disabled="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0"
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="text-sm font-bold text-white">Vincular Lançamento do Livro Caixa</span>
+          </button>
+
+          <button @click="chooseEditCreditCard"
                   class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
             <span class="text-sm font-medium">Editar Cartão</span>
@@ -679,8 +699,8 @@ onUnmounted(() => {
             <span class="text-sm font-medium" v-else>Pular Mês</span>
           </button>
 
-          <button @click="chooseLinkUpcoming" 
-                  v-if="upcomingActionItem?.isSubscription"
+          <button @click="chooseLinkUpcoming"
+                  v-if="upcomingActionItem?.isSubscription || (upcomingActionItem?.isCreditCard && upcomingActionItem?.account)"
                   class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span class="text-sm font-bold text-white">Vincular Lançamento do Livro Caixa</span>
@@ -709,8 +729,10 @@ onUnmounted(() => {
     <LinkTransactionModal
       v-if="showLinkTransaction"
       v-model:open="showLinkTransaction"
-      :subscription="upcomingActionItem"
+      :subscription="linkingCreditCard ? null : upcomingActionItem"
+      :creditCard="linkingCreditCard"
       :categoriesMap="categoriesMap"
+      @update:open="val => { if (!val) linkingCreditCard = null; }"
       @linked="loadData"
     />
   </AppShell>

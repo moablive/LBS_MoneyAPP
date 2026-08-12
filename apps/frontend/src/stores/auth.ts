@@ -28,17 +28,13 @@ export const useAuthStore = defineStore('auth', () => {
   const state = load();
   const token = ref<string | null>(state.token);
   const user = ref<User | null>(state.user);
-  // Mirrors LoginHub's `requirePasswordChange` — true forces the change-password
-  // modal before the rest of the app is usable.
-  const requirePasswordChange = ref<boolean>(state.requirePasswordChange ?? false);
-
   const isAuthenticated = computed(() => token.value !== null);
 
   function persist() {
     if (typeof localStorage === 'undefined') return;
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ token: token.value, user: user.value, requirePasswordChange: requirePasswordChange.value }),
+      JSON.stringify({ token: token.value, user: user.value }),
     );
   }
 
@@ -68,7 +64,6 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     token.value = data.token;
-    requirePasswordChange.value = !!data.requirePasswordChange;
 
     // 2) Provision / sync the local MoneyAPP user (owns the financial data).
     const boot = await fetch(`${BACKEND_API}/auth/bootstrap`, {
@@ -82,16 +77,14 @@ export const useAuthStore = defineStore('auth', () => {
     persist();
   }
 
-  /** Define a senha definitiva no LoginHub (1º acesso ou pós-reset). */
-  async function changePassword(novaSenha: string) {
-    const res = await fetch(`${LOGINHUB_API}/auth/change-password`, {
+  /** Define a senha definitiva no LoginHub via Magic Link (1º acesso ou pós-reset). */
+  async function setupPassword(setupToken: string, novaSenha: string) {
+    const res = await fetch(`${LOGINHUB_API}/auth/setup-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token.value}` },
-      body: JSON.stringify({ novaSenha }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: setupToken, novaSenha }),
     });
-    if (!res.ok) throw new Error('change_password_failed');
-    requirePasswordChange.value = false;
-    persist();
+    if (!res.ok) throw new Error('setup_password_failed');
   }
 
   /** Renova o JWT no LoginHub (grace de 7 dias). Retorna true se renovou. */
@@ -115,7 +108,6 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     token.value = null;
     user.value = null;
-    requirePasswordChange.value = false;
     persist();
   }
 
@@ -139,11 +131,10 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     token,
     user,
-    requirePasswordChange,
     isAuthenticated,
     login,
     logout,
-    changePassword,
+    setupPassword,
     refresh,
     persist,
     updateSettings,

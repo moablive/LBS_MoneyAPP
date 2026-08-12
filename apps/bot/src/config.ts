@@ -17,8 +17,10 @@ const envSchema = z.object({
   OLLAMA_URL: z.string().url().default('http://server_ollama:11434'),
   // Modelo de visão (OCR de comprovantes) — precisa suportar imagens.
   OLLAMA_MODEL: z.string().default('qwen2.5vl:7b'),
-  // Modelo de texto (transação por voz) — não precisa de visão.
-  OLLAMA_TEXT_MODEL: z.string().default('llama3.1'),
+  // Modelo de texto (transação por voz) — não precisa de visão, mas usa o MESMO
+  // tag do de visão acima de propósito: em 12GB só um modelo fica residente, e
+  // assim voz e comprovante não se evictam. Ver nota em ../../../shared.env.
+  OLLAMA_TEXT_MODEL: z.string().default('qwen2.5vl:7b'),
   GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required'),
 });
 

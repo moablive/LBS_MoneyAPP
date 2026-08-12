@@ -103,6 +103,7 @@ export interface Transaction {
   accountId: string | null;
   subscriptionId?: string | null;
   investmentId?: string | null;
+  invoiceCardId?: string | null;
   hasReceipt: boolean;
   createdAt?: string;
   updatedAt?: string;

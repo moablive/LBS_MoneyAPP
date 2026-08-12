@@ -164,7 +164,7 @@ moneyapp/
 │   │   │   └── server.ts          # HTTP server entrypoint
 │   │   └── Dockerfile
 │   │
-│   └── 📂 bot/               # Telegram Bot (app_moneyapp_bot)
+│   └── 📂 bot/               # Telegram Bot (lbs_moneyapp_bot)
 │
 ├── 📂 packages/
 │   ├── 📂 api-client/            # Cliente HTTP e fetch wrappers
@@ -189,7 +189,7 @@ flowchart LR
   subgraph awl_network["🐳 Docker · awl_network"]
     NGINX["nginx<br/>moneyapp_frontend:80"]
     API["Express + Drizzle<br/>moneyapp_backend:3000"]
-    BOT["Telegram Bot<br/>app_moneyapp_bot"]
+    BOT["Telegram Bot<br/>lbs_moneyapp_bot"]
     PG["PostgreSQL<br/>awlsrvDB_postgres:5432<br/>database 'moneyapp'"]
   end
 
@@ -316,12 +316,12 @@ erDiagram
 O MoneyAPP delega toda a gestão de usuários, senhas e autenticação para o **LoginHUB**.
 O aplicativo não gerencia mais credenciais locais, master users via `.env`, ou convites diretamente.
 
-### Criação e Convite de Usuários
+### Criação e Convite de Usuários (Fluxo Magic Link)
 
 O administrador do sistema cria os usuários diretamente no painel do LoginHUB (designando a eles acesso ao app MoneyAPP).
-- O LoginHUB envia o e-mail de convite com a senha temporária e links de acesso.
-- No primeiro acesso ao MoneyAPP com essa senha, o fluxo do LoginHUB intercepta exigindo a troca de senha.
-- Após definida a senha definitiva, o usuário pode acessar normalmente o sistema.
+- O LoginHUB envia um **Magic Link** por e-mail contendo um token de setup.
+- O usuário acessa a tela `/setup-password` no MoneyAPP pelo link e define sua **senha definitiva** imediatamente (sem passar por senha temporária).
+- Após definida a senha, o usuário pode fazer o login e acessar normalmente o sistema.
 
 ### Vínculo com o Bot do Telegram
 
@@ -334,7 +334,7 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 
 🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
 
-O bot do Telegram (`app_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
+O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
 
 > [!IMPORTANT]
 > O bot **não tem mais `.env` próprio**. Até 07/2026 ele vivia numa subpasta aninhada (`apps/bot/MoneyAPP_BOT/`, um repo git separado — resquício de migração, removida em 28/07/2026) e lia um `.env` de lá; hoje o código está direto em `apps/bot/` e os três serviços usam o mesmo par `env_file: [../shared.env, .env]`, e as variáveis do bot (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `LOGINHUB_APP_ID`, `OLLAMA_MODEL`, `OLLAMA_TEXT_MODEL`) moram no **`.env` da raiz do MoneyAPP**. `BOT_SERVICE_KEY`, `GROQ_API_KEY` e `OLLAMA_URL` vêm do `../shared.env`; `BACKEND_URL` vem do bloco `environment:` do compose, que tem precedência sobre `env_file`.
@@ -353,7 +353,7 @@ A integração é **bidirecional em leitura** e toda **interna** à rede Docker 
 
 | Direção | Fluxo |
 | ------- | ----- |
-| **Todo → Money** (dashboard) | `DashboardView` → `GET /api/integrations/todoapp/tasks?start&end` → backend resolve `telegramId` em `user_settings` → `GET http://app_todoapp_backend:3000/api/bot/tasks?telegramId&start&end` com `x-api-key: BOT_SERVICE_KEY`. As tarefas aparecem em **Próximos Lançamentos** (toggle "TodoAPP", `amount: 0`, check verde quando concluídas) |
+| **Todo → Money** (dashboard) | `DashboardView` → `GET /api/integrations/todoapp/tasks?start&end` → backend resolve `telegramId` em `user_settings` → `GET http://lbs_todoapp_backend:3000/api/bot/tasks?telegramId&start&end` com `x-api-key: BOT_SERVICE_KEY`. As tarefas aparecem em **Próximos Lançamentos** (toggle "TodoAPP", `amount: 0`, check verde quando concluídas) |
 | **Money → Todo** (calendário) | O backend do TodoAPP chama `GET /api/calendar?start&end` com identidade delegada (`x-api-key` + `x-user-id: <loginhubId no Money>`) e exibe os lançamentos no calendário |
 
 **Pontos-chave:**
@@ -431,7 +431,7 @@ docker compose --env-file .env up -d --build
 | --------- | ---- | ----- | ------ |
 | `moneyapp_backend` | Node 20 | `3000` (interno) | API REST + healthcheck (migrations via `pnpm db:migrate`, não no boot) |
 | `moneyapp_frontend` | nginx | `80` (interno) | Static assets + reverse proxy `/api/` → backend |
-| `app_moneyapp_bot` | Node 20 | — | Cliente HTTP Telegram Bot |
+| `lbs_moneyapp_bot` | Node 20 | — | Cliente HTTP Telegram Bot |
 
 > [!IMPORTANT]
 > **Ingress em produção**: O tráfego chega via **Cloudflare Tunnel** diretamente ao `moneyapp_frontend:80` dentro da `awl_network`. Nenhuma porta é exposta ao host.
@@ -527,6 +527,7 @@ docker compose --env-file .env up -d --build
 | Rota | View | Descrição |
 | ---- | ---- | --------- |
 | `/login` | `LoginView` | 🔐 Autenticação (rota pública) |
+| `/setup-password` | `SetupPasswordView` | 🔑 Definição de senha via Magic Link (rota pública) |
 | `/` | `DashboardView` | 📊 Dashboard com resumo, gráficos e projeção |
 | `/transacoes` | `TransactionsView` | 💳 Lista e CRUD de transações |
 | `/recorrentes` | `RecurrentsView` | 🔄 Gerenciamento de assinaturas |

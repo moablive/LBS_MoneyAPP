@@ -52,3 +52,12 @@ export const payInvoiceSchema = z.object({
   receipt: receiptSchema.nullable().optional(),
 });
 export type PayInvoiceInput = z.infer<typeof payInvoiceSchema>;
+
+// Settles an invoice with a transaction that is already in the cash book,
+// instead of creating a new one like `payInvoiceSchema` does.
+export const linkInvoicePaymentSchema = z
+  .object({
+    transactionId: z.string().uuid(),
+  })
+  .strict();
+export type LinkInvoicePaymentInput = z.infer<typeof linkInvoicePaymentSchema>;

@@ -5,6 +5,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login',       name: 'login',        component: () => import('./views/LoginView.vue'), meta: { public: true } },
+    { path: '/setup-password', name: 'setup_password', component: () => import('./views/SetupPasswordView.vue'), meta: { public: true } },
     { path: '/',            name: 'dashboard',    component: () => import('./views/DashboardView.vue') },
     { path: '/transacoes',  name: 'transactions', component: () => import('./views/TransactionsView.vue') },
     { path: '/recorrentes', name: 'recurrents',   component: () => import('./views/RecurrentsView.vue') },

@@ -4,17 +4,23 @@ import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import PayInvoiceModal from '../components/modals/PayInvoiceModal.vue';
+import LinkTransactionModal from '../components/modals/LinkTransactionModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
-import type { Account } from '@moneyapp/models';
+import type { Account, Category } from '@moneyapp/models';
 
 const items = shallowRef<Account[]>([]);
+const categories = shallowRef<Category[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
 const showPayInvoice = ref(false);
+const showLinkTransaction = ref(false);
 const editingAccount = ref<Account | null>(null);
 const payingAccount = ref<Account | null>(null);
+const linkingAccount = ref<Account | null>(null);
+
+const categoriesMap = computed(() => new Map(categories.value.map(c => [c.id, c])));
 
 function editAccount(a: Account) {
   editingAccount.value = a;
@@ -26,11 +32,20 @@ function payInvoice(a: Account) {
   showPayInvoice.value = true;
 }
 
+function linkInvoicePayment(a: Account) {
+  linkingAccount.value = a;
+  showLinkTransaction.value = true;
+}
+
 async function reload() {
   loading.value = true;
   try {
-    const data = await api.get<Account[]>('/accounts');
+    const [data, cats] = await Promise.all([
+      api.get<Account[]>('/accounts'),
+      api.get<Category[]>('/categories'),
+    ]);
     items.value = data.filter(a => a.type === 'credit_card');
+    categories.value = cats;
   } finally {
     loading.value = false;
   }
@@ -139,6 +154,16 @@ const totalLimit = computed(() =>
               Pagar Fatura
             </button>
             <button
+              class="text-muted hover:text-accent p-1.5 rounded-lg shrink-0"
+              title="Vincular Lançamento do Livro Caixa"
+              @click.stop="linkInvoicePayment(a)"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            </button>
+            <button
               class="text-muted hover:text-expense p-1.5 rounded-lg shrink-0"
               title="Remover"
               @click.stop="remove(a.id)"
@@ -164,6 +189,15 @@ const totalLimit = computed(() =>
       :creditCard="payingAccount"
       @update:open="val => { if (!val) payingAccount = null; }"
       @paid="reload"
+    />
+
+    <LinkTransactionModal
+      v-if="showLinkTransaction"
+      v-model:open="showLinkTransaction"
+      :creditCard="linkingAccount"
+      :categoriesMap="categoriesMap"
+      @update:open="val => { if (!val) linkingAccount = null; }"
+      @linked="reload"
     />
   </AppShell>
 </template>

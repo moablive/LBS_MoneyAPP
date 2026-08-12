@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { categoryTypeEnum, createCategorySchema, updateCategorySchema } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
@@ -26,7 +26,7 @@ categoriesRouter.get('/', validate(listQuerySchema, 'query'), async (req, res, n
           ? and(eq(categories.loginhubId, loginhubId), eq(categories.type, type))
           : eq(categories.loginhubId, loginhubId),
       )
-      .orderBy(asc(categories.name));
+      .orderBy(desc(categories.createdAt));
     res.json(rows);
   } catch (err) {
     next(err);
