@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { categoryTypeEnum, createCategorySchema, updateCategorySchema } from '@moneyapp/models';
 import { db, schema } from '@moneyapp/db';
