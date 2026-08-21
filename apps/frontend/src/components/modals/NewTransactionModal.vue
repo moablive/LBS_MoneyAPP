@@ -11,7 +11,7 @@ import type { Transaction } from '@moneyapp/models';
 
 const authStore = useAuthStore();
 const open = defineModel<boolean>('open', { default: false });
-const props = defineProps<{ transaction?: Transaction | null; defaultType?: TransactionType }>();
+const props = defineProps<{ transaction?: Transaction | null; defaultType?: TransactionType; initialData?: any }>();
 const emit = defineEmits<{
   (e: 'created', value: unknown): void;
 }>();
@@ -120,14 +120,34 @@ watch(type, () => {
 onMounted(() => reset());
 
 function reset() {
-  description.value = '';
-  absAmount.value = null;
-  type.value = props.defaultType || 'expense';
-  status.value = 'paid';
-  occurredAt.value = getLocalYMDHM();
-  categoryId.value = '';
-  accountId.value = '';
-  receiptFile.value = null;
+  if (props.initialData) {
+    description.value = props.initialData.description || '';
+    absAmount.value = props.initialData.amount ? Math.abs(Number(props.initialData.amount)) : null;
+    type.value = props.initialData.type || props.defaultType || 'expense';
+    status.value = props.initialData.status || 'paid';
+    
+    if (props.initialData.occurredAt) {
+      const d = new Date(props.initialData.occurredAt);
+      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+      occurredAt.value = iso.slice(0, 16);
+    } else {
+      occurredAt.value = getLocalYMDHM();
+    }
+    
+    categoryId.value = props.initialData.categoryId || '';
+    accountId.value = props.initialData.accountId || '';
+    receiptFile.value = props.initialData._receiptFile || null;
+  } else {
+    description.value = '';
+    absAmount.value = null;
+    type.value = props.defaultType || 'expense';
+    status.value = 'paid';
+    occurredAt.value = getLocalYMDHM();
+    categoryId.value = '';
+    accountId.value = '';
+    receiptFile.value = null;
+  }
+  
   removeExistingReceipt.value = false;
   error.value = null;
 }
@@ -308,6 +328,13 @@ function onFileChange(e: Event) {
           <span class="text-sm text-white font-medium flex-1">Comprovante anexado</span>
           <button type="button" @click="removeExistingReceipt = true" class="text-xs text-expense hover:underline">
             Remover / Trocar
+          </button>
+        </div>
+
+        <div v-else-if="receiptFile" class="flex items-center gap-3 p-3 bg-surface-base border border-surface-border rounded-xl">
+          <span class="text-sm text-white font-medium flex-1 truncate">{{ receiptFile.name || 'Comprovante da IA' }}</span>
+          <button type="button" @click="receiptFile = null" class="text-xs text-expense hover:underline whitespace-nowrap">
+            Remover
           </button>
         </div>
 

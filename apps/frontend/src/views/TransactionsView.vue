@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef, triggerRef } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, triggerRef, watch } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewTransactionModal from '../components/modals/NewTransactionModal.vue';
 import TransactionDetailsModal from '../components/modals/TransactionDetailsModal.vue';
-import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip, ShareIcon } from '@heroicons/vue/24/outline';
+import AiImportModal from '../components/modals/AiImportModal.vue';
+import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PaperClipIcon as Paperclip, ShareIcon, SparklesIcon as Sparkles } from '@heroicons/vue/24/outline';
 import { sharesClient } from '@moneyapp/api-client';
 import type { TransactionType, Transaction, Account, Category } from '@moneyapp/models';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
@@ -16,13 +17,30 @@ const accounts = ref<Account[]>([]);
 const categories = ref<Category[]>([]);
 const loading = ref(true);
 const showCreate = ref(false);
+const showAiImport = ref(false);
 const createType = ref<TransactionType>('expense');
 const filterType = ref<'all' | TransactionType>('all');
 const filterCategory = ref<string>('all');
 const filterAccount = ref<string>('all');
 const filterPeriod = ref<'current_month' | 'next_month' | 'all'>('current_month');
+const filterSearch = ref('');
 const selectedRow = ref<Transaction | null>(null);
 const editingRow = ref<Transaction | null>(null);
+const aiInitialData = ref<Partial<Transaction> | null>(null);
+
+function handleAiParsed(parsedData: any, file: File | null) {
+  aiInitialData.value = { ...parsedData, receiptFile: file };
+  editingRow.value = null;
+  createType.value = parsedData.type || 'expense';
+  showCreate.value = true;
+}
+
+// Reset initial data when modal closes
+watch(showCreate, (val) => {
+  if (!val) {
+    aiInitialData.value = null;
+  }
+});
 
 const shareModalOpen = ref(false);
 const shareLink = ref('');
@@ -87,6 +105,11 @@ onMounted(async () => {
     console.error('Failed to load accounts or categories', e);
   }
   await reload();
+  window.addEventListener('transaction-created', reload);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('transaction-created', reload);
 });
 
 const accountsMap = computed(() => {
@@ -102,24 +125,76 @@ const creditCardAccounts = computed(() => accounts.value.filter(a => a.type === 
 
 const grouped = computed(() => {
   const map = new Map<string, Transaction[]>();
-  for (const r of rows.value) {
-    const day = r.occurredAt.slice(0, 10);
-    if (!map.has(day)) map.set(day, []);
-    map.get(day)!.push(r);
+  
+  const search = filterSearch.value.trim().toLowerCase();
+  let currentRows = rows.value;
+  
+  if (search) {
+    currentRows = currentRows.filter(r => {
+      const descMatch = r.description.toLowerCase().includes(search);
+      const catMatch = (categoriesMap.value.get(r.categoryId)?.name || '').toLowerCase().includes(search);
+      const accMatch = (accountsMap.value.get(r.accountId)?.name || '').toLowerCase().includes(search);
+      const amountMatch = String(r.amount).includes(search);
+      return descMatch || catMatch || accMatch || amountMatch;
+    });
   }
-  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+
+  // Parse any date string into a proper Date object using LOCAL timezone.
+  // This ensures grouping by day and sorting within the day are both
+  // consistent with the user's local clock (America/Sao_Paulo).
+  const toLocalDate = (val: string): Date => {
+    // Handle DD/MM/YYYY [HH:mm[:ss]] (Brazilian format)
+    const brMatch = val.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (brMatch) {
+      const [, dd, mm, yyyy, hh, mi, ss] = brMatch;
+      return new Date(+yyyy, +mm - 1, +dd, +(hh || 0), +(mi || 0), +(ss || 0));
+    }
+    // ISO or any other format — let the JS engine handle it.
+    // ISO with 'Z' → converts from UTC to local automatically.
+    // ISO without timezone → treated as local time.
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? new Date(0) : d;
+  };
+
+  // Generate a YYYY-MM-DD key from a Date using LOCAL year/month/day.
+  const localDayKey = (d: Date): string => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  for (const r of currentRows) {
+    const key = localDayKey(toLocalDate(r.occurredAt));
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(r);
+  }
+
+  // Ordena os itens dentro de cada dia (Decrescente: última compra do dia no topo,
+  // primeira compra do dia embaixo — facilita acompanhar o extrato conforme ele "sobe")
+  for (const [, arr] of map.entries()) {
+    arr.sort((a, b) => {
+      return toLocalDate(b.occurredAt).getTime() - toLocalDate(a.occurredAt).getTime();
+    });
+  }
+
+  // Ordena os dias (Decrescente: último dia do mês no topo, dia 01 embaixo —
+  // ordem cronológica única e contínua junto com o horário dentro do dia:
+  // lendo de baixo pra cima cresce a partir de 01/01 00:00 até a última compra)
+  return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 });
 
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const formatDay = (iso: string) => {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const monthNum = String(d.getUTCMonth() + 1).padStart(2, '0');
-  let monthName = d.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+const formatDay = (dayKey: string) => {
+  // dayKey is LOCAL YYYY-MM-DD — parse it as local date for display
+  const [y, m, d] = dayKey.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = String(date.getDate()).padStart(2, '0');
+  const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+  let monthName = date.toLocaleDateString('pt-BR', { month: 'long' });
   monthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  return `${day}/${monthNum} - ${monthName}`;
+  let weekdayName = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+  weekdayName = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1);
+  return `${day}/${monthNum} - ${monthName} - ${weekdayName}`;
 };
 
 const formatTime = (iso: string) => {
@@ -176,13 +251,65 @@ async function handleDelete(t: Transaction | null) {
     loading.value = false;
   }
 }
+
+// ---------- multi-select / bulk delete ---------------------------------------
+const selectMode = ref(false);
+const selectedIds = ref<string[]>([]);
+
+const allVisibleIds = computed(() => grouped.value.flatMap(([, list]) => list.map(r => r.id)));
+const allSelected = computed(
+  () => allVisibleIds.value.length > 0 && selectedIds.value.length === allVisibleIds.value.length
+);
+
+function isSelected(id: string) {
+  return selectedIds.value.includes(id);
+}
+
+function toggleSelect(id: string) {
+  const i = selectedIds.value.indexOf(id);
+  if (i === -1) selectedIds.value.push(id);
+  else selectedIds.value.splice(i, 1);
+}
+
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value;
+  if (!selectMode.value) selectedIds.value = [];
+}
+
+function toggleSelectAll() {
+  if (allSelected.value) selectedIds.value = [];
+  else selectedIds.value = [...allVisibleIds.value];
+}
+
+function onRowClick(r: Transaction) {
+  if (selectMode.value) toggleSelect(r.id);
+  else selectedRow.value = r;
+}
+
+async function handleBulkDelete() {
+  const ids = [...selectedIds.value];
+  if (ids.length === 0) return;
+  if (!(await confirm(`Excluir ${ids.length} transação(ões) selecionada(s)? Esta ação não pode ser desfeita.`))) return;
+
+  loading.value = true;
+  try {
+    await api.post('/transactions/bulk-delete', { ids });
+    selectedIds.value = [];
+    selectMode.value = false;
+    await reload();
+  } catch (e) {
+    console.error('Failed to bulk delete transactions', e);
+    loading.value = false;
+    await alert('Erro ao excluir as transações selecionadas.');
+  }
+}
 </script>
 
 <template>
   <AppShell>
     <div class="mx-auto max-w-7xl px-4 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap mb-8">
-        <h1 class="text-2xl font-bold tracking-tight text-white">Livro Caixa</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Livro Caixa <span class="text-sm text-accent">(v5)</span></h1>
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div class="order-3 sm:order-1 flex sm:inline-flex w-full sm:w-auto rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg">
             <button
@@ -225,7 +352,15 @@ async function handleDelete(t: Transaction | null) {
               <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
             </optgroup>
           </select>
-          <div class="order-5 flex items-center gap-2 w-full sm:w-auto">
+          <div class="order-4 sm:order-5 flex-1 sm:flex-none min-w-0">
+            <input 
+              v-model="filterSearch"
+              type="text"
+              placeholder="Buscar..."
+              class="w-full px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div class="order-6 flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold shadow-lg hover:bg-expense/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="editingRow = null; showCreate = true; createType = 'expense'"
@@ -235,15 +370,44 @@ async function handleDelete(t: Transaction | null) {
               @click="editingRow = null; showCreate = true; createType = 'income'"
             >+ Receita</button>
             <button
+              class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-accent/10 text-accent border border-accent/30 text-sm font-bold shadow-lg hover:bg-accent/20 transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              @click="showAiImport = true"
+              title="Importar com IA"
+            >
+              <Sparkles class="w-4 h-4" /> Importar IA
+            </button>
+            <button
               class="flex items-center justify-center sm:flex-none px-3 py-2 rounded-xl bg-surface-overlay text-muted border border-surface-border text-sm font-bold shadow-lg hover:text-white transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="handleShare"
               title="Compartilhar"
             >
               <ShareIcon class="w-5 h-5" />
             </button>
+            <button
+              class="flex-1 sm:flex-none px-4 py-2 rounded-xl border text-sm font-bold shadow-lg transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              :class="selectMode ? 'bg-accent/20 text-accent border-accent/40' : 'bg-surface-overlay text-muted border-surface-border hover:text-white'"
+              @click="toggleSelectMode"
+              title="Selecionar itens"
+            >{{ selectMode ? 'Cancelar' : 'Selecionar' }}</button>
           </div>
         </div>
       </header>
+
+      <div v-if="selectMode" class="sticky top-2 z-30 flex items-center justify-between gap-3 flex-wrap bg-surface-raised border border-accent/30 rounded-xl px-4 py-3 shadow-lg">
+        <div class="flex items-center gap-4">
+          <button @click="toggleSelectAll" class="text-sm font-semibold text-accent hover:text-accent/80 transition-colors">
+            {{ allSelected ? 'Limpar seleção' : 'Selecionar tudo' }}
+          </button>
+          <span class="text-sm text-muted">{{ selectedIds.length }} selecionada(s)</span>
+        </div>
+        <button
+          @click="handleBulkDelete"
+          :disabled="selectedIds.length === 0"
+          class="px-4 py-2 rounded-xl bg-expense/10 text-expense border border-expense/30 text-sm font-bold hover:bg-expense/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          Excluir selecionados
+        </button>
+      </div>
 
       <section v-if="loading" class="space-y-4">
         <div v-for="i in 6" :key="i" class="skeleton h-20 w-full rounded-2xl" />
@@ -275,10 +439,26 @@ async function handleDelete(t: Transaction | null) {
             <li
               v-for="r in list"
               :key="r.id"
-              v-memo="[r.id, r.status, selectedRow?.id === r.id]"
-              @click="selectedRow = r"
-              class="px-4 py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr] items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              v-memo="[r.id, r.status, selectedRow?.id === r.id, selectMode, isSelected(r.id)]"
+              @click="onRowClick(r)"
+              class="px-4 py-3 grid items-center gap-4 transition-colors hover:bg-surface-overlay/30 cursor-pointer"
+              :class="[
+                selectMode
+                  ? 'grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr]'
+                  : 'grid-cols-[1fr_auto] sm:grid-cols-[1.5fr_2fr_1fr_1fr_1.5fr_1fr_1fr]',
+                selectMode && isSelected(r.id) ? 'bg-accent/10' : '',
+              ]"
             >
+              <!-- Selection checkbox -->
+              <div v-if="selectMode" class="flex items-center justify-center" @click.stop="toggleSelect(r.id)">
+                <input
+                  type="checkbox"
+                  :checked="isSelected(r.id)"
+                  @change.stop="toggleSelect(r.id)"
+                  class="w-4 h-4 rounded cursor-pointer accent-accent"
+                />
+              </div>
+
               <!-- Mobile Left: Icon & Description -->
               <div class="flex sm:hidden items-center justify-start gap-3 min-w-0">
                 <div v-if="r.accountId && accountsMap.get(r.accountId)" 
@@ -383,9 +563,10 @@ async function handleDelete(t: Transaction | null) {
     <NewTransactionModal
       v-model:open="showCreate"
       :transaction="editingRow"
+      :initialData="aiInitialData"
       :defaultType="createType"
       @created="reload"
-      @update:open="val => { if (!val) editingRow = null; }"
+      @update:open="val => { if (!val) { editingRow = null; aiInitialData = null; } }"
     />
 
     <TransactionDetailsModal
@@ -438,5 +619,11 @@ async function handleDelete(t: Transaction | null) {
         </div>
       </div>
     </div>
+
+    <AiImportModal
+      :open="showAiImport"
+      @close="showAiImport = false"
+      @parsed="handleAiParsed"
+    />
   </AppShell>
 </template>

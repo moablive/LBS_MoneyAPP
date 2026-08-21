@@ -88,6 +88,10 @@ export const scanReceiptScene = new Scenes.WizardScene<BotContext>(
       const expenseNames = categoriesExpense.map(c => c.name).join(', ');
       const incomeNames = categoriesIncome.map(c => c.name).join(', ');
 
+      const TZ = 'America/Sao_Paulo';
+      const now = new Date();
+      const hojeStr = now.toLocaleDateString('en-CA', { timeZone: TZ });
+
       const prompt = `Analise a imagem deste comprovante/recibo.
 Extraia as informações rigorosamente neste formato JSON:
 {
@@ -97,6 +101,8 @@ Extraia as informações rigorosamente neste formato JSON:
   "data": <"YYYY-MM-DD" da transação>,
   "categoriaNome": <"Escolha o nome mais apropriado desta lista se for expense: [${expenseNames}] ou desta lista se for income: [${incomeNames}]">
 }
+Hoje é ${hojeStr} (fuso ${TZ}).
+IMPORTANTE sobre a data: use o ano/mês/dia exatos mostrados no comprovante. Se o comprovante mostrar a data SEM o ano (ex: apenas "17/08"), assuma o ANO ATUAL (${now.getFullYear()}) — NUNCA invente ou assuma um ano passado como 2023. Se a imagem não tiver nenhuma data visível, use hoje (${hojeStr}).
 Retorne APENAS o JSON válido, sem NENHUM texto adicional ou markdown de código.`;
 
       const ollamaRes = await fetch(`${env.OLLAMA_URL}/api/generate`, {

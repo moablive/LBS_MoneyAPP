@@ -6,12 +6,14 @@ import type { Account, SubscriptionSummaryResponse, LoanSummaryResponse } from '
 import { useAuthStore } from '../stores/auth';
 import NewTransactionModal from './modals/NewTransactionModal.vue';
 import GlobalConfirmDialog from './modals/GlobalConfirmDialog.vue';
+import CsvImportModal from './modals/CsvImportModal.vue';
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 const showGlobalCreate = ref(false);
 const showMore = ref(false);
+const showCsvImport = ref(false);
 
 const LOGO_SRC = '/logo/MONEYAPP.png';
 const logoSrc = ref(LOGO_SRC);
@@ -262,7 +264,15 @@ const totalPaidLoansAmount = computed(() => {
           </div>
         </template>
       </nav>
-      <div class="m-4">
+      <div class="m-4 flex flex-col gap-2">
+        <button
+          class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm text-white/70 bg-surface-overlay border border-surface-border hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-all shadow-sm"
+          @click="showCsvImport = true"
+          title="Importar CSV"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+          <span class="font-medium tracking-wide">Importar CSV</span>
+        </button>
         <button
           class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm text-white/70 bg-surface-overlay border border-surface-border hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all shadow-sm"
           @click="logout"
@@ -366,6 +376,13 @@ const totalPaidLoansAmount = computed(() => {
           </template>
 
           <button
+            @click="showCsvImport = true; showMore = false"
+            class="w-full mt-4 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-white/70 bg-surface-overlay border border-surface-border hover:bg-accent/10 hover:text-accent transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            Importar CSV
+          </button>
+          <button
             @click="logout"
             class="w-full mt-2 flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-400 bg-surface-overlay border border-surface-border hover:bg-red-500/10 transition-colors"
           >
@@ -381,5 +398,9 @@ const totalPaidLoansAmount = computed(() => {
       @close="showGlobalCreate = false" 
     />
     <GlobalConfirmDialog />
+    <CsvImportModal 
+      :open="showCsvImport" 
+      @close="showCsvImport = false" 
+    />
   </div>
 </template>

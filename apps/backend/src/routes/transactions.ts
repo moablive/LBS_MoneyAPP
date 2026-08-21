@@ -9,6 +9,242 @@ import { validate } from '../middleware/validate.js';
 export const transactionsRouter = Router();
 transactionsRouter.use(requireAuth);
 
+// ---------- ai-parse ---------------------------------------------------------
+transactionsRouter.post('/ai-parse', async (req, res, next) => {
+  try {
+    const { text, imageBase64 } = req.body;
+    if (!text && !imageBase64) return res.status(400).json({ error: 'Text or image is required' });
+
+    const loginhubId = req.user!.loginhubId;
+
+    const [userAccounts, userCategories] = await Promise.all([
+      db.query.accounts.findMany({ where: eq(accounts.loginhubId, loginhubId) }),
+      db.query.categories.findMany({ where: eq(categories.loginhubId, loginhubId) })
+    ]);
+
+    const accountNames = userAccounts.map(a => a.name).join(', ');
+    const categoryNames = userCategories.map(c => c.name).join(', ');
+
+    const TZ = 'America/Sao_Paulo';
+    const now = new Date();
+    const localDate = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: TZ });
+    const daysAgo = (n: number) => localDate(new Date(now.getTime() - n * 86_400_000));
+    const nowLocal = now.toLocaleString('sv-SE', { timeZone: TZ }).replace(' ', 'T');
+
+    let systemPrompt = '';
+    
+    if (imageBase64) {
+      systemPrompt = `Analise a imagem deste comprovante/recibo.
+Extraia as informações rigorosamente neste formato JSON:
+{
+  "description": <"breve descrição ou nome do estabelecimento">,
+  "amount": <numero, ex: 15.50>,
+  "type": <"expense" para pagamentos feitos ou "income" para recebimentos>,
+  "categoryName": <"Escolha o nome mais apropriado desta lista: [${categoryNames}]. Se não se encaixar perfeitamente, retorne null">,
+  "accountName": <"Escolha o nome da conta mais apropriado desta lista: [${accountNames}]. Se não se encaixar perfeitamente, retorne null">,
+  "occurredAt": <"YYYY-MM-DDTHH:mm:ss" da transação. Se não tiver hora, use "YYYY-MM-DDT12:00:00">
+}
+Hoje é ${daysAgo(0)} (agora: ${nowLocal}, fuso ${TZ}).
+IMPORTANTE sobre a data: use o ano/mês/dia exatos mostrados no comprovante. Se o comprovante mostrar a data SEM o ano (ex: apenas "17/08" ou "17/08 às 14:30"), assuma o ANO ATUAL (${now.getFullYear()}) — NUNCA invente ou assuma um ano passado como 2023. Se a imagem não tiver nenhuma data visível, use hoje (${daysAgo(0)}).
+Retorne APENAS o JSON válido, sem NENHUM texto adicional ou markdown de código.
+${text ? `Aviso: o usuário forneceu este contexto adicional: "${text}"` : ''}`;
+    } else {
+      systemPrompt = `
+Você é um assistente financeiro que extrai dados de transações a partir de textos e gera respostas EXCLUSIVAMENTE em JSON, sem texto adicional.
+Dada a mensagem do usuário, você deve identificar:
+1. "description": A descrição curta da despesa ou receita.
+2. "amount": O valor numérico da transação (positivo, use ponto como separador decimal).
+3. "type": O tipo da transação. Deve ser obrigatoriamente "expense" ou "income".
+4. "categoryName": O nome da categoria que melhor se encaixa, baseando-se nestas opções disponíveis: [${categoryNames}]. Se não se encaixar perfeitamente, retorne null.
+5. "accountName": O nome da conta/cartão que foi utilizado, baseando-se nestas opções disponíveis: [${accountNames}]. Se não se encaixar perfeitamente, retorne null.
+6. "occurredAt": A data e hora da transação, no formato ISO 8601 (YYYY-MM-DDTHH:mm:ss).
+Agora é ${nowLocal} (fuso ${TZ}).
+Datas de referência:
+  hoje = ${daysAgo(0)}
+  ontem = ${daysAgo(1)}
+Se a data não for mencionada, use hoje. Se apenas dia/mês forem mencionados (sem ano), use o ano atual (${now.getFullYear()}) — NUNCA invente ou assuma um ano passado.
+
+Exemplo de saída esperada (a data abaixo é apenas ilustrativa do FORMATO; calcule a data real com base nas regras acima):
+{
+  "description": "Mercado",
+  "amount": 150.50,
+  "type": "expense",
+  "categoryName": "Alimentação",
+  "accountName": "Cartão Nubank",
+  "occurredAt": "${daysAgo(0)}T10:00:00"
+}
+
+Mensagem do usuário: "${text}"
+`;
+    }
+
+    // Try to import env from services
+    const { env } = await import('@moneyapp/services');
+    
+    // For images we need the vision model (qwen2.5vl:7b), for text llama3.2:3b is faster
+    // We just use what's configured or fallback
+    const modelToUse = imageBase64 ? 'qwen2.5vl:7b' : 'llama3.2:3b';
+    
+    const ollamaPayload: any = {
+      model: modelToUse,
+      prompt: systemPrompt,
+      stream: false,
+      format: "json"
+    };
+    
+    if (imageBase64) {
+      ollamaPayload.images = [imageBase64];
+    }
+
+    const response = await fetch(`${env.OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ollamaPayload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let extractedStr = data.response?.trim();
+    
+    // Log for debugging
+    console.log('[AI Parse] Raw response:', extractedStr);
+    try {
+      require('fs').writeFileSync('/tmp/ai_response.json', extractedStr);
+    } catch (e) {}
+    
+    if (!extractedStr) {
+      throw new Error('Empty response from AI');
+    }
+
+    // Remove markdown blocks
+    extractedStr = extractedStr.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(extractedStr);
+    } catch (err) {
+      console.error('[AI Parse] Failed to parse JSON:', extractedStr);
+      throw err;
+    }
+
+    const matchedCategory = userCategories.find(c => c.name.toLowerCase() === parsed.categoryName?.toLowerCase());
+    const matchedAccount = userAccounts.find(a => a.name.toLowerCase() === parsed.accountName?.toLowerCase());
+
+    res.json({
+      description: parsed.description || parsed.descricao || '',
+      amount: Number(parsed.amount || parsed.valor) || null,
+      type: (parsed.type === 'income' || parsed.tipo === 'income') ? 'income' : 'expense',
+      categoryId: matchedCategory?.id || null,
+      accountId: matchedAccount?.id || null,
+      occurredAt: parsed.occurredAt || parsed.data || new Date().toISOString()
+    });
+
+  } catch (error) {
+    req.log.error(error, 'Failed to parse AI text');
+    next(error);
+  }
+});
+
+// ---------- parse-statement (bank app screenshot -> rows) --------------------
+// Reads a mobile bank statement screenshot and returns each transaction row
+// with its normalized vertical bounds so the client can crop the receipt image.
+transactionsRouter.post('/parse-statement', async (req, res, next) => {
+  try {
+    const { imageBase64 } = req.body ?? {};
+    if (!imageBase64) return res.status(400).json({ error: 'image_required' });
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const systemPrompt = `Você recebe a captura de tela (print) de um extrato bancário de um app de celular.
+A tela lista transações agrupadas por dia. Cada grupo tem um cabeçalho de dia (ex: "Sex, 14/ago", "Qua, 12/ago").
+Cada transação ocupa uma linha com: um ícone à esquerda, um título (ex: "Pix enviado", "Pix recebido", "Compra realizada", "Pagamento realizado"), o nome/estabelecimento, a hora (ex: "22:40") e o valor (ex: "-R$ 19,50" ou "+R$ 753,00").
+
+Sua tarefa: extrair TODAS as transações e devolver EXCLUSIVAMENTE um JSON no formato:
+{
+  "rows": [
+    {
+      "date": "DD/MM" (dia da transação, use o cabeçalho de dia imediatamente ACIMA da linha),
+      "time": "HH:mm" (hora exibida na linha),
+      "title": "<o título, ex: Pix enviado>",
+      "description": "<nome/estabelecimento da linha>",
+      "amount": <número decimal com sinal: NEGATIVO para saídas/pagamentos (-R$) e POSITIVO para entradas (+R$), ex: -19.50 ou 753.00>,
+      "type": "expense" para saídas ou "income" para entradas,
+      "yTop": <número entre 0 e 1: topo da linha completa da transação, sendo 0 = topo da imagem e 1 = base da imagem>,
+      "yBottom": <número entre 0 e 1: base da linha completa da transação>
+    }
+  ]
+}
+
+Regras IMPORTANTES:
+- yTop e yBottom são FRAÇÕES da ALTURA da imagem (0.0 no topo, 1.0 na base). Devem delimitar toda a linha da transação (do ícone/título até logo antes da próxima linha).
+- NÃO inclua a barra de status do celular (relógio, bateria), botões de voltar, nem os cabeçalhos de dia como transações — apenas as linhas de transação reais.
+- A data ("DD/MM") vem SEMPRE do cabeçalho de dia acima da linha. Se o cabeçalho não tiver ano, não invente; o cliente assume o ano atual (${currentYear}).
+- Ordene as linhas de cima para baixo, na mesma ordem em que aparecem na tela.
+- Responda APENAS o JSON válido, sem markdown, sem texto adicional.`;
+
+    const { env } = await import('@moneyapp/services');
+
+    const response = await fetch(`${env.OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'qwen2.5vl:7b',
+        prompt: systemPrompt,
+        images: [imageBase64],
+        stream: false,
+        format: 'json',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let extractedStr: string = data.response?.trim() ?? '';
+    if (!extractedStr) throw new Error('Empty response from AI');
+    extractedStr = extractedStr.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(extractedStr);
+    } catch (err) {
+      req.log.error({ extractedStr }, '[parse-statement] Failed to parse JSON');
+      throw err;
+    }
+
+    const rawRows: any[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed.rows) ? parsed.rows : [];
+
+    const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+    const rows = rawRows
+      .map((r) => {
+        const amount = Number(r.amount);
+        const yTop = clamp01(Number(r.yTop));
+        const yBottom = clamp01(Number(r.yBottom));
+        return {
+          date: typeof r.date === 'string' ? r.date.trim() : '',
+          time: typeof r.time === 'string' ? r.time.trim() : '',
+          title: typeof r.title === 'string' ? r.title.trim() : '',
+          description: typeof r.description === 'string' ? r.description.trim() : '',
+          amount: Number.isFinite(amount) ? amount : null,
+          type: r.type === 'income' ? 'income' : 'expense',
+          yTop,
+          yBottom: yBottom > yTop ? yBottom : Math.min(1, yTop + 0.05),
+        };
+      })
+      .filter((r) => r.amount !== null && r.date);
+
+    res.json({ rows });
+  } catch (error) {
+    req.log.error(error, 'Failed to parse statement image');
+    next(error);
+  }
+});
+
 // ---------- list -------------------------------------------------------------
 transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (req, res, next) => {
   try {
@@ -106,6 +342,60 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
     });
 
     res.status(201).json(stripReceipt(created));
+  } catch (err) {
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ error: err.code });
+      return;
+    }
+    next(err);
+  }
+});
+
+// ---------- create bulk ------------------------------------------------------
+import { z } from 'zod';
+
+transactionsRouter.post('/bulk', validate(z.array(createTransactionSchema)), async (req, res, next) => {
+  try {
+    const loginhubId = req.user!.loginhubId;
+    const items = req.body as import('@moneyapp/models').CreateTransactionInput[];
+
+    const createdRows = await db.transaction(async (tx) => {
+      const results = [];
+      for (const body of items) {
+        const isFatura = await isFaturaPaymentTx(tx, body.accountId ?? null, body.categoryId);
+        const status = body.status ?? 'paid';
+
+        if (isFatura && status === 'paid' && (!body.receipt || !body.receipt.base64)) {
+          throw new HttpError(400, 'receipt_required_for_fatura_payment');
+        }
+
+        const [row] = await tx
+          .insert(transactions)
+          .values({
+            loginhubId,
+            description: body.description,
+            amount: body.amount.toFixed(2),
+            type: body.type,
+            status,
+            occurredAt: body.occurredAt,
+            categoryId: body.categoryId,
+            accountId: body.accountId ?? null,
+            receiptBase64: body.receipt?.base64 ?? null,
+            receiptMimeType: body.receipt?.mimeType ?? null,
+          })
+          .returning();
+
+        if (row!.accountId && row!.status === 'paid') {
+          let delta = Number(row!.amount);
+          if (isFatura) delta = Math.abs(delta);
+          await applyBalanceDelta(tx, loginhubId, row!.accountId, delta);
+        }
+        results.push(row!);
+      }
+      return results;
+    });
+
+    res.status(201).json(createdRows.map(stripReceipt));
   } catch (err) {
     if (err instanceof HttpError) {
       res.status(err.status).json({ error: err.code });
@@ -232,6 +522,45 @@ transactionsRouter.delete('/:id', async (req, res, next) => {
     next(err);
   }
 });
+
+// ---------- bulk delete ------------------------------------------------------
+transactionsRouter.post(
+  '/bulk-delete',
+  validate(z.object({ ids: z.array(z.string().uuid()).min(1).max(500) })),
+  async (req, res, next) => {
+    try {
+      const loginhubId = req.user!.loginhubId;
+      const { ids } = req.body as { ids: string[] };
+
+      const deleted = await db.transaction(async (tx) => {
+        let count = 0;
+        for (const id of ids) {
+          const existing = await tx.query.transactions.findFirst({
+            where: and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)),
+          });
+          if (!existing) continue;
+
+          await tx
+            .delete(transactions)
+            .where(and(eq(transactions.id, id), eq(transactions.loginhubId, loginhubId)));
+
+          const oldIsFatura = await isFaturaPaymentTx(tx, existing.accountId, existing.categoryId);
+          if (existing.accountId && existing.status === 'paid') {
+            let deltaToReverse = Number(existing.amount);
+            if (oldIsFatura) deltaToReverse = Math.abs(deltaToReverse);
+            await applyBalanceDelta(tx, loginhubId, existing.accountId, negate(String(deltaToReverse)));
+          }
+          count++;
+        }
+        return count;
+      });
+
+      res.json({ deleted });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // ---------- receipt streaming ------------------------------------------------
 transactionsRouter.get('/:id/receipt', async (req, res, next) => {
