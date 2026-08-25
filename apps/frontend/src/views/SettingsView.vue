@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TelegramLinkCard from '../components/TelegramLinkCard.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
@@ -127,6 +128,10 @@ async function hardReload() {
 
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6">
       <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Preferências</h2>
+
+      <!-- Vinculo da conta: vem antes do nome de exibicao porque sem vinculo o
+           bot nao fala com voce, e o nome nao tem onde aparecer. -->
+      <TelegramLinkCard />
 
       <div class="mb-6">
         <p class="text-slate-100 font-medium">Nome de exibição no bot</p>

@@ -406,5 +406,31 @@ export const pushSubscriptions = pgTable(
   (t) => ({ userIdx: index("push_subscriptions_loginhub_idx").on(t.loginhubId) })
 );
 
+/**
+ * Passes de uso único que vinculam um Telegram a uma conta já autenticada.
+ *
+ * O vínculo era feito digitando e-mail, senha e o código do 2FA DENTRO do chat.
+ * A senha fica no histórico do Telegram — nos servidores deles, no aparelho e em
+ * qualquer backup —, o código do autenticador também, e o bot precisava
+ * reimplementar o login do hub inteiro.
+ *
+ * Aqui a ordem se inverte: a pessoa já entrou no app pelo PC, com 2FA, e de lá
+ * emite um passe. O passe atravessa o chat e é inofensivo — vale poucos minutos,
+ * serve uma vez, e não abre nada além de gravar o vínculo.
+ *
+ * Guardamos o SHA-256 e não o passe: vazamento do banco não entrega passe
+ * utilizável, do mesmo jeito que não se guarda senha em texto.
+ */
+export const telegramLinkTokens = pgTable("telegram_link_tokens", {
+  tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+  loginhubId: integer("loginhub_id").notNull(),
+  criadoEm: timestamp("criado_em", { withTimezone: true }).defaultNow().notNull(),
+  expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
+  /** Carimbo do consumo. Não-nulo = já usado, e não serve de novo. */
+  usadoEm: timestamp("usado_em", { withTimezone: true }),
+});
+
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
+export type TelegramLinkToken = typeof telegramLinkTokens.$inferSelect;
+export type NewTelegramLinkToken = typeof telegramLinkTokens.$inferInsert;

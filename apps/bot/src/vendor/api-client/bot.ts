@@ -1,6 +1,26 @@
 import { apiOptions, serviceHeaders, ApiError } from './client.js';
 
 export const botApi = {
+  /**
+   * Troca o passe do deep link pelo vinculo `telegram_id -> loginhub_id`.
+   *
+   * A regra do passe (guardado como hash, validade, uso unico com a corrida
+   * resolvida no proprio UPDATE) mora no backend, dono do schema. Reimplementar
+   * aqui daria duas copias de uma verificacao de seguranca, livres para divergir.
+   */
+  consumirPasseDeVinculo: async (token: string, telegramId: string): Promise<{ loginhubId: number }> => {
+    const res = await fetch(`${apiOptions.baseUrl}/bot/consume-link-token`, {
+      method: 'POST',
+      headers: { ...serviceHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, telegramId }),
+    });
+    if (!res.ok) {
+      const corpo = await res.json().catch(() => null) as { message?: string } | null;
+      throw new ApiError(res.status, corpo ?? { message: `HTTP ${res.status}` });
+    }
+    return await res.json();
+  },
+
   getUserIdByTelegramId: async (telegramId: string): Promise<{ id: string } | null> => {
     try {
       const res = await fetch(`${apiOptions.baseUrl}/bot/users/by-telegram/${telegramId}`, {

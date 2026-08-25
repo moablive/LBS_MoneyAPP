@@ -32,6 +32,47 @@ const bot = new Telegraf<BotContext>(env.TELEGRAM_BOT_TOKEN);
 
 // Sessão (necessária para as wizard scenes) + privacidade (1 único usuário).
 bot.use(session());
+
+/**
+ * Vínculo híbrido: `/start <passe>` vindo do deep link emitido no app.
+ *
+ * Vem ANTES do `auth` de propósito. Quem chega por aqui ainda não tem vínculo —
+ * é o que veio criar —, e o `auth` responderia "use /login", mandando a pessoa
+ * de volta ao fluxo que este caminho existe para aposentar: senha e código do
+ * 2FA digitados dentro do chat ficam no histórico do Telegram.
+ *
+ * A autenticação de verdade já aconteceu no PC, com 2FA. O que chega aqui é um
+ * passe de uso único que só abre uma porta: gravar o vínculo.
+ */
+bot.use(async (ctx, next) => {
+  const texto = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
+  const passe = /^\/start\s+(\S+)/.exec(texto ?? '')?.[1];
+  if (!passe) return next();
+
+  const telegramId = String(ctx.from!.id);
+  try {
+    const r = await botApi.consumirPasseDeVinculo(passe, telegramId);
+    // O passe some do chat: ele já morreu no consumo, mas deixá-lo à vista
+    // convida a reenviar e a receber "não vale mais" sem entender por quê.
+    await ctx.deleteMessage().catch(() => {});
+    await ctx.reply(
+      `✅ <b>Telegram vinculado!</b>\n\n` +
+        `Sua conta do MoneyAPP (#${r.loginhubId}) agora fala com este chat.`,
+      { parse_mode: 'HTML' }
+    );
+    return sendMainMenu(ctx);
+  } catch (err) {
+    console.error('[vinculo] falha ao consumir o passe:', err);
+    await ctx.deleteMessage().catch(() => {});
+    await ctx.reply(
+      '❌ <b>Este link de vínculo não vale mais.</b>\n\n' +
+        'Ele serve uma vez só e expira em 10 minutos. Abra o MoneyAPP no navegador, ' +
+        'entre na sua conta e gere outro em <b>Configurações → Vincular Telegram</b>.',
+      { parse_mode: 'HTML' }
+    );
+  }
+});
+
 bot.use(auth);
 
 // Inicia os Cron Jobs em Background

@@ -14,6 +14,12 @@ const envSchema = z.object({
   LOGINHUB_APP_ID: z.coerce.number().int().positive(),
   // Shared secret the Telegram bot presents (x-api-key) to call /bot/* routes.
   BOT_SERVICE_KEY: z.string().min(32, 'BOT_SERVICE_KEY must be at least 32 chars'),
+  /**
+   * Username do bot, sem `@` — entra no deep link do vinculo hibrido
+   * (`https://t.me/<username>?start=<passe>`). Opcional: sem ele o app segue
+   * inteiro, so a rota `/api/telegram/link-token` responde CONFIG_AUSENTE.
+   */
+  TELEGRAM_BOT_USERNAME: z.string().optional(),
   CORS_ORIGIN: z.string().default('*').transform((val) => {
     if (val === '*') return val;
     return val.split(',').map(s => s.trim());
