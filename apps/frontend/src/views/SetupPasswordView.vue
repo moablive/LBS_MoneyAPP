@@ -51,7 +51,24 @@ async function submit() {
   error.value = null;
   loading.value = true;
   try {
-    await auth.setupPassword(token.value, password.value);
+    const r = await auth.setupPassword(token.value, password.value);
+
+    // 'enrolar': o convite exige 2FA e falta configurar. Emenda direto no QR do
+    // hub, sem passar pelo login — o magic link ja morreu nesta chamada.
+    if (r.etapa === 'enrolar') {
+      window.location.href = r.url;
+      return;
+    }
+
+    // '2fa': conta que JA tem autenticador (tipico de reset de senha). O hub
+    // devolve desafio em vez de sessao, senao o reset seria um atalho para
+    // pular o segundo fator. O login fecha a etapa.
+    if (r.etapa === '2fa') {
+      successMessage.value = 'Senha definida. Confirme o código do autenticador para entrar.';
+      setTimeout(() => router.replace('/login'), 2000);
+      return;
+    }
+
     successMessage.value = 'Senha definida com sucesso! Redirecionando para o login...';
     setTimeout(() => {
       router.replace('/login');

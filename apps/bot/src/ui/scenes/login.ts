@@ -94,8 +94,13 @@ export const loginScene = new Scenes.WizardScene<BotContext>(
       
       await ctx.reply('✅ Conta vinculada com sucesso! Bem-vindo ao MoneyAPP Telegram Bot.', mainMenuKeyboard());
     } catch (e: any) {
-      if (e && e.status === 403 && e.body?.error === 'needs_password_change') {
-        await ctx.reply('⚠️ Acesso negado. Você ainda está com a senha padrão gerada por convite. Acesse https://money.astralwavelabel.com, defina a sua nova senha e depois volte aqui para vincular o bot.');
+      // `needs_password_change` saiu: o LoginHUB nao devolve mais essa flag —
+      // a senha se define pelo magic link. O que barra o vinculo hoje e o
+      // segundo fator, e sao dois casos distintos.
+      if (e && e.status === 403 && e.body?.error === 'needs_2fa') {
+        await ctx.reply('🔐 Esta conta usa verificação em duas etapas. Por segurança, o vínculo com o Telegram precisa ser feito a partir do site: entre em https://money.astralwavelabel.com e volte aqui depois.');
+      } else if (e && e.status === 403 && e.body?.error === 'needs_2fa_setup') {
+        await ctx.reply('🔐 Esta conta ainda não configurou a verificação em duas etapas, que é obrigatória. Entre em https://money.astralwavelabel.com com a sua senha — você será levado à tela de configuração (tenha o celular à mão) — e depois volte aqui.');
       } else {
         console.error('Erro na verificação de senha:', e);
         await ctx.reply('Ocorreu um erro interno. Tente novamente.');

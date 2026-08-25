@@ -26,9 +26,12 @@ export const botApi = {
   /**
    * Vincula a conta do Telegram a um usuário do MoneyAPP. As credenciais são
    * validadas NO LOGINHUB (identidade central) e só então o telegram_id é
-   * gravado no backend do MoneyAPP. Retorna null para credenciais inválidas e
-   * lança ApiError(403, { error: 'needs_password_change' }) quando o usuário
-   * ainda usa a senha temporária (deve trocá-la no painel web antes).
+   * gravado no backend do MoneyAPP. Retorna null para credenciais inválidas.
+   *
+   * Lança ApiError(403) quando a senha confere mas a sessão não sai:
+   *   `needs_2fa`       — a conta tem autenticador; o vínculo do Telegram exige
+   *                       a etapa que o bot não consegue conduzir sozinho.
+   *   `needs_2fa_setup` — a conta exige 2FA e ainda não configurou nenhum.
    */
   login: async (email: string, password: string, telegramId: string): Promise<{ id: string } | null> => {
     // 1) Valida e-mail + senha no LoginHub.
@@ -53,12 +56,25 @@ export const botApi = {
     if (!lh.ok) throw new ApiError(lh.status, await lh.json().catch(() => null));
 
     const data = (await lh.json()) as {
-      requirePasswordChange?: boolean;
+      token?: string;
+      requires2FA?: boolean;
+      require2FASetup?: boolean;
       usuario?: { nome?: string; id?: number };
     };
 
-    if (data.requirePasswordChange) {
-      throw new ApiError(403, { error: 'needs_password_change' });
+    // O hub responde 200 em tres desfechos e so um traz sessao. Um bot do
+    // Telegram nao tem como escanear QR nem hospedar a tela de enrolamento,
+    // entao aqui os dois desfechos de 2FA viram erro explicito com instrucao —
+    // antes caiam em `usuario: undefined` e o backend devolvia
+    // `missing_fields`, que nao diz nada a quem esta no chat.
+    if (data.requires2FA) {
+      throw new ApiError(403, { error: 'needs_2fa' });
+    }
+    if (data.require2FASetup) {
+      throw new ApiError(403, { error: 'needs_2fa_setup' });
+    }
+    if (!data.token || !data.usuario?.id) {
+      throw new ApiError(500, { error: 'unexpected_login_response' });
     }
 
     // 2) Vincula o telegram_id ao usuário no MoneyAPP (chamada de serviço).
