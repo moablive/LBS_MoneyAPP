@@ -1,10 +1,21 @@
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '@moneyapp/services';
 import { LoginHubPayload } from '@moneyapp/models';
-import { verifyHubToken, HubAuthError, bearerDoRequest } from '../lib/hubAuthServer.js';
+import { verifyHubToken, HubAuthError, bearerDoRequest, criarVerificadorDeRevogacao } from '../lib/hubAuthServer.js';
 
 /** Config da guarda do hub. Uma só, montada a partir do env validado. */
 const hubConfig = { secret: env.JWT_SECRET, appId: env.LOGINHUB_APP_ID };
+
+/**
+ * Revogacao de sessao. Ativar o 2FA (ou um reset administrativo) carimba um
+ * piso no hub a partir do qual so valem tokens novos — e o `verifyHubToken`,
+ * que e local de proposito, nao enxerga isso. Sem este verificador um token
+ * emitido antes do corte seguia aceito aqui por ate 24 h.
+ *
+ * Cache curto por usuario: o piso muda raríssimo, entao nao ha ida a rede por
+ * requisicao. Falha ABERTA se o hub nao responder — ver o kit.
+ */
+const revogacao = criarVerificadorDeRevogacao({ baseUrl: env.LOGINHUB_API_URL });
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -78,6 +89,14 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       const e = err as HubAuthError;
       const status = e instanceof HubAuthError ? e.status : 401;
       res.status(status).json({ error: e instanceof HubAuthError ? e.code : 'unauthorized', message: e?.message });
+      return;
+    }
+
+    if (await revogacao.revogada(token, payload)) {
+      res.status(401).json({
+        error: 'SESSAO_REVOGADA',
+        message: 'Sua sessao foi encerrada. Entre novamente.',
+      });
       return;
     }
 
