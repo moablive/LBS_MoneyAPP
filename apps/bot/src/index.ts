@@ -6,7 +6,6 @@ import { registerScene, REGISTER_SCENE } from './ui/scenes/register.js';
 import { viewCategoryScene, VIEW_CATEGORY_SCENE } from './ui/scenes/viewCategory.js';
 import { attachReceiptScene, ATTACH_RECEIPT_SCENE } from './ui/scenes/attachReceipt.js';
 import { scanReceiptScene, SCAN_RECEIPT_SCENE } from './ui/scenes/scanReceipt.js';
-import { loginScene, LOGIN_SCENE } from './ui/scenes/login.js';
 import { changeCategoryScene, CHANGE_CATEGORY_SCENE } from './ui/scenes/changeCategory.js';
 import { sendMainMenu } from './handlers/start.js';
 import { showReports, generateReportChart, generateTextReport } from './handlers/reports.js';
@@ -79,14 +78,12 @@ bot.use(auth);
 startNotificationsCron(bot);
 
 // Fluxos de conversa.
-const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, scanReceiptScene, loginScene, changeCategoryScene]);
+const stage = new Scenes.Stage<BotContext>([registerScene, viewCategoryScene, attachReceiptScene, scanReceiptScene, changeCategoryScene]);
 bot.use(stage.middleware());
 
 // Menu principal.
 bot.start(sendMainMenu);
 
-// Login
-bot.command('login', (ctx) => ctx.scene.enter(LOGIN_SCENE));
 
 // Entradas dos fluxos.
 bot.hears(`${Icons.NewRecord} Registrar Novo`, (ctx) => ctx.scene.enter(REGISTER_SCENE));
