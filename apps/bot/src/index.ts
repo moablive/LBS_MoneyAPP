@@ -21,11 +21,11 @@ import { setupApi, botApi } from '@moneyapp/api-client';
 import { Markup } from 'telegraf';
 import { toggleNotification } from './utils/user-cache.js';
 
+// Só o backend do MoneyAPP: a config do LoginHub saiu daqui junto com o login,
+// que agora mora no `auth-kit` (src/lib/) e é montado na cena de login.
 setupApi({
   baseUrl: env.BACKEND_URL,
   apiKey: env.BOT_SERVICE_KEY,
-  loginhubUrl: env.LOGINHUB_API_URL,
-  loginhubAppId: env.LOGINHUB_APP_ID,
 });
 
 const bot = new Telegraf<BotContext>(env.TELEGRAM_BOT_TOKEN);

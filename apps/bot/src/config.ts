@@ -9,7 +9,15 @@ const envSchema = z.object({
   LOGINHUB_API_URL: z.string().url(),
   // ID do MoneyAPP no LoginHub (tenant). Enviado em /auth/login para evitar
   // AMBIGUOUS_EMAIL quando o mesmo e-mail existe em mais de um app.
+  // Login publico DESTE app — e para ca que o bot manda quem precisa
+  // enrolar 2FA. O QR mora na propria tela do app desde que cada um
+  // passou a enrolar em casa; o painel do hub saiu do caminho.
+  APP_LOGIN_URL: z.string().default('https://money.astralwavelabel.com/login'),
   LOGINHUB_APP_ID: z.string().min(1).optional(),
+  // Painel do hub — endereço PÚBLICO, porque vai dentro de um link que a pessoa
+  // abre no navegador dela. É lá que mora a tela do QR de enrolamento de 2FA,
+  // compartilhada por todos os apps; o bot não reimplementa nada disso.
+  LOGINHUB_UI_URL: z.string().url().default('https://loginhub.astralwavelabel.com'),
   // Shared service key presented to the MoneyAPP backend on /bot/* and on
   // delegated user routes (with the x-user-id header). Replaces the old
   // self-signed JWT (JWT_SECRET) — the bot no longer mints tokens.

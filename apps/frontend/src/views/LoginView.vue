@@ -2,6 +2,10 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import TwoFactorEnroll from '../components/TwoFactorEnroll.vue';
+
+/** Passe de enrolamento. Enquanto existir, o QR toma a tela. */
+const enrolarToken = ref<string | null>(null);
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -51,10 +55,11 @@ async function submit() {
   try {
     const r = await auth.login(email.value.trim(), password.value);
 
-    // 'enrolar': a conta exige 2FA e ainda não tem autenticador. O QR é a tela
-    // do hub, compartilhada por todos os apps — não reimplementamos aqui.
+    // 'enrolar': a conta exige 2FA e ainda não tem autenticador. O QR é montado
+    // aqui mesmo — atravessar origem com o passe na URL prendia o convite ao
+    // build do painel do hub, e deixava o passe no historico do navegador.
     if (r.etapa === 'enrolar') {
-      window.location.href = r.url;
+      enrolarToken.value = r.setupToken;
       return;
     }
     // '2fa': o template troca para o campo de código; nada a fazer aqui.
@@ -82,9 +87,17 @@ async function confirmarCodigo() {
 
 <template>
   <main class="min-h-dvh grid place-items-center px-6">
+    <!-- Enrolamento de 2FA: assume a tela, sem sair do app. -->
+    <TwoFactorEnroll
+      v-if="enrolarToken"
+      class="w-full max-w-sm"
+      :setup-token="enrolarToken"
+      @concluido="irParaApp"
+    />
+
     <!-- Etapa 1: credenciais -->
     <form
-      v-if="!auth.aguardandoSegundoFator"
+      v-else-if="!auth.aguardandoSegundoFator"
       class="card w-full max-w-sm space-y-5"
       @submit.prevent="submit"
     >

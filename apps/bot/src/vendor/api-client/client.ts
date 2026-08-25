@@ -8,18 +8,12 @@ export interface ApiOptions {
   baseUrl: string;
   /** Shared service key sent as x-api-key to the MoneyAPP backend. */
   apiKey: string;
-  /** Base URL of LoginHub (central identity), e.g. http://server_loginhub_backend:3000/api */
-  loginhubUrl: string;
-  /** ID do MoneyAPP no LoginHub. Enviado no /auth/login para desambiguar e-mail. */
-  loginhubAppId?: string;
   onUnauthorized: () => void;
 }
 
 export const apiOptions: ApiOptions = {
   baseUrl: '/api',
   apiKey: '',
-  loginhubUrl: '',
-  loginhubAppId: undefined,
   onUnauthorized: () => {},
 };
 

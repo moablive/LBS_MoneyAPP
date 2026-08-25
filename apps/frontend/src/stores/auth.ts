@@ -15,8 +15,6 @@ const LOGINHUB_APP_ID = import.meta.env.VITE_LOGINHUB_APP_ID as string | undefin
 
 
 /** URL do painel do LoginHUB — é lá que mora a tela de enrolamento de 2FA. */
-const LOGINHUB_UI =
-  (import.meta.env.VITE_LOGINHUB_UI_URL as string) || 'https://loginhub.astralwavelabel.com';
 
 function load(): PersistedState {
   if (typeof localStorage === 'undefined') return { token: null, user: null };
@@ -122,17 +120,37 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (r.status === 'enrolar') {
-      // O passe de 10 min só abre as rotas de enrolamento. A tela com o QR é a
-      // do hub — nenhum app cliente reimplementa.
-      return {
-        etapa: 'enrolar' as const,
-        url: `${LOGINHUB_UI}/enrolar-2fa?token=${encodeURIComponent(r.setupToken)}` +
-             `&retorno=${encodeURIComponent(window.location.origin)}`,
-      };
+      return { etapa: 'enrolar' as const, setupToken: r.setupToken };
     }
 
     await bootstrap(r.session.token, r.session.usuario?.nome);
     return { etapa: 'sessao' as const };
+  }
+
+  /**
+   * Enrolamento de 2FA, passo 1: pede o secret e a URI `otpauth://` ao hub.
+   *
+   * O QR e desenhado NO NAVEGADOR a partir dessa URI (ver TwoFactorEnroll) — o
+   * segredo nao vai para gerador de terceiro nenhum, e o passe nao atravessa
+   * origem. Antes ele viajava na query string ate o painel do hub, o que o
+   * deixava no historico do navegador e em log de acesso — e amarrava o convite
+   * ao build daquele painel.
+   */
+  async function iniciarEnrolamento(setupToken: string) {
+    return hub.twoFactor.setup(setupToken);
+  }
+
+  /**
+   * Passo 2: confirma com o codigo do autenticador.
+   *
+   * A ativacao mata o passe que fez esta chamada e devolve uma sessao nova. O
+   * `bootstrap` roda com ela para provisionar o usuario local — sem isso a
+   * pessoa termina o convite e cai deslogada na primeira requisicao.
+   */
+  async function confirmarEnrolamento(codigo: string, setupToken: string) {
+    const r = await hub.twoFactor.verifySetup(codigo, setupToken);
+    await bootstrap(r.token);
+    return r;
   }
 
   /** Fecha o login pendente com o código do autenticador (ou de recuperação). */
@@ -163,11 +181,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (r.status === 'enrolar') {
-      return {
-        etapa: 'enrolar' as const,
-        url: `${LOGINHUB_UI}/enrolar-2fa?token=${encodeURIComponent(r.setupToken)}` +
-             `&retorno=${encodeURIComponent(window.location.origin)}`,
-      };
+      return { etapa: 'enrolar' as const, setupToken: r.setupToken };
     }
 
     await bootstrap(r.session.token);
@@ -217,6 +231,8 @@ export const useAuthStore = defineStore('auth', () => {
     challengeToken,
     aguardandoSegundoFator,
     login,
+    iniciarEnrolamento,
+    confirmarEnrolamento,
     verificarSegundoFator,
     logout,
     setupPassword,

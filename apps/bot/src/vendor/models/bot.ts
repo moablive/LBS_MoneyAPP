@@ -14,4 +14,9 @@ export interface AttachReceiptState {
 
 export interface LoginState {
   email?: string;
+  /**
+   * Passe de 5 minutos entre a senha e o código do autenticador. Fica no state
+   * da cena, e não em módulo: um bot atende várias conversas ao mesmo tempo.
+   */
+  challengeToken?: string;
 }

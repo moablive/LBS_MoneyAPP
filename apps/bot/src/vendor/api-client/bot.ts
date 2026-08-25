@@ -24,67 +24,22 @@ export const botApi = {
   },
 
   /**
-   * Vincula a conta do Telegram a um usuário do MoneyAPP. As credenciais são
-   * validadas NO LOGINHUB (identidade central) e só então o telegram_id é
-   * gravado no backend do MoneyAPP. Retorna null para credenciais inválidas.
+   * Vincula a conta do Telegram a um usuário do MoneyAPP.
    *
-   * Lança ApiError(403) quando a senha confere mas a sessão não sai:
-   *   `needs_2fa`       — a conta tem autenticador; o vínculo do Telegram exige
-   *                       a etapa que o bot não consegue conduzir sozinho.
-   *   `needs_2fa_setup` — a conta exige 2FA e ainda não configurou nenhum.
+   * Chamada de SERVIÇO: quem provou a identidade foi o LoginHub, na cena de
+   * login, pelo `auth-kit`. O login do hub morava aqui dentro e conhecia por
+   * conta própria as rotas e os desfechos do `/auth/login` — fork do contrato,
+   * exatamente o que o kit existe para evitar. Este cliente voltou a fazer só o
+   * que é dele: falar com o backend do MoneyAPP.
    */
-  login: async (email: string, password: string, telegramId: string): Promise<{ id: string } | null> => {
-    // 1) Valida e-mail + senha no LoginHub.
-    // Envia app_id para evitar AMBIGUOUS_EMAIL (mesmo e-mail em vários apps).
-    const loginBody: { email: string; password: string; app_id?: string } = { email, password };
-    if (apiOptions.loginhubAppId) loginBody.app_id = apiOptions.loginhubAppId;
-
-    let lh: Response;
-    try {
-      lh = await fetch(`${apiOptions.loginhubUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginBody),
-      });
-    } catch {
-      throw new ApiError(0, { error: 'loginhub_unreachable' });
-    }
-    if (lh.status === 401) return null; // credenciais inválidas
-    // 409 = e-mail vinculado a múltiplos apps sem app_id. Não deve ocorrer com
-    // LOGINHUB_APP_ID configurado, mas tratamos para não cair no erro genérico.
-    if (lh.status === 409) throw new ApiError(409, { error: 'ambiguous_email' });
-    if (!lh.ok) throw new ApiError(lh.status, await lh.json().catch(() => null));
-
-    const data = (await lh.json()) as {
-      token?: string;
-      requires2FA?: boolean;
-      require2FASetup?: boolean;
-      usuario?: { nome?: string; id?: number };
-    };
-
-    // O hub responde 200 em tres desfechos e so um traz sessao. Um bot do
-    // Telegram nao tem como escanear QR nem hospedar a tela de enrolamento,
-    // entao aqui os dois desfechos de 2FA viram erro explicito com instrucao —
-    // antes caiam em `usuario: undefined` e o backend devolvia
-    // `missing_fields`, que nao diz nada a quem esta no chat.
-    if (data.requires2FA) {
-      throw new ApiError(403, { error: 'needs_2fa' });
-    }
-    if (data.require2FASetup) {
-      throw new ApiError(403, { error: 'needs_2fa_setup' });
-    }
-    if (!data.token || !data.usuario?.id) {
-      throw new ApiError(500, { error: 'unexpected_login_response' });
-    }
-
-    // 2) Vincula o telegram_id ao usuário no MoneyAPP (chamada de serviço).
-    const link = await fetch(`${apiOptions.baseUrl}/bot/link-telegram`, {
+  linkTelegram: async (loginhubId: number, email: string, telegramId: string): Promise<{ id: string }> => {
+    const res = await fetch(`${apiOptions.baseUrl}/bot/link-telegram`, {
       method: 'POST',
       headers: serviceHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ loginhubId: data.usuario?.id?.toString(), email, telegramId }),
+      body: JSON.stringify({ loginhubId: String(loginhubId), email, telegramId }),
     });
-    if (!link.ok) throw new ApiError(link.status, await link.json().catch(() => null));
-    return (await link.json()) as { id: string };
+    if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
+    return (await res.json()) as { id: string };
   },
 
   getSummaryByCategory: async (loginhubId: string, type: 'income' | 'expense') => {

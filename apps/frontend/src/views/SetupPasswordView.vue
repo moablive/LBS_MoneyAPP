@@ -2,6 +2,10 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import TwoFactorEnroll from '../components/TwoFactorEnroll.vue';
+
+/** Passe de enrolamento: quando existe, o QR assume a tela. */
+const enrolarToken = ref<string | null>(null);
 
 const router = useRouter();
 const route = useRoute();
@@ -53,10 +57,11 @@ async function submit() {
   try {
     const r = await auth.setupPassword(token.value, password.value);
 
-    // 'enrolar': o convite exige 2FA e falta configurar. Emenda direto no QR do
-    // hub, sem passar pelo login — o magic link ja morreu nesta chamada.
+    // 'enrolar': o convite exige 2FA e falta configurar. Emenda direto no QR,
+    // aqui mesmo — o magic link ja morreu nesta chamada, entao nao da para
+    // voltar a esta tela: motivo de sobra para nao atravessar origem no meio.
     if (r.etapa === 'enrolar') {
-      window.location.href = r.url;
+      enrolarToken.value = r.setupToken;
       return;
     }
 
@@ -83,7 +88,16 @@ async function submit() {
 
 <template>
   <main class="min-h-dvh grid place-items-center px-6">
+    <!-- Enrolamento de 2FA, emendado no convite sem sair do app. -->
+    <TwoFactorEnroll
+      v-if="enrolarToken"
+      class="w-full max-w-sm"
+      :setup-token="enrolarToken"
+      @concluido="router.replace('/')"
+    />
+
     <form
+      v-else
       class="card w-full max-w-sm space-y-5"
       @submit.prevent="submit"
     >
