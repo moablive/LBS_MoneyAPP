@@ -126,13 +126,13 @@ export function authOrConsumer(...escoposExigidos: string[]) {
     const loginhubId = parseInt(onBehalfOf, 10);
 
     if (!(await contaConsenteLeitor(loginhubId, consumer.id))) {
-      if (env.ALLOW_LEGACY_BOT_DELEGATION) {
-        // Janela de compatibilidade: hoje ainda nao ha consentimento gravado, e
-        // desligar isso de uma vez quebraria a leitura do TodoAPP. Nao bloqueia,
-        // mas registra — quando `ALLOW_LEGACY_BOT_DELEGATION` virar `false` isto
-        // passa a devolver 403. Semeie o consentimento antes de fechar a janela.
+      if (!env.ENFORCE_CONSUMER_CONSENT) {
+        // Consentimento do dono e OPT-IN, SEPARADO do flag de delegacao do bot:
+        // fechar o ramo cego (ALLOW_LEGACY_BOT_DELEGATION=false) NAO deve exigir
+        // seed nem quebrar a leitura do TodoAPP. Aqui so registra; vira 403 quando
+        // ENFORCE_CONSUMER_CONSENT ligar (semeie leitoresExternos antes).
         console.warn(
-          `[consumers] leitura cross-app sem consentimento: consumer=${consumer.id} loginhubId=${loginhubId} (permitida pela janela legada)`,
+          `[consumers] leitura cross-app sem consentimento: consumer=${consumer.id} loginhubId=${loginhubId} (permitida; ENFORCE_CONSUMER_CONSENT desligado)`,
         );
       } else {
         res.status(403).json({ error: 'forbidden' });

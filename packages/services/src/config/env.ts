@@ -43,6 +43,13 @@ const envSchema = z.object({
    */
   ALLOW_LEGACY_BOT_DELEGATION: boolEnv(true),
   /**
+   * Exige consentimento do dono (user_settings.leitoresExternos) na leitura
+   * cross-app escopada. SEPARADO de ALLOW_LEGACY_BOT_DELEGATION de proposito:
+   * fechar o ramo cego do bot nao deve forcar o seed nem quebrar o TodoAPP.
+   * Ligue depois de semear os consentimentos.
+   */
+  ENFORCE_CONSUMER_CONSENT: boolEnv(false),
+  /**
    * Escape hatch: aceitar chave de servico vinda da borda publica. Fica `false`
    * — so ligar se a topologia mudar (algum chamador legitimo passar a entrar
    * pelo nginx do frontend). Ver middleware/rede.ts.
