@@ -22,6 +22,11 @@ const envSchema = z.object({
   // delegated user routes (with the x-user-id header). Replaces the old
   // self-signed JWT (JWT_SECRET) — the bot no longer mints tokens.
   BOT_SERVICE_KEY: z.string().min(32, 'BOT_SERVICE_KEY must be at least 32 chars'),
+  // Fase 2: chave DEDICADA para pedir ao hub um JWT de usuario curto
+  // (POST /auth/service/delegate). Presente => o bot repassa Bearer <jwt> ao
+  // backend; ausente => cai no legado (x-api-key + x-user-id). Diferente da
+  // BOT_SERVICE_KEY compartilhada do ecossistema.
+  HUB_DELEGATION_KEY: z.string().optional(),
   OLLAMA_URL: z.string().url().default('http://server_ollama:11434'),
   // Modelo de visão (OCR de comprovantes) — precisa suportar imagens.
   OLLAMA_MODEL: z.string().default('qwen2.5vl:7b'),
