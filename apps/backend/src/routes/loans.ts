@@ -3,6 +3,7 @@ import { eq, desc, and, sql } from 'drizzle-orm';
 import { db, schema } from '@moneyapp/db';
 const { loans, transactions, accounts, categories } = schema;
 import { requireAuth } from '../middleware/auth.js';
+import { authOrConsumer } from '../middleware/consumers.js';
 import { validate } from '../middleware/validate.js';
 import { createLoanSchema, updateLoanSchema, type LoanSummaryResponse } from '@moneyapp/models';
 
@@ -484,7 +485,7 @@ loansRouter.delete('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-loansRouter.get('/:id/receipt', requireAuth, async (req, res, next) => {
+loansRouter.get('/:id/receipt', authOrConsumer('receipt.read'), async (req, res, next) => {
   try {
     const loginhubId = req.user!.loginhubId;
     const id = req.params.id as string;

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { db, schema } from '@moneyapp/db';
 import { and, eq, gte, lte } from 'drizzle-orm';
-import { requireAuth } from '../middleware/auth.js';
+import { authOrConsumer } from '../middleware/consumers.js';
 
 export const calendarRouter = Router();
 
-calendarRouter.get('/', requireAuth, async (req, res, next) => {
+calendarRouter.get('/', authOrConsumer('calendar.read'), async (req, res, next) => {
   try {
     const loginhubId = req.user!.loginhubId;
     const startStr = req.query.start as string;

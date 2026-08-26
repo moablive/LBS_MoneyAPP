@@ -4,10 +4,18 @@ import { createTransactionSchema, transactionFiltersSchema, updateTransactionSch
 import { db, schema } from '@moneyapp/db';
 const { accounts, transactions, categories } = schema;
 import { requireAuth } from '../middleware/auth.js';
+import { authOrConsumer } from '../middleware/consumers.js';
 import { validate } from '../middleware/validate.js';
 
 export const transactionsRouter = Router();
-transactionsRouter.use(requireAuth);
+// A rota de comprovante (`GET /:id/receipt`) tambem aceita o leitor de servico
+// escopado (`receipt.read`) — e o que o TodoAPP consome. Todo o resto do
+// roteador continua exigindo sessao de usuario.
+const comprovanteOuUsuario = authOrConsumer('receipt.read');
+transactionsRouter.use((req, res, next) => {
+  const ehComprovante = req.method === 'GET' && /^\/[^/]+\/receipt\/?$/.test(req.path);
+  return ehComprovante ? comprovanteOuUsuario(req, res, next) : requireAuth(req, res, next);
+});
 
 // ---------- ai-parse ---------------------------------------------------------
 transactionsRouter.post('/ai-parse', async (req, res, next) => {
