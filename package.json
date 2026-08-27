@@ -14,7 +14,10 @@
     "typecheck": "pnpm -r run typecheck",
     "db:generate": "pnpm --filter @moneyapp/backend run db:generate",
     "db:migrate": "pnpm --filter @moneyapp/backend run db:migrate",
-    "db:studio": "pnpm --filter @moneyapp/backend run db:studio"
+    "db:studio": "pnpm --filter @moneyapp/backend run db:studio",
+    "version:bump": "node scripts/bump-version.mjs",
+    "version:minor": "node scripts/bump-version.mjs --minor",
+    "version:major": "node scripts/bump-version.mjs --major"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

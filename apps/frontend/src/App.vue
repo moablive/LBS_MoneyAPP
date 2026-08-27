@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
+import UpdateBanner from './components/UpdateBanner.vue';
+import VersionBadge from './components/VersionBadge.vue';
 </script>
 
 <template>
@@ -18,6 +20,10 @@ import { RouterView } from 'vue-router';
       </RouterView>
     </div>
   </div>
+
+  <!-- Fora do RouterView de proposito: precisam sobreviver a troca de rota. -->
+  <VersionBadge />
+  <UpdateBanner />
 </template>
 
 <style>
