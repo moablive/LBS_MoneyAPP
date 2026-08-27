@@ -1,0 +1,75 @@
+# Sobreposicao de DESENVOLVIMENTO — nada aqui vai para producao.
+#
+#   docker compose --env-file ../shared.env --env-file .env \
+#     -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# ou, mais curto, na raiz do app:  pnpm docker:dev
+#
+# O docker-compose.yml sozinho continua sendo producao: build multi-stage, front
+# servido por nginx, sem volume de codigo. Este arquivo troca as imagens finais
+# pelos estagios que ja tem as dependencias instaladas, monta o repositorio de
+# dentro e roda os watchers — `tsx watch` no backend e no bot, Vite com HMR no
+# front. Editou no host, o container reage.
+#
+# ATENCAO aos volumes anonimos `/repo/**/node_modules`: sem eles o bind mount da
+# raiz cobriria o node_modules do container pelo do host, que foi resolvido para
+# outra plataforma — o pnpm/rollup morre no boot. Workspace novo em apps/ ou
+# packages/ = LINHA NOVA na ancora abaixo.
+#
+# Em dev o nginx sai do caminho, e com ele o proxy /api: quem passa a encaminhar
+# e o proprio Vite, pelo DEV_API_TARGET (ver apps/frontend/vite.config.ts). O
+# tunel da Cloudflare aponta para o nginx, entao em modo dev o acesso e pela
+# porta publicada, nao pelo dominio publico.
+
+#
+# Cada servico de dev tem `image:` proprio (sufixo -dev). Sem isso o compose
+# reaproveita a imagem de PRODUCAO ja tagueada com o mesmo nome e ignora o
+# `target:` — o container sobe com o nginx e morre em `pnpm: not found`, que e
+# um erro bem dificil de ler. Com nome proprio, a imagem nao existe na primeira
+# vez e o compose a constroi sozinho.
+
+x-hot-reload: &hot-reload
+  - .:/repo
+  - /repo/node_modules
+  - /repo/apps/backend/node_modules
+  - /repo/apps/frontend/node_modules
+  - /repo/packages/api-client/node_modules
+  - /repo/packages/db/node_modules
+  - /repo/packages/models/node_modules
+  - /repo/packages/services/node_modules
+
+services:
+  lbs_moneyapp_backend:
+    image: lbs_moneyapp_backend_dev
+    build:
+      # `deps` tem as dependencias instaladas e NAO tem o codigo — ele vem do
+      # bind mount, que e o ponto do exercicio.
+      target: deps
+    command: pnpm --filter @moneyapp/backend dev
+    volumes: *hot-reload
+    ports:
+      # So para depurar direto, sem passar pelo front. O trafego real continua
+      # entrando pela rede interna.
+      - "5082:3000"
+
+  lbs_moneyapp_frontend:
+    image: lbs_moneyapp_frontend_dev
+    build:
+      # `deps` do Dockerfile do front: instala e para antes do `vite build`.
+      target: deps
+    command: pnpm --filter @moneyapp/frontend dev
+    environment:
+      DEV_API_TARGET: http://moneyapp_backend:3000
+    volumes: *hot-reload
+    ports:
+      - "5182:5173"
+
+  lbs_moneyapp_bot:
+    image: lbs_moneyapp_bot_dev
+    build:
+      target: deps
+    command: pnpm dev
+    volumes:
+      # O bot tem contexto de build proprio (apps/bot), fora do workspace.
+      - ./apps/bot:/app
+      - /app/node_modules

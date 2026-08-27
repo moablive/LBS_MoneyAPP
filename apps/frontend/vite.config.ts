@@ -39,6 +39,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { '/api': 'http://localhost:3000' },
+    // Em container, `--host` sozinho nao basta: o Vite recusa Host que nao seja
+    // localhost e responde "Blocked request". O acesso em dev vem da LAN ou do
+    // Tailscale, entao os dois precisam estar ligados.
+    host: true,
+    allowedHosts: true,
+    // Em producao o nginx do proprio front encaminha /api ao backend; em dev
+    // nao ha nginx. Rodando na maquina o alvo e localhost, rodando em container
+    // e o alias do backend na awl_network — dai a variavel, definida no
+    // docker-compose.dev.yml.
+    proxy: { '/api': process.env.DEV_API_TARGET || 'http://localhost:3000' },
   },
 });

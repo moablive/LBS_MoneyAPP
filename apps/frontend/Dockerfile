@@ -3,7 +3,7 @@ ARG VITE_API_BASE_URL
 ARG VITE_LOGINHUB_API_URL
 ARG VITE_LOGINHUB_APP_ID
 
-FROM node:20-alpine AS build
+FROM node:20-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /repo
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* tsconfig.base.json ./
@@ -13,6 +13,10 @@ COPY packages/db/package.json packages/db/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/services/package.json packages/services/
 RUN pnpm install --frozen-lockfile || pnpm install
+
+# Estagio de compilacao. O `deps` acima e reaproveitado pelo modo dev
+# (docker-compose.dev.yml), que precisa das dependencias e NAO do build.
+FROM deps AS build
 COPY packages/ packages/
 COPY apps/frontend apps/frontend
 ARG VITE_API_BASE_URL

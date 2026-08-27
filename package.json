@@ -17,7 +17,8 @@
     "db:studio": "pnpm --filter @moneyapp/backend run db:studio",
     "version:bump": "node scripts/bump-version.mjs",
     "version:minor": "node scripts/bump-version.mjs --minor",
-    "version:major": "node scripts/bump-version.mjs --major"
+    "version:major": "node scripts/bump-version.mjs --major",
+    "docker:dev": "docker compose --env-file ../shared.env --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
