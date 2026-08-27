@@ -14,6 +14,11 @@ export const auth: MiddlewareFn<BotContext> = async (ctx, next) => {
   const id = ctx.from?.id;
   if (!id) return;
 
+  // Uso privado. Em grupo, o que o bot responde — saldo, fatura, comprovante
+  // fotografado — fica visível para todos na conversa, e o vínculo do LoginHUB
+  // responde por uma pessoa só. NotesAPP e TodoAPP já barravam; aqui não.
+  if (ctx.chat && ctx.chat.type !== 'private') return;
+
   const user = await botApi.getUserIdByTelegramId(String(id));
   const loginhubId = user?.id;
   if (!loginhubId) {
