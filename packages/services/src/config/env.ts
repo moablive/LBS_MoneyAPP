@@ -70,6 +70,18 @@ const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default('mailto:admin@moneyapp.local'),
   OLLAMA_URL: z.string().default('http://server_ollama:11434'),
+  // Os dois modelos precisam estar DECLARADOS aqui, não só presentes no
+  // ambiente: o zod descarta chave que o schema não conhece, então
+  // `env.OLLAMA_MODEL` vinha undefined mesmo com o compose entregando o valor.
+  // Foi o que levou a rota de transações a hardcodear o nome do modelo — e o
+  // hardcode apontava para 'llama3.2:3b', que nunca existiu neste servidor.
+  //
+  // Os defaults repetem os do apps/bot/src/config.ts de propósito: os dois
+  // processos falam com o MESMO Ollama, e divergir aqui faria dois modelos
+  // residentes disputando 12 GB de VRAM — exatamente o que o .env do MoneyAPP
+  // documenta ter sido resolvido unificando voz e visão num modelo só.
+  OLLAMA_MODEL: z.string().default('qwen2.5vl:7b'),
+  OLLAMA_TEXT_MODEL: z.string().default('qwen2.5vl:7b'),
 });
 
 const parsed = envSchema.safeParse(process.env);

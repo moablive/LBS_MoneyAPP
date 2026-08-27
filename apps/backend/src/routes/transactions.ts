@@ -89,9 +89,16 @@ Mensagem do usuário: "${text}"
     // Try to import env from services
     const { env } = await import('@moneyapp/services');
     
-    // For images we need the vision model (qwen2.5vl:7b), for text llama3.2:3b is faster
-    // We just use what's configured or fallback
-    const modelToUse = imageBase64 ? 'qwen2.5vl:7b' : 'llama3.2:3b';
+    // Imagem (OCR de comprovante) usa o modelo de VISÃO; texto usa o de TEXTO.
+    // Hoje os dois apontam para o mesmo tag, e isso é deliberado: são 12 GB de
+    // VRAM, e dois modelos diferentes aqui significariam um despejando o outro
+    // a cada comprovante fotografado.
+    //
+    // Vinha hardcodado como `imageBase64 ? 'qwen2.5vl:7b' : 'llama3.2:3b'`. O
+    // llama3.2:3b NUNCA existiu neste servidor — a chamada morria com
+    // "model 'llama3.2:3b' not found" e a extração por texto nunca funcionou.
+    // A imagem funcionava por coincidência: o nome cravado era o certo.
+    const modelToUse = imageBase64 ? env.OLLAMA_MODEL : env.OLLAMA_TEXT_MODEL;
     
     const ollamaPayload: any = {
       model: modelToUse,
@@ -200,7 +207,10 @@ Regras IMPORTANTES:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'qwen2.5vl:7b',
+        // Sempre visão: esta rota lê print de extrato. O valor cravado aqui era
+        // o certo, mas trocar de modelo exigia lembrar deste ponto — agora sai
+        // do mesmo lugar que o resto.
+        model: env.OLLAMA_MODEL,
         prompt: systemPrompt,
         images: [imageBase64],
         stream: false,
