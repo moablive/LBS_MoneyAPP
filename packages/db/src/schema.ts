@@ -421,14 +421,21 @@ export const pushSubscriptions = pgTable(
  * Guardamos o SHA-256 e não o passe: vazamento do banco não entrega passe
  * utilizável, do mesmo jeito que não se guarda senha em texto.
  */
-export const telegramLinkTokens = pgTable("telegram_link_tokens", {
-  tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
-  loginhubId: integer("loginhub_id").notNull(),
-  criadoEm: timestamp("criado_em", { withTimezone: true }).defaultNow().notNull(),
-  expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
-  /** Carimbo do consumo. Não-nulo = já usado, e não serve de novo. */
-  usadoEm: timestamp("usado_em", { withTimezone: true }),
-});
+export const telegramLinkTokens = pgTable(
+  "telegram_link_tokens",
+  {
+    tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+    loginhubId: integer("loginhub_id").notNull(),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).defaultNow().notNull(),
+    expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
+    /** Carimbo do consumo. Não-nulo = já usado, e não serve de novo. */
+    usadoEm: timestamp("usado_em", { withTimezone: true }),
+  },
+  // O índice existia em produção e não estava declarado aqui — foi criado à mão
+  // e o schema nunca soube dele. A varredura de tokens vencidos filtra por
+  // expira_em; sem o índice ela vira seq scan na tabela inteira.
+  (t) => ({ expiraIdx: index("telegram_link_tokens_expira_idx").on(t.expiraEm) }),
+);
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;

@@ -1,5 +1,5 @@
 {
-  "id": "5cab142b-0492-4ee5-829f-d629caf0d1ab",
+  "id": "c15a9d25-8e27-48d8-95a8-ef48321cd60a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -15,9 +15,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -53,31 +53,6 @@
           "notNull": true,
           "default": "'0'"
         },
-        "freeze_balance": {
-          "name": "freeze_balance",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "credit_limit": {
-          "name": "credit_limit",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "closing_day": {
-          "name": "closing_day",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "due_day": {
-          "name": "due_day",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -87,11 +62,11 @@
         }
       },
       "indexes": {
-        "accounts_loginhub_idx": {
-          "name": "accounts_loginhub_idx",
+        "accounts_user_idx": {
+          "name": "accounts_user_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -103,7 +78,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "accounts_user_id_users_id_fk": {
+          "name": "accounts_user_id_users_id_fk",
+          "tableFrom": "accounts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -118,9 +107,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -152,11 +141,11 @@
         }
       },
       "indexes": {
-        "categories_loginhub_idx": {
-          "name": "categories_loginhub_idx",
+        "categories_user_idx": {
+          "name": "categories_user_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -167,11 +156,11 @@
           "method": "btree",
           "with": {}
         },
-        "categories_loginhub_name_type_uq": {
-          "name": "categories_loginhub_name_type_uq",
+        "categories_user_name_type_uq": {
+          "name": "categories_user_name_type_uq",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -195,7 +184,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "categories_user_id_users_id_fk": {
+          "name": "categories_user_id_users_id_fk",
+          "tableFrom": "categories",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -210,9 +213,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -300,11 +303,11 @@
         }
       },
       "indexes": {
-        "investments_loginhub_idx": {
-          "name": "investments_loginhub_idx",
+        "investments_user_idx": {
+          "name": "investments_user_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -332,6 +335,19 @@
         }
       },
       "foreignKeys": {
+        "investments_user_id_users_id_fk": {
+          "name": "investments_user_id_users_id_fk",
+          "tableFrom": "investments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "investments_account_id_accounts_id_fk": {
           "name": "investments_account_id_accounts_id_fk",
           "tableFrom": "investments",
@@ -360,20 +376,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "account_id": {
           "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "category_id": {
-          "name": "category_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -389,12 +399,6 @@
           "type": "numeric(14, 2)",
           "primaryKey": false,
           "notNull": true
-        },
-        "expected_amount": {
-          "name": "expected_amount",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": false
         },
         "date": {
           "name": "date",
@@ -429,18 +433,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "payment_receipt_base64": {
-          "name": "payment_receipt_base64",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "payment_receipt_mime_type": {
-          "name": "payment_receipt_mime_type",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -457,11 +449,11 @@
         }
       },
       "indexes": {
-        "loans_loginhub_idx": {
-          "name": "loans_loginhub_idx",
+        "loans_user_idx": {
+          "name": "loans_user_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -474,6 +466,19 @@
         }
       },
       "foreignKeys": {
+        "loans_user_id_users_id_fk": {
+          "name": "loans_user_id_users_id_fk",
+          "tableFrom": "loans",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "loans_account_id_accounts_id_fk": {
           "name": "loans_account_id_accounts_id_fk",
           "tableFrom": "loans",
@@ -486,201 +491,10 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
-        },
-        "loans_category_id_categories_id_fk": {
-          "name": "loans_category_id_categories_id_fk",
-          "tableFrom": "loans",
-          "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
-    },
-    "public.push_subscriptions": {
-      "name": "push_subscriptions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(36)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "endpoint": {
-          "name": "endpoint",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "p256dh": {
-          "name": "p256dh",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "auth": {
-          "name": "auth",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "push_subscriptions_loginhub_idx": {
-          "name": "push_subscriptions_loginhub_idx",
-          "columns": [
-            {
-              "expression": "loginhub_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "push_subscriptions_endpoint_unique": {
-          "name": "push_subscriptions_endpoint_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "endpoint"
-          ]
-        }
-      }
-    },
-    "public.shared_links": {
-      "name": "shared_links",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category_id": {
-          "name": "category_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "token": {
-          "name": "token",
-          "type": "varchar(128)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "password_hash": {
-          "name": "password_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "shared_links_loginhub_idx": {
-          "name": "shared_links_loginhub_idx",
-          "columns": [
-            {
-              "expression": "loginhub_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "shared_links_token_idx": {
-          "name": "shared_links_token_idx",
-          "columns": [
-            {
-              "expression": "token",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "shared_links_category_id_categories_id_fk": {
-          "name": "shared_links_category_id_categories_id_fk",
-          "tableFrom": "shared_links",
-          "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "shared_links_token_unique": {
-          "name": "shared_links_token_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
-        }
-      }
     },
     "public.subscriptions": {
       "name": "subscriptions",
@@ -693,9 +507,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -760,11 +574,11 @@
         }
       },
       "indexes": {
-        "subscriptions_loginhub_idx": {
-          "name": "subscriptions_loginhub_idx",
+        "subscriptions_user_idx": {
+          "name": "subscriptions_user_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -777,6 +591,19 @@
         }
       },
       "foreignKeys": {
+        "subscriptions_user_id_users_id_fk": {
+          "name": "subscriptions_user_id_users_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "subscriptions_category_id_categories_id_fk": {
           "name": "subscriptions_category_id_categories_id_fk",
           "tableFrom": "subscriptions",
@@ -807,63 +634,6 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.telegram_link_tokens": {
-      "name": "telegram_link_tokens",
-      "schema": "",
-      "columns": {
-        "token_hash": {
-          "name": "token_hash",
-          "type": "varchar(64)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "criado_em": {
-          "name": "criado_em",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "expira_em": {
-          "name": "expira_em",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "usado_em": {
-          "name": "usado_em",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "telegram_link_tokens_expira_idx": {
-          "name": "telegram_link_tokens_expira_idx",
-          "columns": [
-            {
-              "expression": "expira_em",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
     "public.transactions": {
       "name": "transactions",
       "schema": "",
@@ -875,9 +645,9 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -938,18 +708,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "loan_id": {
-          "name": "loan_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "invoice_card_id": {
-          "name": "invoice_card_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "receipt_base64": {
           "name": "receipt_base64",
           "type": "text",
@@ -978,11 +736,11 @@
         }
       },
       "indexes": {
-        "transactions_loginhub_occurred_idx": {
-          "name": "transactions_loginhub_occurred_idx",
+        "transactions_user_occurred_idx": {
+          "name": "transactions_user_occurred_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1003,7 +761,7 @@
           "name": "transactions_user_type_occurred_idx",
           "columns": [
             {
-              "expression": "loginhub_id",
+              "expression": "user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1073,6 +831,19 @@
         }
       },
       "foreignKeys": {
+        "transactions_user_id_users_id_fk": {
+          "name": "transactions_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "transactions_category_id_categories_id_fk": {
           "name": "transactions_category_id_categories_id_fk",
           "tableFrom": "transactions",
@@ -1124,52 +895,53 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
-        },
-        "transactions_loan_id_loans_id_fk": {
-          "name": "transactions_loan_id_loans_id_fk",
-          "tableFrom": "transactions",
-          "tableTo": "loans",
-          "columnsFrom": [
-            "loan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "transactions_invoice_card_id_accounts_id_fk": {
-          "name": "transactions_invoice_card_id_accounts_id_fk",
-          "tableFrom": "transactions",
-          "tableTo": "accounts",
-          "columnsFrom": [
-            "invoice_card_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.user_settings": {
-      "name": "user_settings",
+    "public.users": {
+      "name": "users",
       "schema": "",
       "columns": {
-        "loginhub_id": {
-          "name": "loginhub_id",
-          "type": "integer",
+        "id": {
+          "name": "id",
+          "type": "uuid",
           "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(120)",
+          "primaryKey": false,
           "notNull": true
         },
-        "telegram_id": {
-          "name": "telegram_id",
-          "type": "varchar(50)",
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "settings": {
           "name": "settings",
@@ -1183,11 +955,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "user_settings_telegram_id_unique": {
-          "name": "user_settings_telegram_id_unique",
+        "users_email_unique": {
+          "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "telegram_id"
+            "email"
           ]
         }
       }
