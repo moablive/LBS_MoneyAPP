@@ -1,5 +1,5 @@
 {
-  "name": "moneyapp",
+  "name": "lbs-moneyapp",
   "version": "0.1.0",
   "private": true,
   "description": "PWA de controle financeiro pessoal — monorepo Vue 3 + Express + Drizzle + PostgreSQL",
