@@ -1,0 +1,33 @@
+#!/bin/bash
+# Guarda de segredos. Este arquivo PRECISA existir aqui.
+#
+# Os outros apps da suite herdam o pre-commit de /root/.git-templates/hooks.
+# Este repositorio nao: ele define `core.hooksPath = .githooks` (por causa do
+# post-commit ao lado), e hooksPath substitui o diretorio inteiro — nao soma.
+# Sem este arquivo, o MoneyAPP era o unico da LifeBusinessSuit onde commit
+# passava sem varredura de credencial.
+#
+# A logica e propositalmente auto-contida, e nao um `source` do template
+# global: o repositorio e clonado fora deste servidor, onde /root nao existe.
+
+echo "🛡️  [Segurança] Verificando arquivos no commit para evitar vazamentos..."
+
+# 1. Verifica se está tentando comitar um arquivo .env real
+if git diff --cached --name-only | grep -E '^\.env$|^\.env\.[^e]'; then
+    echo "❌ ERRO: Você está tentando fazer commit de um arquivo .env real!"
+    echo "Arquivos de ambiente devem ficar apenas na sua máquina e nunca devem subir para o Git."
+    echo "Adicione o .env ao .gitignore do projeto e use .env.example para o repositório."
+    exit 1
+fi
+
+# 2. Roda o gitleaks para checar senhas e chaves no código em si
+if command -v gitleaks > /dev/null; then
+    gitleaks protect -v --staged
+    if [ $? -ne 0 ]; then
+        echo "❌ ERRO: Gitleaks detectou possíveis credenciais ou senhas no seu código."
+        echo "Remova as senhas (coloque em .env) ou use git commit --no-verify se for um falso positivo."
+        exit 1
+    fi
+else
+    echo "⚠️  Gitleaks não encontrado no PATH. Pulando verificação de secrets no código."
+fi
