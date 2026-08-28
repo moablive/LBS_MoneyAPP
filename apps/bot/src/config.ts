@@ -35,6 +35,16 @@ const envSchema = z.object({
   // assim voz e comprovante não se evictam. Ver nota em ../../../shared.env.
   OLLAMA_TEXT_MODEL: z.string().default('qwen2.5vl:7b'),
   GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required'),
+  // ── LBS Notify (plataforma central de notificacoes) ──────────────────────
+  // Com a flag `false` nada muda: o cron continua so no Telegram. Ligada, ele
+  // passa a emitir tambem o evento de vencimento para o Notify entregar como
+  // Web Push — o Telegram continua saindo daqui do mesmo jeito.
+  LBS_NOTIFY_URL: z.string().default('http://lbs_notify_api:3000'),
+  LBS_NOTIFY_KEY: z.string().optional(),
+  MONEY_NOTIFY_USE_CENTRAL: z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined ? false : /^(1|true|yes|on)$/i.test(v.trim()))),
 });
 
 const parsed = envSchema.safeParse(process.env);

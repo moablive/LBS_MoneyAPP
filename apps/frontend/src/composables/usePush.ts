@@ -1,5 +1,18 @@
 import { ref } from 'vue';
 import { api } from '@moneyapp/api-client';
+import {
+  notifyCentralAtivo,
+  notifyPublicKey,
+  notifyRegistrarWebPush,
+  notifyRemoverWebPush,
+} from '../lib/lbsNotifyClient';
+
+/**
+ * Chave do JWT do LoginHUB no localStorage — a MESMA que o `tokenKey` do
+ * auth-kit usa neste app. Cada app tem a sua; não unifique sem migrar o
+ * storage, ou todo mundo cai para a tela de login no deploy seguinte.
+ */
+const CHAVE_TOKEN = 'token';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -10,6 +23,22 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
+}
+
+/**
+ * A inscrição foi criada com esta chave pública?
+ *
+ * `applicationServerKey` volta como ArrayBuffer cru; a comparação é feita na
+ * forma base64url, que é como a chave chega da API.
+ */
+function mesmaChave(sub: PushSubscription, publicKey: string): boolean {
+  const bruto = sub.options?.applicationServerKey;
+  if (!bruto) return false;
+  const bytes = new Uint8Array(bruto as ArrayBuffer);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const atual = window.btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return atual === publicKey.replace(/=+$/, '');
 }
 
 export function usePush() {
@@ -51,9 +80,22 @@ export function usePush() {
       }
 
       const reg = await navigator.serviceWorker.ready;
-      const { publicKey } = await api.get<{ publicKey: string }>('/push/public-key');
+      // A chave vem de quem VAI entregar. Assinar com a chave de um serviço e
+      // mandar pelo outro produz 403 no servidor de push do navegador.
+      const publicKey = notifyCentralAtivo
+        ? await notifyPublicKey()
+        : (await api.get<{ publicKey: string }>('/push/public-key')).publicKey;
 
       let sub = await reg.pushManager.getSubscription();
+      // Uma inscrição existente pode ter sido criada com a chave do OUTRO
+      // caminho (é o caso de todo aparelho que já tinha push antes do LBS
+      // Notify). Ela nunca passaria a receber pela central, e o sintoma seria
+      // "ativei e não chega nada" — sem erro nenhum. Por isso a chave é
+      // conferida e a inscrição divergente é refeita.
+      if (sub && !mesmaChave(sub, publicKey)) {
+        await sub.unsubscribe().catch(() => {});
+        sub = null;
+      }
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -61,7 +103,8 @@ export function usePush() {
         });
       }
 
-      await api.post('/push/subscribe', sub.toJSON());
+      if (notifyCentralAtivo) await notifyRegistrarWebPush(sub.toJSON(), CHAVE_TOKEN);
+      else await api.post('/push/subscribe', sub.toJSON());
       isSubscribed.value = true;
       return true;
     } catch (err: any) {
@@ -80,7 +123,11 @@ export function usePush() {
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        await api.post('/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {});
+        if (notifyCentralAtivo) {
+          await notifyRemoverWebPush(sub.endpoint, CHAVE_TOKEN).catch(() => {});
+        } else {
+          await api.post('/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {});
+        }
         await sub.unsubscribe();
       }
       isSubscribed.value = false;
