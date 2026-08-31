@@ -136,7 +136,10 @@ function reset() {
     
     categoryId.value = props.initialData.categoryId || '';
     accountId.value = props.initialData.accountId || '';
-    receiptFile.value = props.initialData._receiptFile || null;
+    // A chave e `receiptFile` — a mesma que a TransactionsView monta ao receber
+    // o `parsed` da IA. Ja se chamou `_receiptFile` aqui, e o comprovante lido
+    // pela IA simplesmente nunca chegava ao formulario.
+    receiptFile.value = props.initialData.receiptFile || null;
   } else {
     description.value = '';
     absAmount.value = null;
