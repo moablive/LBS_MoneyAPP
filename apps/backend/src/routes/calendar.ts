@@ -48,7 +48,12 @@ calendarRouter.get('/', authOrConsumer('calendar.read'), async (req, res, next) 
         type: tx.type,
         status: tx.status,
         category: tx.category?.name,
-        color: tx.type === 'expense' ? '#ef4444' : '#22c55e',
+        // A cor que a PESSOA escolheu para a categoria (NewCategoryModal), nao
+        // uma cor derivada do tipo. Cravar vermelho/verde aqui jogava fora o
+        // unico dado de cor que o usuario de fato escolheu, e fazia o
+        // calendario do TodoAPP pintar todas as despesas da mesma cor.
+        // Sem categoria (ou categoria sem cor) cai no vermelho/verde de antes.
+        color: tx.category?.color || (tx.type === 'expense' ? '#ef4444' : '#22c55e'),
         hasReceipt: !!tx.receiptBase64,
       });
     });
