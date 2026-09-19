@@ -5,19 +5,6 @@ import { getUpcomingTransactions, UpcomingTransaction } from '../utils/upcoming.
 import { brl, escHtml } from '../utils/format.js';
 import type { BotContext } from '../context.js';
 import { isNotificationEnabled } from '../utils/user-cache.js';
-import { criarClienteNotify } from '../lib/lbsNotify.js';
-import { env } from '../config.js';
-
-/**
- * Entrega de Web Push pela plataforma central. Inerte enquanto
- * `MONEY_NOTIFY_USE_CENTRAL` for `false` — o Telegram abaixo nao depende disto.
- */
-const notify = criarClienteNotify({
-  baseUrl: env.LBS_NOTIFY_URL,
-  app: 'money',
-  key: env.LBS_NOTIFY_KEY,
-  enabled: env.MONEY_NOTIFY_USE_CENTRAL,
-});
 
 async function sendNotificationForDate(
   bot: Telegraf<BotContext>,
@@ -27,8 +14,10 @@ async function sendNotificationForDate(
   targetYYYYMMDD: string,
   title: string,
   dateStr: string,
-  /** Tipo do evento no LBS Notify: 'money.due_today' | 'money.due_soon'. */
-  eventType: string
+  // Classificava o evento para o LBS Notify ('money.due_today' | 'money.due_soon').
+  // A central saiu em 19/09/2026; o parametro fica porque as duas chamadas o
+  // passam posicionalmente e ele documenta qual dos dois avisos e este.
+  _eventType: string
 ) {
   const dueOnDate = transactions.filter(t => t.occurredAt.slice(0, 10) === targetYYYYMMDD);
 
@@ -63,25 +52,6 @@ async function sendNotificationForDate(
   await bot.telegram.sendMessage(user.telegramId, msgText, { parse_mode: 'HTML' });
   console.log(`✅ Notificação Telegram enviada para ${user.telegramId} (${targetYYYYMMDD})`);
 
-  // Web Push pela central. SEM VALOR NENHUM no corpo: a notificação aparece na
-  // tela de bloqueio, e quem estiver ao lado da pessoa leria quanto ela deve.
-  // O Telegram acima continua detalhando tudo — lá o aparelho já está aberto.
-  if (notify.ativo()) {
-    const quantos = dueOnDate.length;
-    await notify.emitir({
-      // Id ESTÁVEL por (usuário, data alvo): o cron é diário, e se ele rodar
-      // duas vezes no mesmo dia — restart do container, redeploy às 08:00 — o
-      // Notify reconhece o evento repetido em vez de avisar de novo.
-      eventId: `money:${eventType}:${user.id}:${targetYYYYMMDD}`,
-      type: eventType,
-      userId: String(user.id),
-      title: `⚠️ ${title}`,
-      body: quantos === 1
-        ? '1 lançamento vencendo. Toque para ver os detalhes.'
-        : `${quantos} lançamentos vencendo. Toque para ver os detalhes.`,
-      data: { url: '/' },
-    });
-  }
 }
 
 export function startNotificationsCron(bot: Telegraf<BotContext>) {

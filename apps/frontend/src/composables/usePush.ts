@@ -1,18 +1,5 @@
 import { ref } from 'vue';
 import { api } from '@moneyapp/api-client';
-import {
-  notifyCentralAtivo,
-  notifyPublicKey,
-  notifyRegistrarWebPush,
-  notifyRemoverWebPush,
-} from '../lib/lbsNotifyClient';
-
-/**
- * Chave do JWT do LoginHUB no localStorage — a MESMA que o `tokenKey` do
- * auth-kit usa neste app. Cada app tem a sua; não unifique sem migrar o
- * storage, ou todo mundo cai para a tela de login no deploy seguinte.
- */
-const CHAVE_TOKEN = 'token';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -80,11 +67,7 @@ export function usePush() {
       }
 
       const reg = await navigator.serviceWorker.ready;
-      // A chave vem de quem VAI entregar. Assinar com a chave de um serviço e
-      // mandar pelo outro produz 403 no servidor de push do navegador.
-      const publicKey = notifyCentralAtivo
-        ? await notifyPublicKey()
-        : (await api.get<{ publicKey: string }>('/push/public-key')).publicKey;
+      const publicKey = (await api.get<{ publicKey: string }>('/push/public-key')).publicKey;
 
       let sub = await reg.pushManager.getSubscription();
       // Uma inscrição existente pode ter sido criada com a chave do OUTRO
@@ -103,8 +86,7 @@ export function usePush() {
         });
       }
 
-      if (notifyCentralAtivo) await notifyRegistrarWebPush(sub.toJSON(), CHAVE_TOKEN);
-      else await api.post('/push/subscribe', sub.toJSON());
+      await api.post('/push/subscribe', sub.toJSON());
       isSubscribed.value = true;
       return true;
     } catch (err: any) {
@@ -123,11 +105,7 @@ export function usePush() {
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        if (notifyCentralAtivo) {
-          await notifyRemoverWebPush(sub.endpoint, CHAVE_TOKEN).catch(() => {});
-        } else {
-          await api.post('/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {});
-        }
+        await api.post('/push/unsubscribe', { endpoint: sub.endpoint }).catch(() => {});
         await sub.unsubscribe();
       }
       isSubscribed.value = false;
