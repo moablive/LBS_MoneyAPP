@@ -698,70 +698,27 @@ docker compose --env-file .env up -d --build
 
 ---
 
-## 🔔 LBS Notify — notificações pela plataforma central
+## 🔔 Notificações — Web Push próprio
 
-Desde 27/08/2026 existe um serviço central de notificações da suite, o
-[**LBS Notify**](https://github.com/moablive/LBSNotify) (containers
-`lbs_notify_api` e `lbs_notify_worker`, banco `lbsnotify`). Ele substitui a
-infraestrutura de Web Push que cada app carregava duplicada.
+Este app entrega Web Push por conta própria: par VAPID no `.env`, tabela
+`push_subscriptions` no próprio banco e rotas de inscrição no backend. O
+`usePush` do frontend confere a chave da inscrição existente e a refaz quando
+ela é de outro par — sem isso o sintoma seria "ativei e não chega nada", sem
+erro nenhum.
 
-> ⚠️ **Está DESLIGADO por padrão.** Com as flags abaixo em branco/`false` — que
-> é como elas nascem — o comportamento deste app é **exatamente** o de antes.
-> Nada muda até você virar as chaves, e a virada é um app por vez.
+### Sobre o LBS Notify (histórico)
 
-### As flags
+A plataforma **central** de push da suíte foi **descontinuada em 19/09/2026**.
+Ela foi construída, publicada e nunca entregou um único aviso: o rollout
+dependia de um hostname público no túnel Cloudflare que nunca existiu, então as
+flags ficaram em `false` e o banco `lbsnotify` terminou com zero linhas.
 
-| Variável | Onde | Vazio/`false` significa |
-|---|---|---|
-| `VITE_LBS_NOTIFY_URL` | build do frontend | o PWA registra o aparelho no `/api/push/*` deste app |
-| `LBS_NOTIFY_KEY` | backend/bot | chave de serviço deste app na central |
-| `MONEY_NOTIFY_USE_CENTRAL` | backend/bot | a entrega continua saindo daqui |
+Containers derrubados, submódulo removido e repositório apagado do GitHub. As
+variáveis `LBS_NOTIFY_URL`, `LBS_NOTIFY_KEY`, `<APP>_NOTIFY_USE_CENTRAL` e
+`VITE_LBS_NOTIFY_URL` saíram do `.env` e do `shared.env`.
 
-### Como ligar
+O código está preservado em `/root/recuperado/LBS_NotifyAPP-20260919.bundle`.
 
-```bash
-# 1) o PWA passa a registrar o aparelho na central
-#    .env:  VITE_LBS_NOTIFY_URL='https://notify.astralwavelabel.com'
-bash /mnt/nvme2tb/docker-services/server/dashboard/scripts/redeploy.sh LifeBusinessSuit/LBS_MoneyAPP
-#    -> abra o app, ative as notificações, confirme que chega
-
-# 2) a entrega passa a sair da central
-#    .env:  MONEY_NOTIFY_USE_CENTRAL='true'
-bash /mnt/nvme2tb/docker-services/server/dashboard/scripts/redeploy.sh LifeBusinessSuit/LBS_MoneyAPP
-```
-
-### Duas coisas que mordem
-
-**A inscrição antiga não migra.** Uma `PushSubscription` fica amarrada à chave
-pública VAPID usada no `subscribe()` do navegador. O Notify assina com **outro**
-par, então as linhas de ``push_subscriptions`` **não podem** ser copiadas para lá — o
-servidor de push responderia `403` em todo envio. Cada aparelho se reinscreve na
-primeira vez que a pessoa ativa. O `usePush` já confere a chave da inscrição
-existente e a refaz quando ela é do outro caminho; sem isso o sintoma seria
-"ativei e não chega nada", sem erro nenhum.
-
-**Entre os passos 1 e 2 pode chegar em dobro.** O mesmo aparelho fica inscrito
-nos dois lados por um período. É o preço do rollout gradual e some quando
-a `push_subscriptions` deste app for aposentada.
-
-### O que muda no código deste app
-
-| Arquivo | O que faz |
-|---|---|
-| `apps/bot/src/lib/lbsNotify.ts` | cliente da API interna, que nunca derruba quem chama |
-| `apps/bot/src/cron/notifications.ts` | emite `money.due_today` e `money.due_soon` |
-| `apps/frontend/src/lib/lbsNotifyClient.ts` | registro do aparelho na central |
-| `apps/frontend/src/composables/usePush.ts` | escolhe o caminho e confere a chave VAPID |
-
-**O push não leva valor nenhum.** O corpo manda só a contagem — *"3 lançamentos
-vencendo. Toque para ver os detalhes."* Notificação aparece na tela de bloqueio:
-quem estiver ao lado da pessoa leria quanto ela deve. O **Telegram continua
-detalhando tudo**, com valor e categoria, porque lá o aparelho já está
-desbloqueado e aberto no chat.
-
-**`eventId` estável por (usuário, data alvo).** O cron é diário; se rodar duas
-vezes no mesmo dia — restart do container, redeploy às 08:00 — a central
-reconhece o evento repetido em vez de avisar de novo.
-
-📖 Contrato da API, decisões e operação: [`LBSNotify/README.md`](https://github.com/moablive/LBSNotify).
-Sequência de corte detalhada: `LBSNotify/docs/ARCHITECTURE_DISCOVERY.md`.
+Restaram no repositório, inertes, `apps/bot/src/lib/lbsNotify.ts` e
+`apps/frontend/src/lib/lbsNotifyClient.ts`: eles degradam sozinhos (`enabled`
+falso = nenhuma chamada sai), então removê-los é limpeza, não urgência.
