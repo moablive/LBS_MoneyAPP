@@ -78,7 +78,7 @@ telegramRouter.post('/link-token', async (req, res) => {
   });
 
   res.json({
-    deepLink: `https://t.me/${bot}?start=${passe}`,
+    deepLink: `https://t.me/${bot}?start=${env.TELEGRAM_START_PREFIX}${passe}`,
     bot,
     expiresIn: TTL_MINUTOS * 60,
     expiraEm: expiraEm.toISOString(),

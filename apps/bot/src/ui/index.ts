@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 import type { InlineKeyboardButton } from 'telegraf/types';
 
 import { Icons } from './icons.js';
+import { noMeuBruxo, BOTAO_CASA } from '../lib/meubruxo.js';
 
 export function mainMenuKeyboard() {
   return Markup.keyboard([
@@ -12,7 +13,9 @@ export function mainMenuKeyboard() {
     [`${Icons.Reports} Ver Relatórios`, `${Icons.GeneralReport} Relatório Geral`],
     [`${Icons.Balances} Saldos das Contas`, `${Icons.Upcoming} Próximos Lançamentos`],
     [`${Icons.Loans} Empréstimos`],
-  ]).resize();
+    ...(noMeuBruxo ? [[BOTAO_CASA]] : []),
+    // persistent: o teclado fica sempre aberto, não recolhe quando se digita.
+  ]).resize().persistent();
 }
 
 /**
