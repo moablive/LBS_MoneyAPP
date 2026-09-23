@@ -190,7 +190,7 @@ flowchart LR
     NGINX["nginx<br/>moneyapp_frontend:80"]
     API["Express + Drizzle<br/>moneyapp_backend:3000"]
     BOT["Telegram Bot<br/>lbs_moneyapp_bot"]
-    PG["PostgreSQL<br/>awlsrvDB_postgres:5432<br/>database 'moneyapp'"]
+    PG["PostgreSQL<br/>server_db_postgres:5432<br/>database 'moneyapp'"]
   end
 
   PWA -- "HTTPS" --> NGINX
@@ -200,7 +200,7 @@ flowchart LR
 ```
 
 > [!NOTE]
-> O PostgreSQL é um **container externo compartilhado** (`awlsrvDB_postgres`). O MoneyAPP usa um **database dedicado** `moneyapp` (tabelas no schema `public`) para isolar de outras aplicações na mesma instância.
+> O PostgreSQL é um **container externo compartilhado** (`server_db_postgres`). O MoneyAPP usa um **database dedicado** `moneyapp` (tabelas no schema `public`) para isolar de outras aplicações na mesma instância.
 
 ---
 
@@ -341,7 +341,7 @@ O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — con
 >
 > Isso é seguro para o backend porque ele valida ambiente com `z.object()` **sem** `.strict()` (`packages/services/src/config/env.ts`) — chave desconhecida é descartada em silêncio, não rejeitada.
 >
-> Ao adicionar variável do bot, cuidado com `OLLAMA_MODEL`: aqui é o modelo de **visão** (OCR de comprovante), enquanto no MailAPP a mesma variável é o modelo de **texto**. Por causa dessa colisão ela nunca pode subir para o `shared.env`.
+> Ao adicionar variável do bot, cuidado com `OLLAMA_MODEL`: aqui é o modelo de **visão** (OCR de comprovante), e o LBSTTSAPP usa a mesma variável com outro modelo de visão. Como cada app escolhe o seu, ela nunca pode subir para o `shared.env`.
 
 ---
 
@@ -706,19 +706,5 @@ Este app entrega Web Push por conta própria: par VAPID no `.env`, tabela
 ela é de outro par — sem isso o sintoma seria "ativei e não chega nada", sem
 erro nenhum.
 
-### Sobre o LBS Notify (histórico)
-
-A plataforma **central** de push da suíte foi **descontinuada em 19/09/2026**.
-Ela foi construída, publicada e nunca entregou um único aviso: o rollout
-dependia de um hostname público no túnel Cloudflare que nunca existiu, então as
-flags ficaram em `false` e o banco `lbsnotify` terminou com zero linhas.
-
-Containers derrubados, submódulo removido e repositório apagado do GitHub. As
-variáveis `LBS_NOTIFY_URL`, `LBS_NOTIFY_KEY`, `<APP>_NOTIFY_USE_CENTRAL` e
-`VITE_LBS_NOTIFY_URL` saíram do `.env` e do `shared.env`.
-
-O código está preservado em `/root/recuperado/LBS_NotifyAPP-20260919.bundle`.
-
-Restaram no repositório, inertes, `apps/bot/src/lib/lbsNotify.ts` e
-`apps/frontend/src/lib/lbsNotifyClient.ts`: eles degradam sozinhos (`enabled`
-falso = nenhuma chamada sai), então removê-los é limpeza, não urgência.
+> Não existe central de push na suíte: o antigo LBS Notify foi descontinuado
+> em 19/09/2026. Cada app envia o próprio Web Push.

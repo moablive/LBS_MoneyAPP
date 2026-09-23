@@ -24,7 +24,7 @@ bot comunica-se com o backend do MoneyAPP de forma autenticada usando a `BOT_SER
 flowchart LR
   Telegram((Telegram)) <--> BOT[lbs_moneyapp_bot]
   BOT -- "HTTP /api" --> API[lbs_moneyapp_backend]
-  API <--> DB[(awlsrvDB_postgres)]
+  API <--> DB[(server_db_postgres)]
   BOT -. "Valida convites" .-> LoginHub
 ```
 
