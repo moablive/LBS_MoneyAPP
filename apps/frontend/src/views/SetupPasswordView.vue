@@ -69,7 +69,7 @@ async function submit() {
     // devolve desafio em vez de sessao, senao o reset seria um atalho para
     // pular o segundo fator. O login fecha a etapa.
     if (r.etapa === '2fa') {
-      successMessage.value = 'Senha definida. Confirme o código do autenticador para entrar.';
+      successMessage.value = 'Senha definida. Confirme o código do Google Authenticator para entrar.';
       setTimeout(() => router.replace('/login'), 2000);
       return;
     }

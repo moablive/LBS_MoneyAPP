@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import QRCode from 'qrcode';
+import GoogleAuthAviso from './GoogleAuthAviso.vue';
 import { useAuthStore } from '../stores/auth';
 import type { TwoFactorSetupData } from '../lib/hubAuthClient';
 
@@ -46,6 +47,7 @@ onMounted(async () => {
       qrDataUrl.value = await QRCode.toDataURL(dados.value.otpauthUri, {
         width: 200,
         margin: 1,
+        errorCorrectionLevel: 'H', // o ícone do app cobre o centro
         color: { dark: '#121215', light: '#ffffff' },
       });
     } catch {
@@ -169,27 +171,22 @@ function copiar() {
       </div>
 
       <template v-else-if="dados">
-        <ol class="list-decimal space-y-1 pl-5 text-sm text-muted mb-6">
-          <li>Abra o Google Authenticator, Authy, 1Password ou Microsoft Authenticator.</li>
-          <li>{{ qrDataUrl ? 'Escaneie o QR abaixo (ou informe a chave manualmente).' : 'Adicione uma conta e informe a chave abaixo.' }}</li>
-          <li>Digite o codigo de 6 digitos que o app mostrar.</li>
-        </ol>
+        <GoogleAuthAviso :emissor="dados.issuer" class="mb-6 text-white" />
 
         <div v-if="qrDataUrl" class="flex justify-center mb-6">
-          <img
-            :src="qrDataUrl"
-            alt="QR Code para o aplicativo autenticador"
-            class="rounded-2xl bg-white p-3 shadow-lg"
-          />
+          <div class="relative rounded-2xl p-1 shadow-lg" style="background: linear-gradient(135deg, #4285F4, #34A853, #FBBC05, #EA4335)">
+            <img :src="qrDataUrl" alt="QR Code para escanear com o Google Authenticator" class="block rounded-xl bg-white p-3" />
+            <img src="/logo/pwa-192x192.png" alt="" class="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white object-contain p-0.5" />
+          </div>
         </div>
 
         <div class="rounded-2xl border border-surface-border bg-surface-overlay/50 p-4 mb-6">
-          <p class="text-[11px] uppercase tracking-wider text-muted">Conta</p>
-          <p class="text-sm text-white break-all">{{ dados.label }}</p>
+          <p class="text-[11px] uppercase tracking-wider text-muted">Conta no Google Authenticator</p>
+          <p class="text-sm text-white break-all"><strong>{{ dados.issuer }}</strong> · {{ dados.label }}</p>
           <p class="text-[11px] uppercase tracking-wider text-muted mt-3">Chave</p>
           <code class="block break-all font-mono text-sm text-white">{{ dados.secret }}</code>
           <a :href="dados.otpauthUri" class="mt-3 inline-block text-xs text-accent hover:underline">
-            Estou no celular — abrir no autenticador
+            Estou no celular — abrir no Google Authenticator
           </a>
         </div>
 

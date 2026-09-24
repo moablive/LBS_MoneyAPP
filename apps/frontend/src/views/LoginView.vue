@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GoogleAuthAviso from '../components/GoogleAuthAviso.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
@@ -158,6 +159,7 @@ async function confirmarCodigo() {
             ? 'Digite um dos códigos de recuperação que você guardou.'
             : 'Digite o código de 6 dígitos do seu aplicativo autenticador.' }}
         </p>
+        <GoogleAuthAviso v-if="!usarBackup" modo="codigo" emissor="MoneyAPP" class="mt-4 text-white" />
       </header>
 
       <label class="block space-y-1">
