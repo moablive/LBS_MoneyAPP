@@ -93,7 +93,7 @@ function copiar() {
 
 <template>
   <div
-    class="bg-surface-raised/60 backdrop-blur-xl border border-white/10 p-10 rounded-[2rem] shadow-modal animate-fade-in-up"
+    class="bg-surface-raised/60 backdrop-blur-xl border border-fg/10 p-10 rounded-[2rem] shadow-modal animate-fade-in-up"
   >
     <!-- Codigos de recuperacao: unica vez que aparecem. -->
     <template v-if="backupCodes">
@@ -109,7 +109,7 @@ function copiar() {
       </div>
 
       <div class="rounded-2xl border border-[#ff9500]/40 bg-[#ff9500]/10 p-4 mb-6">
-        <strong class="block text-white text-sm">Guarde estes codigos agora.</strong>
+        <strong class="block text-fg text-sm">Guarde estes codigos agora.</strong>
         <span class="text-muted text-sm">
           Eles nao voltam a ser exibidos e sao a sua unica entrada se voce perder o celular.
           Cada um serve uma vez so.
@@ -120,7 +120,7 @@ function copiar() {
         <li
           v-for="c in backupCodes"
           :key="c"
-          class="rounded-xl border border-surface-border bg-surface-overlay/50 px-3 py-2 text-center font-mono text-sm text-white"
+          class="rounded-xl border border-surface-border bg-surface-overlay/50 px-3 py-2 text-center font-mono text-sm text-fg"
         >
           {{ c }}
         </li>
@@ -128,7 +128,7 @@ function copiar() {
 
       <button
         type="button"
-        class="w-full mb-3 py-3.5 rounded-2xl font-semibold text-white bg-surface-overlay/70 border border-surface-border hover:bg-surface-overlay transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+        class="w-full mb-3 py-3.5 rounded-2xl font-semibold text-fg bg-surface-overlay/70 border border-surface-border hover:bg-surface-overlay transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         @click="copiar"
       >
         {{ copiado ? 'Copiado' : 'Copiar todos' }}
@@ -171,7 +171,7 @@ function copiar() {
       </div>
 
       <template v-else-if="dados">
-        <GoogleAuthAviso :emissor="dados.issuer" class="mb-6 text-white" />
+        <GoogleAuthAviso :emissor="dados.issuer" class="mb-6 text-fg" />
 
         <div v-if="qrDataUrl" class="flex justify-center mb-6">
           <div class="relative rounded-2xl p-1 shadow-lg" style="background: linear-gradient(135deg, #4285F4, #34A853, #FBBC05, #EA4335)">
@@ -182,9 +182,9 @@ function copiar() {
 
         <div class="rounded-2xl border border-surface-border bg-surface-overlay/50 p-4 mb-6">
           <p class="text-[11px] uppercase tracking-wider text-muted">Conta no Google Authenticator</p>
-          <p class="text-sm text-white break-all"><strong>{{ dados.issuer }}</strong> · {{ dados.label }}</p>
+          <p class="text-sm text-fg break-all"><strong>{{ dados.issuer }}</strong> · {{ dados.label }}</p>
           <p class="text-[11px] uppercase tracking-wider text-muted mt-3">Chave</p>
-          <code class="block break-all font-mono text-sm text-white">{{ dados.secret }}</code>
+          <code class="block break-all font-mono text-sm text-fg">{{ dados.secret }}</code>
           <a :href="dados.otpauthUri" class="mt-3 inline-block text-xs text-accent hover:underline">
             Estou no celular — abrir no Google Authenticator
           </a>
@@ -199,7 +199,7 @@ function copiar() {
             inputmode="numeric"
             maxlength="6"
             placeholder="000000"
-            class="w-full bg-surface-overlay/50 border border-surface-border rounded-2xl px-5 py-4 text-center tracking-[0.4em] text-white placeholder-muted focus:border-accent focus:bg-surface-overlay focus:ring-1 focus:ring-accent outline-none transition-all duration-300"
+            class="w-full bg-surface-overlay/50 border border-surface-border rounded-2xl px-5 py-4 text-center tracking-[0.4em] text-fg placeholder-muted focus:border-accent focus:bg-surface-overlay focus:ring-1 focus:ring-accent outline-none transition-all duration-300"
           />
 
           <p v-if="erro" class="text-sm text-red-400 text-center">{{ erro }}</p>

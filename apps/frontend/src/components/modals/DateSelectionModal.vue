@@ -34,7 +34,7 @@ function submit() {
   <Modal :open="open" title="Planejar Data" @close="open = false">
     <form class="space-y-4" @submit.prevent="submit">
       <div v-if="itemName" class="p-3 bg-surface-overlay border border-surface-border rounded-xl">
-        <p class="text-sm font-semibold text-white truncate">{{ itemName }}</p>
+        <p class="text-sm font-semibold text-fg truncate">{{ itemName }}</p>
       </div>
 
       <label class="block space-y-1">
@@ -50,7 +50,7 @@ function submit() {
       <div class="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100 transition-colors"
+          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg transition-colors"
           @click="open = false"
         >
           Cancelar

@@ -137,14 +137,14 @@ async function handleLink(tx: any) {
       <!-- Header -->
       <header class="px-6 py-4 border-b border-surface-border flex justify-between items-center bg-surface-overlay/50">
         <div>
-          <h3 class="text-lg font-bold text-white">Vincular Lançamento Existente</h3>
+          <h3 class="text-lg font-bold text-fg">Vincular Lançamento Existente</h3>
           <p class="text-xs text-muted">
             {{ isCardMode
               ? 'Selecione a saída já lançada no Livro Caixa que pagou esta fatura.'
               : 'Selecione uma transação já lançada no Livro Caixa para vincular.' }}
           </p>
         </div>
-        <button @click="open = false" class="text-muted hover:text-white transition-colors">
+        <button @click="open = false" class="text-muted hover:text-fg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </header>
@@ -154,7 +154,7 @@ async function handleLink(tx: any) {
         <img v-if="props.creditCard.customIconUrl" :src="props.creditCard.customIconUrl" class="w-7 h-7 rounded-md object-contain shrink-0 border border-surface-border" />
         <div class="min-w-0 flex-1">
           <span class="text-[10px] font-bold uppercase tracking-wider text-accent">Fatura do Cartão</span>
-          <p class="text-sm font-semibold text-white truncate">{{ props.creditCard.name }}</p>
+          <p class="text-sm font-semibold text-fg truncate">{{ props.creditCard.name }}</p>
         </div>
         <div class="text-right shrink-0">
           <span class="text-sm font-bold text-expense tabular-nums">{{ brl(targetAmount) }}</span>
@@ -164,7 +164,7 @@ async function handleLink(tx: any) {
       <div v-else-if="props.subscription" class="px-6 py-3 bg-surface-overlay border-b border-surface-border/50 flex items-center justify-between gap-4">
         <div class="min-w-0">
           <span class="text-[10px] font-bold uppercase tracking-wider text-accent">Assinatura / Mensalidade</span>
-          <p class="text-sm font-semibold text-white truncate">{{ props.subscription.description }}</p>
+          <p class="text-sm font-semibold text-fg truncate">{{ props.subscription.description }}</p>
         </div>
         <div class="text-right shrink-0">
           <span class="text-sm font-bold text-expense tabular-nums">{{ brl(targetAmount) }}</span>
@@ -177,7 +177,7 @@ async function handleLink(tx: any) {
           v-model="search"
           type="text"
           placeholder="Buscar no Livro Caixa por descrição ou valor..."
-          class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/60"
+          class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-2.5 text-sm text-fg placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/60"
         />
       </div>
 
@@ -205,7 +205,7 @@ async function handleLink(tx: any) {
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-sm text-white truncate">{{ tx.description }}</span>
+                <span class="font-medium text-sm text-fg truncate">{{ tx.description }}</span>
                 <span v-if="Math.abs(Number(tx.amount)) === targetAmount" class="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] font-bold uppercase tracking-wider shrink-0">
                   Valor Exato
                 </span>
@@ -245,7 +245,7 @@ async function handleLink(tx: any) {
       <footer class="p-4 border-t border-surface-border bg-surface-overlay/30 flex justify-end">
         <button
           @click="open = false"
-          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-white transition-colors text-sm font-semibold"
+          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg transition-colors text-sm font-semibold"
         >
           Cancelar
         </button>

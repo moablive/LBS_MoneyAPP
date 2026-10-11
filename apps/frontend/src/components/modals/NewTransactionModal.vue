@@ -328,14 +328,14 @@ function onFileChange(e: Event) {
         <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 15MB)</span>
         
         <div v-if="transaction?.hasReceipt && !removeExistingReceipt && !receiptFile" class="flex items-center gap-3 p-3 bg-surface-base border border-surface-border rounded-xl">
-          <span class="text-sm text-white font-medium flex-1">Comprovante anexado</span>
+          <span class="text-sm text-fg font-medium flex-1">Comprovante anexado</span>
           <button type="button" @click="removeExistingReceipt = true" class="text-xs text-expense hover:underline">
             Remover / Trocar
           </button>
         </div>
 
         <div v-else-if="receiptFile" class="flex items-center gap-3 p-3 bg-surface-base border border-surface-border rounded-xl">
-          <span class="text-sm text-white font-medium flex-1 truncate">{{ receiptFile.name || 'Comprovante da IA' }}</span>
+          <span class="text-sm text-fg font-medium flex-1 truncate">{{ receiptFile.name || 'Comprovante da IA' }}</span>
           <button type="button" @click="receiptFile = null" class="text-xs text-expense hover:underline whitespace-nowrap">
             Remover
           </button>
@@ -346,7 +346,7 @@ function onFileChange(e: Event) {
           type="file"
           accept="image/png,image/jpeg,image/webp,application/pdf"
           class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl
-                 file:border-0 file:bg-surface-overlay file:text-slate-100"
+                 file:border-0 file:bg-surface-overlay file:text-fg"
           @change="onFileChange"
         />
         
@@ -359,7 +359,7 @@ function onFileChange(e: Event) {
       <div class="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
+          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg"
           @click="open = false"
         >
           Cancelar

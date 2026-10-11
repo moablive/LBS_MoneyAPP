@@ -650,8 +650,8 @@ async function submitImport(force = false) {
     <div class="relative bg-surface-raised border border-surface-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center bg-surface-overlay">
-        <h2 class="text-lg font-bold text-white tracking-wide">Importar CSV</h2>
-        <button @click="emit('close')" class="text-muted hover:text-white transition-colors">
+        <h2 class="text-lg font-bold text-fg tracking-wide">Importar CSV</h2>
+        <button @click="emit('close')" class="text-muted hover:text-fg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -665,7 +665,7 @@ async function submitImport(force = false) {
           <div class="space-y-4">
             <div class="space-y-1.5">
               <label class="text-xs font-semibold uppercase tracking-wider text-muted">Conta</label>
-              <select v-model="selectedAccountId" class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent transition-colors">
+              <select v-model="selectedAccountId" class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-3 text-sm text-fg focus:outline-none focus:border-accent transition-colors">
                 <option value="" disabled>Selecione uma conta...</option>
                 <optgroup label="Contas" v-if="normalAccounts.length > 0">
                   <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
@@ -678,7 +678,7 @@ async function submitImport(force = false) {
             
             <div class="space-y-1.5">
               <label class="text-xs font-semibold uppercase tracking-wider text-muted">Categoria Padrão</label>
-              <select v-model="selectedCategoryId" class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent transition-colors">
+              <select v-model="selectedCategoryId" class="w-full bg-surface-base border border-surface-border rounded-xl px-4 py-3 text-sm text-fg focus:outline-none focus:border-accent transition-colors">
                 <option value="" disabled>Selecione uma categoria...</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
@@ -726,13 +726,13 @@ async function submitImport(force = false) {
             <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               <label v-for="d in formattedDates" :key="d.value" class="flex items-center gap-3 p-3 rounded-xl border border-surface-border bg-surface-base cursor-pointer hover:border-accent/50 transition-colors" :class="{'bg-accent/5 border-accent/30': selectedDateFilter.includes(d.value)}">
                 <input type="checkbox" :value="d.value" v-model="selectedDateFilter" class="w-4 h-4 rounded text-accent bg-surface-overlay border-surface-border focus:ring-accent focus:ring-offset-surface-base" />
-                <span class="text-sm font-medium text-white">{{ d.label }}</span>
+                <span class="text-sm font-medium text-fg">{{ d.label }}</span>
               </label>
             </div>
           </div>
 
           <div class="pt-4 flex justify-between border-t border-surface-border">
-            <button @click="currentStep = 1" class="text-muted hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            <button @click="currentStep = 1" class="text-muted hover:text-fg px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
               Voltar
             </button>
             <button @click="confirmDateFilter" :disabled="selectedDateFilter.length === 0" class="bg-accent text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -751,7 +751,7 @@ async function submitImport(force = false) {
           <div v-if="printRows.length > 0" class="rounded-xl border px-4 py-3 flex items-center justify-between gap-3"
                :class="unmatchedPrint.length > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-income/40 bg-income/5'">
             <div class="text-xs leading-snug">
-              <p class="font-semibold text-white">
+              <p class="font-semibold text-fg">
                 Comprovantes: {{ linkedPrintCount }}/{{ printRows.length }} atrelados
               </p>
               <p v-if="unmatchedPrint.length > 0" class="text-amber-400 mt-0.5">
@@ -775,7 +775,7 @@ async function submitImport(force = false) {
                 <input type="checkbox" v-model="t.selected" class="w-4 h-4 rounded text-accent bg-surface-overlay border-surface-border focus:ring-accent focus:ring-offset-surface-base" />
               </label>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-white truncate">{{ t.description }}</p>
+                <p class="text-sm font-medium text-fg truncate">{{ t.description }}</p>
                 <p class="text-xs text-muted">{{ t.dateStr }}</p>
               </div>
               <div class="shrink-0 flex items-center gap-1.5">
@@ -793,7 +793,7 @@ async function submitImport(force = false) {
                 <div class="text-sm font-bold font-display" :class="t.amount >= 0 ? 'text-income' : 'text-expense'">
                   {{ t.amount >= 0 ? '+' : '' }}{{ t.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </div>
-                <select v-model="t.categoryId" class="bg-surface-overlay border border-surface-border rounded-lg text-xs px-2 py-1 focus:outline-none focus:border-accent text-white max-w-[140px] truncate cursor-pointer">
+                <select v-model="t.categoryId" class="bg-surface-overlay border border-surface-border rounded-lg text-xs px-2 py-1 focus:outline-none focus:border-accent text-fg max-w-[140px] truncate cursor-pointer">
                   <optgroup label="Despesas" v-if="expenseCategories.length > 0">
                     <option v-for="c in expenseCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </optgroup>
@@ -806,7 +806,7 @@ async function submitImport(force = false) {
           </div>
 
           <div class="pt-4 flex justify-between border-t border-surface-border mt-4">
-            <button @click="currentStep = 2" class="text-muted hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors" :disabled="isLoading">
+            <button @click="currentStep = 2" class="text-muted hover:text-fg px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors" :disabled="isLoading">
               Voltar
             </button>
             <button @click="submitImport()" :disabled="isLoading || filteredTransactions.filter(t => t.selected).length === 0" class="bg-accent text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
@@ -824,11 +824,11 @@ async function submitImport(force = false) {
       <div class="relative bg-surface-raised border border-surface-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         <div class="px-6 py-4 border-b border-surface-border bg-surface-overlay flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          <h3 class="text-base font-bold text-white">Divergências encontradas</h3>
+          <h3 class="text-base font-bold text-fg">Divergências encontradas</h3>
         </div>
         <div class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
           <div v-if="unmatchedCsv.length > 0" class="space-y-2">
-            <p class="text-sm font-semibold text-white">{{ unmatchedCsv.length }} transação(ões) do CSV sem comprovante <span class="text-muted font-normal">(ok — os prints podem não cobrir todos os dias)</span>:</p>
+            <p class="text-sm font-semibold text-fg">{{ unmatchedCsv.length }} transação(ões) do CSV sem comprovante <span class="text-muted font-normal">(ok — os prints podem não cobrir todos os dias)</span>:</p>
             <ul class="space-y-1">
               <li v-for="t in unmatchedCsv.slice(0, 20)" :key="t.id" class="flex justify-between items-center text-xs bg-surface-base border border-surface-border rounded-lg px-3 py-2">
                 <span class="text-muted truncate mr-2">{{ t.dateStr }} · {{ t.description }}</span>
@@ -838,7 +838,7 @@ async function submitImport(force = false) {
             <p v-if="unmatchedCsv.length > 20" class="text-[11px] text-muted">+ {{ unmatchedCsv.length - 20 }} outra(s)…</p>
           </div>
           <div v-if="unmatchedPrint.length > 0" class="space-y-2">
-            <p class="text-sm font-semibold text-white">{{ unmatchedPrint.length }} comprovante(s) do print sem transação no CSV:</p>
+            <p class="text-sm font-semibold text-fg">{{ unmatchedPrint.length }} comprovante(s) do print sem transação no CSV:</p>
             <p class="text-[11px] text-muted">Atrele cada um a uma transação abaixo, ou deixe em branco para ignorar.</p>
             <ul class="space-y-2">
               <li v-for="(p, i) in unmatchedPrint" :key="`up-${i}`" class="flex items-center gap-3 bg-surface-base border border-surface-border rounded-lg px-3 py-2">
@@ -850,7 +850,7 @@ async function submitImport(force = false) {
                   </div>
                   <select
                     @change="assignPrintToTransaction(p, ($event.target as HTMLSelectElement).value)"
-                    class="mt-1 w-full bg-surface-overlay border border-surface-border rounded-lg text-xs px-2 py-1.5 text-white focus:outline-none focus:border-accent cursor-pointer"
+                    class="mt-1 w-full bg-surface-overlay border border-surface-border rounded-lg text-xs px-2 py-1.5 text-fg focus:outline-none focus:border-accent cursor-pointer"
                   >
                     <option value="">Atrelar a uma transação...</option>
                     <option v-for="t in assignCandidates(p)" :key="t.id" :value="t.id">
@@ -867,7 +867,7 @@ async function submitImport(force = false) {
           </p>
         </div>
         <div class="px-6 py-4 border-t border-surface-border flex justify-between gap-3">
-          <button @click="showMismatch = false" class="text-muted hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+          <button @click="showMismatch = false" class="text-muted hover:text-fg px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
             Fechar
           </button>
           <button
@@ -893,7 +893,7 @@ async function submitImport(force = false) {
       <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="closeManualCrop"></div>
       <div class="relative bg-surface-raised border border-surface-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div class="px-6 py-4 border-b border-surface-border bg-surface-overlay">
-          <h3 class="text-base font-bold text-white">Recorte manual</h3>
+          <h3 class="text-base font-bold text-fg">Recorte manual</h3>
           <p v-if="manualTargetRow" class="text-xs text-muted mt-0.5 truncate">
             {{ manualTargetRow.dateStr }} · {{ manualTargetRow.description }} ·
             <span :class="manualTargetRow.amount >= 0 ? 'text-income' : 'text-expense'">{{ manualTargetRow.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
@@ -951,7 +951,7 @@ async function submitImport(force = false) {
         </div>
 
         <div class="px-6 py-4 border-t border-surface-border flex justify-between gap-3">
-          <button @click="closeManualCrop" type="button" class="text-muted hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+          <button @click="closeManualCrop" type="button" class="text-muted hover:text-fg px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
             Cancelar
           </button>
           <div class="flex gap-2">
@@ -959,7 +959,7 @@ async function submitImport(force = false) {
               v-if="selection"
               @click="selection = null"
               type="button"
-              class="text-muted hover:text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              class="text-muted hover:text-fg px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
             >
               Limpar
             </button>

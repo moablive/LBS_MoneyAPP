@@ -9,7 +9,7 @@ import DashboardCategories from '../components/dashboard/DashboardCategories.vue
 import DashboardUpcoming from '../components/dashboard/DashboardUpcoming.vue';
 import DashboardMensalidades from '../components/dashboard/DashboardMensalidades.vue';
 import Modal from '../components/modals/Modal.vue';
-import type { CategoryRankingResponse, DashboardSummaryResponse } from '@moneyapp/models';
+import type { CategoryRankingResponse, DashboardSummaryResponse, SpendingEvolutionResponse } from '@moneyapp/models';
 
 // Lazy-load the modal so it's not in the initial bundle
 const NewAccountModal = defineAsyncComponent(() => import('../components/modals/NewAccountModal.vue'));
@@ -22,6 +22,7 @@ const LinkTransactionModal = defineAsyncComponent(() => import('../components/mo
 
 
 const summary = ref<DashboardSummaryResponse | null>(null);
+const evolution = ref<SpendingEvolutionResponse | null>(null);
 const ranking = ref<CategoryRankingResponse | null>(null);
 const accounts = ref<any[]>([]);
 const subscriptionsSummary = ref<any | null>(null);
@@ -230,12 +231,16 @@ function chooseLinkCreditCard() {
 const loadSummary = async () => {
   loadingSummary.value = true;
   try {
-    const [summaryRes, subscriptionsRes] = await Promise.all([
+    const [summaryRes, subscriptionsRes, evolutionRes] = await Promise.all([
       api.get<DashboardSummaryResponse>('/dashboard/summary'),
       api.get<any>('/subscriptions/summary'),
+      // Evolução acumulada do mês (atual vs. anterior): sparkline e variação
+      // do card de Despesas. Falha aqui não derruba os outros KPIs.
+      api.get<SpendingEvolutionResponse>('/dashboard/spending-evolution').catch(() => null),
     ]);
     summary.value = summaryRes;
     subscriptionsSummary.value = subscriptionsRes;
+    evolution.value = evolutionRes;
   } catch (e) {
     console.error(e);
   } finally {
@@ -422,6 +427,7 @@ const loadUpcoming = async (fromParam: string, toParam: string, fromDate: Date, 
 };
 
 const selectedDate = ref(new Date());
+const monthLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
 // O botão de navegar mês pertence apenas às Mensalidades: recarrega só esse painel,
 // deixando "Próximos Lançamentos" intacto (visão fixa ancorada em hoje).
@@ -490,14 +496,29 @@ onUnmounted(() => {
   <AppShell>
     <div class="mx-auto w-full max-w-[2000px] px-4 sm:px-6 lg:px-8 py-8 space-y-6 relative z-10">
       
-      <header class="flex items-center justify-between gap-4 flex-wrap mb-6">
-        <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+      <header class="flex items-end justify-between gap-4 flex-wrap mb-2">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted mb-1">Visão geral</p>
+          <h1 class="text-3xl font-bold tracking-tight text-fg font-display">Dashboard</h1>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="btn-ghost !py-1.5 text-xs capitalize cursor-default">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            {{ monthLabel }}
+          </span>
+          <button class="btn-primary" @click="editingTransaction = null; createType = 'expense'; showCreate = true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo lançamento
+          </button>
+        </div>
       </header>
 
-      <DashboardKPIs 
+      <DashboardKPIs
         :summary="summary"
         :subscriptionsSummary="subscriptionsSummary"
-        :loading="loadingSummary" 
+        :evolution="evolution"
+        :accounts="accounts"
+        :loading="loadingSummary"
       />
 
       <!-- Bottom row: Accounts, CreditCards, Categories, Upcoming -->
@@ -573,7 +594,7 @@ onUnmounted(() => {
           Tem certeza que deseja remover <strong>{{ itemToDismiss?.description }}</strong> do painel neste mês?
         </p>
         <div class="flex justify-end gap-2 pt-2">
-          <button @click="showConfirmDismiss = false" class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100">Cancelar</button>
+          <button @click="showConfirmDismiss = false" class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg">Cancelar</button>
           <button @click="confirmDismiss" class="px-4 py-2 rounded-xl bg-expense text-white font-medium hover:bg-expense/80">Remover</button>
         </div>
       </div>
@@ -602,7 +623,7 @@ onUnmounted(() => {
           <p class="text-xs font-semibold text-muted uppercase tracking-wider mb-1 flex items-center gap-2">
              Cartão de Crédito
           </p>
-          <p class="text-base font-medium text-white truncate relative z-10">{{ creditCardActionItem?.name }}</p>
+          <p class="text-base font-medium text-fg truncate relative z-10">{{ creditCardActionItem?.name }}</p>
           <p class="text-3xl font-bold text-expense mt-2 font-display tracking-tight relative z-10" v-if="creditCardActionItem">
             {{ brl(Math.abs(Number(creditCardActionItem.currentBalance))) }}
           </p>
@@ -619,14 +640,14 @@ onUnmounted(() => {
           
           <button @click="chooseLinkCreditCard"
                   :disabled="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0"
-                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            <span class="text-sm font-bold text-white">Vincular Lançamento do Livro Caixa</span>
+            <span class="text-sm font-bold text-fg">Vincular Lançamento do Livro Caixa</span>
           </button>
 
           <button @click="chooseEditCreditCard"
-                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-fg transition-colors"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
             <span class="text-sm font-medium">Editar Cartão</span>
           </button>
         </div>
@@ -656,12 +677,12 @@ onUnmounted(() => {
              <span v-else-if="upcomingActionItem?.isCreditCard">Fatura de Cartão</span>
              <span v-else>Lançamento Recorrente</span>
           </p>
-          <p class="text-base font-medium text-white truncate relative z-10">{{ upcomingActionItem?.description }}</p>
+          <p class="text-base font-medium text-fg truncate relative z-10">{{ upcomingActionItem?.description }}</p>
           <p class="text-3xl font-bold mt-2 font-display tracking-tight relative z-10" :class="upcomingActionItem?.type === 'expense' ? 'text-expense' : 'text-income'" v-if="upcomingActionItem">
             {{ brl(Math.abs(Number(upcomingActionItem.amount))) }}
           </p>
           
-           <div class="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-base/50 text-xs text-white/80 border border-surface-border/50">
+           <div class="mt-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-base/50 text-xs text-fg/80 border border-surface-border/50">
              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
              <span v-if="upcomingActionItem?.occurredAt">
                {{ new Date(upcomingActionItem.occurredAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' }) }}
@@ -680,20 +701,20 @@ onUnmounted(() => {
           
           <button @click="requestReceipt"
                   v-if="upcomingActionItem?.type === 'income'"
-                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-fg transition-colors"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <span class="text-sm font-medium">Pedir Comprovante</span>
           </button>
 
           <button @click="chooseEditUpcoming" 
-                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-fg transition-colors"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
             <span class="text-sm font-medium">Mudar Data</span>
           </button>
           
           <button @click="upcomingActionItem?.isSubscription ? choosePayUpcoming() : chooseDismissUpcoming()" 
-                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-white transition-colors" v-if="!upcomingActionItem?.isSubscription"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  class="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-surface-border/60 text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-fg transition-colors" v-if="!upcomingActionItem?.isSubscription"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-income group-hover:text-income transition-colors" v-else><polyline points="20 6 9 17 4 12"></polyline></svg>
             <span class="text-sm font-medium" v-if="upcomingActionItem?.isSubscription">Já Paguei</span>
             <span class="text-sm font-medium" v-else>Pular Mês</span>
@@ -701,9 +722,9 @@ onUnmounted(() => {
 
           <button @click="chooseLinkUpcoming"
                   v-if="upcomingActionItem?.isSubscription || (upcomingActionItem?.isCreditCard && upcomingActionItem?.account)"
-                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-white transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            <span class="text-sm font-bold text-white">Vincular Lançamento do Livro Caixa</span>
+            <span class="text-sm font-bold text-fg">Vincular Lançamento do Livro Caixa</span>
           </button>
         </div>
       </div>
@@ -720,7 +741,7 @@ onUnmounted(() => {
           class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/60 [color-scheme:dark]"
         />
         <div class="flex justify-end gap-2 pt-2">
-          <button @click="showChangeDateModal = false" class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100">Cancelar</button>
+          <button @click="showChangeDateModal = false" class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg">Cancelar</button>
           <button @click="saveCustomDate" class="px-4 py-2 rounded-xl bg-accent text-white font-medium">Salvar Data Auxiliar</button>
         </div>
       </div>

@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'MoneyAPP',
         short_name: 'MoneyAPP',
-        theme_color: '#0b0f17',
+        theme_color: '#f3f4ee',
         background_color: 'transparent',
         display: 'standalone',
         start_url: '/',

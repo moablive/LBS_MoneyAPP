@@ -98,12 +98,12 @@ function logout() {
     <header class="mb-8">
       <RouterLink
         to="/"
-        class="inline-flex items-center gap-2 mb-4 px-3 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-muted hover:text-slate-100 hover:bg-surface-overlay transition-colors"
+        class="inline-flex items-center gap-2 mb-4 px-3 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-muted hover:text-fg hover:bg-surface-overlay transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         Voltar ao Dashboard
       </RouterLink>
-      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+      <h1 class="text-2xl font-bold text-fg flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         Configurações
       </h1>
@@ -111,27 +111,27 @@ function logout() {
     </header>
 
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Preferências</h2>
+      <h2 class="text-lg font-semibold text-fg/90 mb-4 border-b border-surface-border pb-2">Preferências</h2>
 
       <!-- Vinculo da conta: vem antes do nome de exibicao porque sem vinculo o
            bot nao fala com voce, e o nome nao tem onde aparecer. -->
       <TelegramLinkCard />
 
       <div class="mb-6">
-        <p class="text-slate-100 font-medium">Nome de exibição no bot</p>
+        <p class="text-fg font-medium">Nome de exibição no bot</p>
         <p class="text-sm text-muted mt-1 mb-2">Como o bot do Telegram deve te chamar nas notificações de vencimento.</p>
         <input
           v-model="displayName"
           type="text"
           maxlength="60"
           placeholder="Ex.: Patrão Moab"
-          class="w-full sm:w-80 bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 text-slate-100 placeholder:text-muted/60 focus:outline-none focus:border-accent transition-colors"
+          class="w-full sm:w-80 bg-surface-overlay border border-surface-border rounded-xl px-3 py-2 text-fg placeholder:text-muted/60 focus:outline-none focus:border-accent transition-colors"
         />
       </div>
 
       <div class="flex items-center justify-between gap-4">
         <div>
-          <p class="text-slate-100 font-medium">Exigir comprovantes em transações pagas</p>
+          <p class="text-fg font-medium">Exigir comprovantes em transações pagas</p>
           <p class="text-sm text-muted mt-1">Quando ativado, você não poderá marcar uma despesa/receita como "Paga" sem antes anexar um arquivo de comprovante.</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
@@ -142,7 +142,7 @@ function logout() {
 
       <div v-if="push.isSupported" class="flex items-center justify-between gap-4 mt-6 pt-6 border-t border-surface-border/60">
         <div>
-          <p class="text-slate-100 font-medium">Notificações neste aparelho</p>
+          <p class="text-fg font-medium">Notificações neste aparelho</p>
           <p class="text-sm text-muted mt-1">Receba alertas e lembretes importantes diretamente neste navegador.</p>
           <p v-if="push.error.value" class="text-xs text-red-400 mt-1">{{ push.error.value }}</p>
           <p v-else-if="push.permission.value === 'denied'" class="text-xs text-amber-400 mt-1">Bloqueado. Libere nas configurações do site no seu navegador.</p>
@@ -176,7 +176,7 @@ function logout() {
 
     <!-- Seção de Contas: congelar saldo -->
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-1 border-b border-surface-border pb-2">Contas</h2>
+      <h2 class="text-lg font-semibold text-fg/90 mb-1 border-b border-surface-border pb-2">Contas</h2>
       <p class="text-sm text-muted mt-2 mb-4">
         <strong>Marcado = afeta o saldo:</strong> a conta entra no saldo total e é alterada pelos pagamentos.
         <strong>Desmarcado = não afeta:</strong> conta histórica/encerrada — fica fora do saldo total e o valor
@@ -192,7 +192,7 @@ function logout() {
           <div class="flex items-center gap-3 min-w-0">
             <img :src="a.customIconUrl || '/banks/generic.svg'" :alt="a.name" class="h-9 w-9 rounded-lg shrink-0 border border-surface-border object-contain bg-surface-overlay" />
             <div class="min-w-0">
-              <p class="text-slate-100 font-medium truncate">{{ a.name }}</p>
+              <p class="text-fg font-medium truncate">{{ a.name }}</p>
               <p class="text-xs tabular-nums" :class="Number(a.currentBalance) < 0 ? 'text-expense' : 'text-muted'">{{ brl(a.currentBalance) }}</p>
             </div>
           </div>
@@ -210,7 +210,7 @@ function logout() {
 
     <!-- Seção de Cartões de Crédito: congelar saldo -->
     <div v-if="loadingAccounts || creditCardAccounts.length > 0" class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-1 border-b border-surface-border pb-2">Cartões de Crédito</h2>
+      <h2 class="text-lg font-semibold text-fg/90 mb-1 border-b border-surface-border pb-2">Cartões de Crédito</h2>
       <p class="text-sm text-muted mt-2 mb-4">
         Defina quais cartões afetam o saldo da sua listagem de faturas e pagamentos.
       </p>
@@ -223,7 +223,7 @@ function logout() {
           <div class="flex items-center gap-3 min-w-0">
             <img :src="a.customIconUrl || '/banks/generic.svg'" :alt="a.name" class="h-9 w-9 rounded-lg shrink-0 border border-surface-border object-contain bg-surface-overlay" />
             <div class="min-w-0">
-              <p class="text-slate-100 font-medium truncate">{{ a.name }}</p>
+              <p class="text-fg font-medium truncate">{{ a.name }}</p>
               <p class="text-xs tabular-nums text-expense">{{ brl(a.currentBalance) }}</p>
             </div>
           </div>
@@ -241,11 +241,11 @@ function logout() {
 
     <!-- Seção de Conta -->
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 mt-6">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 border-b border-surface-border pb-2">Sistema e Conta</h2>
+      <h2 class="text-lg font-semibold text-fg/90 mb-4 border-b border-surface-border pb-2">Sistema e Conta</h2>
       
       <div class="flex items-center justify-between gap-4">
         <div>
-          <p class="text-slate-100 font-medium">Encerrar sessão</p>
+          <p class="text-fg font-medium">Encerrar sessão</p>
           <p class="text-sm text-muted mt-1">Desconectar do aplicativo neste dispositivo.</p>
         </div>
         <button

@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>PWA moderna de controle financeiro pessoal</strong><br/>
-  Dashboard premium em dark mode · Transações · Assinaturas · Investimentos · Empréstimos
+  Dashboard no estilo "V5" (claro/escuro) · Transações · Assinaturas · Investimentos · Empréstimos
 </p>
 
 <p align="center">
@@ -106,7 +106,7 @@ Acompanhamento de ativos — ações, cripto, renda fixa e fundos. Controle de p
 
 <p align="center">
 
-🌙 **Dark Mode Premium** &nbsp;·&nbsp;
+☀️ **Tema claro "V5" + 🌙 escuro** &nbsp;·&nbsp;
 ⚡ **Quick Actions** &nbsp;·&nbsp;
 📊 **Gráficos Interativos** &nbsp;·&nbsp;
 📱 **PWA Instalável** &nbsp;·&nbsp;
@@ -336,8 +336,11 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 
 O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
 
+> [!NOTE]
+> **Modo hub (Moabinho IA).** Com `MOABINHOIA_GATEWAY_SECRET` no ambiente (vem do `../shared.env`), o bot **não faz long-polling**: quem recebe as mensagens é o hub do painel, o **@moabinho_bot**, que guarda em que módulo cada usuário está e entrega aqui só os updates do Money, por `POST /update` na porta `8090` da `awl_network`. A resposta sai direto do bot para a API do Telegram, com o token do @moabinho_bot (`TELEGRAM_BOT_TOKEN` e `TELEGRAM_BOT_USERNAME` passam a ser os dele). O teclado ganha o botão **🏠 Moabinho IA**, que o hub intercepta para voltar ao menu de módulos, e o deep link de vínculo leva o prefixo `TELEGRAM_START_PREFIX` para o hub saber de que app é o passe. Sem o segredo, o bot volta ao polling com o token que estiver no `.env` — é o caminho de volta, sem tocar em código. As variáveis `MOABINHOIA_*` (antes `MEUBRUXO_*`) são compartilhadas entre os apps da suíte, e o cabeçalho que autentica o hub passou a ser `x-moabinhoia-secret`.
+
 > [!IMPORTANT]
-> O bot **não tem mais `.env` próprio**. Até 07/2026 ele vivia numa subpasta aninhada (`apps/bot/MoneyAPP_BOT/`, um repo git separado — resquício de migração, removida em 28/07/2026) e lia um `.env` de lá; hoje o código está direto em `apps/bot/` e os três serviços usam o mesmo par `env_file: [../shared.env, .env]`, e as variáveis do bot (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `LOGINHUB_APP_ID`, `OLLAMA_MODEL`, `OLLAMA_TEXT_MODEL`) moram no **`.env` da raiz do MoneyAPP**. `BOT_SERVICE_KEY`, `GROQ_API_KEY` e `OLLAMA_URL` vêm do `../shared.env`; `BACKEND_URL` vem do bloco `environment:` do compose, que tem precedência sobre `env_file`.
+> O bot **não tem mais `.env` próprio**. Até 07/2026 ele vivia numa subpasta aninhada (`apps/bot/MoneyAPP_BOT/`, um repo git separado — resquício de migração, removida em 28/07/2026) e lia um `.env` de lá; hoje o código está direto em `apps/bot/` e os três serviços usam o mesmo par `env_file: [../shared.env, .env]`, e as variáveis do bot (`TELEGRAM_BOT_TOKEN`, `LOGINHUB_API_URL`, `LOGINHUB_APP_ID`, `OLLAMA_MODEL`, `OLLAMA_TEXT_MODEL`) moram no **`.env` da raiz do MoneyAPP**. `BOT_SERVICE_KEY`, `GROQ_API_KEY` e `OLLAMA_URL` vêm do `../shared.env`; `BACKEND_URL` vem do bloco `environment:` do compose, que tem precedência sobre `env_file`. Desde 07/10/2026 o texto transcrito do áudio é interpretado pelo **OmniRoute** (`OMNIROUTE_URL`, `OMNIROUTE_API_KEY`, `OMNIROUTE_TEXT_MODEL`, do `../shared.env`), não mais pelo Ollama — no bot, o Ollama ficou só para a visão; o `OLLAMA_TEXT_MODEL` continua sendo usado pelo backend.
 >
 > Isso é seguro para o backend porque ele valida ambiente com `z.object()` **sem** `.strict()` (`packages/services/src/config/env.ts`) — chave desconhecida é descartada em silêncio, não rejeitada.
 >
@@ -632,40 +635,62 @@ docker compose --env-file .env up -d --build
 
 ## 🎨 Design System
 
+> Documentação completa no Google Doc **"Projeto - MoneyAPP ／ Interface V5 (tema claro e escuro)"**, pasta awldocs do Drive.
+
+Desde 11/10/2026 a interface segue a referência **"Dashboard V5"** (reel do code.xr):
+canvas creme, cards brancos com sombra suave, **botões-pílula pretos**, **lima** como
+cor de destaque e **rail lateral escuro flutuante só com ícones** (popups com dados
+ao passar o mouse). O tema claro é o padrão; o escuro antigo continua disponível
+pelo botão sol/lua no rail (ou no menu "Mais" no celular) e fica guardado em
+`localStorage` (`moneyapp-theme`), aplicado antes do primeiro paint pelo `index.html`.
+
+As cores são **CSS vars** em `styles/main.css` (`:root` = claro, `:root.dark` = escuro)
+mapeadas no `tailwind.config.ts` como `rgb(var(--x) / <alpha-value>)`, então
+`bg-fg/5`, `text-accent/60` etc. funcionam nos dois temas. Nos templates, nunca
+`text-white`/`text-slate-*` para texto comum — use `text-fg`, `text-muted`,
+`border-fg/10`. `text-white` só em cima de fundo colorido (botão `bg-accent`, gradientes).
+
 <table>
 <tr>
 <td>
 
-| Token | Cor | Uso |
-| ----- | --- | --- |
-| `surface-base` | ![#0b0f17](https://img.shields.io/badge/-%230b0f17-0b0f17?style=flat-square) `#0b0f17` | Fundo da página |
-| `surface-raised` | ![#11151f](https://img.shields.io/badge/-%2311151f-11151f?style=flat-square) `#11151f` | Cards |
-| `surface-overlay` | ![#161b27](https://img.shields.io/badge/-%23161b27-161b27?style=flat-square) `#161b27` | Modais, popovers |
-| `surface-border` | ![#212737](https://img.shields.io/badge/-%23212737-212737?style=flat-square) `#212737` | Bordas hairline |
-| `accent` | ![#5b8cff](https://img.shields.io/badge/-%235b8cff-5b8cff?style=flat-square) `#5b8cff` | Ação primária |
-| `income` | ![#22c55e](https://img.shields.io/badge/-%2322c55e-22c55e?style=flat-square) `#22c55e` | Valores positivos |
-| `expense` | ![#ef4444](https://img.shields.io/badge/-%23ef4444-ef4444?style=flat-square) `#ef4444` | Valores negativos |
-| `muted` | ![#7a8499](https://img.shields.io/badge/-%237a8499-7a8499?style=flat-square) `#7a8499` | Texto secundário |
+| Token | Claro | Escuro | Uso |
+| ----- | ----- | ------ | --- |
+| `surface-base` | `#f3f4ee` | `#121215` | Fundo da página |
+| `surface-raised` | `#ffffff` | `#1c1c22` | Cards, rail popups |
+| `surface-overlay` | `#eef0e9` | `#272730` | Caixas internas, hover de linha |
+| `surface-border` | `#e3e6dd` | `#333340` | Bordas hairline |
+| `fg` | `#111113` | `#f1f2f6` | Texto principal |
+| `muted` | `#6b707a` | `#7a8499` | Texto secundário |
+| `accent` | `#111113` | `#8b5cf6` | Ação primária (`.btn-primary`, nav ativo no mobile) |
+| `lime` | `#c6f135` | `#c6f135` | Destaque: ícone ativo do rail, FAB, card "Custo fixo", chips "Hoje" |
+| `primary` | `#5b4fff` | `#7c72ff` | Índigo dos painéis de detalhe (4º cartão) |
+| `income` / `expense` | `#16a34a` / `#dc2626` | `#22c55e` / `#ef4444` | Valores positivos / negativos |
 
 </td>
 <td>
 
-**Tipografia**
-- Font: **Inter** (ss01 + cv11)
-- Monetários: sempre `tabular-nums`
+**Componentes de classe** (`main.css`)
+- `.card` + `.card-hover` — card branco `rounded-3xl`
+- `.btn-primary` (pílula preta/violeta), `.btn-lime`, `.btn-ghost`
+- `.chip` — etiqueta de variação (`bg-income/10 text-income`)
+- `.modal-shell` — backdrop `bg-ink-950/40 backdrop-blur-sm`
 
-**Motion**
-- Easing: `cubic-bezier(0.22, 1, 0.36, 1)`
-- Hover/tap: `150ms`
-- Modal in/out: `200–250ms`
-- Gráficos: `400–500ms`
+**Dashboard**
+- `DashboardKPIs` — 5 stat cards: valor, chip de variação e mini-gráfico
+  (fluxo entradas/saídas, barras por cartão, % comprometido, sparkline
+  de `/dashboard/spending-evolution`, card lima de custo fixo)
+- `Sparkline.vue` — linha suave em SVG puro, sem Chart.js
+- `DashboardCreditCards` — cartões "físicos" empilhados (lima, preto, grafite, índigo)
+- `DashboardCategories` — radar (Chart.js) das 6 maiores + lista
 
-**Modais**
-- Mobile: bottom-sheet `rounded-t-3xl`
-- Desktop: card centralizado `rounded-3xl`
+**Tipografia** — Inter (ss01 + cv11); títulos e valores em **Outfit** (`font-display`); monetários `tabular-nums`
 
-**Loading**
-- Skeleton screens — nunca spinners
+**Motion** — easing `cubic-bezier(0.22, 1, 0.36, 1)`; hover `150–300ms`; modal `200–250ms`; sparkline `animate-draw` 1,2 s
+
+**Modais** — mobile bottom-sheet `rounded-t-3xl`; desktop `rounded-3xl`
+
+**Loading** — skeleton screens, nunca spinners
 
 </td>
 </tr>

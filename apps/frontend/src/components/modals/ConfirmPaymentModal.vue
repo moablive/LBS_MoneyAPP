@@ -231,7 +231,7 @@ async function submit() {
             />
             <div class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-3 flex items-center justify-center gap-2 group-hover:border-accent/50 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted group-hover:text-accent transition-colors"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"/><path d="M16 16l-4-4-4 4"/></svg>
-              <span class="text-sm font-medium" :class="receiptFile ? 'text-accent' : 'text-muted group-hover:text-slate-300'">
+              <span class="text-sm font-medium" :class="receiptFile ? 'text-accent' : 'text-muted group-hover:text-fg/70'">
                 {{ receiptFile ? receiptFile.name : 'Clique para escolher ou tire uma foto' }}
               </span>
             </div>
@@ -244,7 +244,7 @@ async function submit() {
       <div class="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
+          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg"
           @click="open = false"
         >
           Cancelar

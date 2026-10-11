@@ -182,7 +182,7 @@ function close() {
       <div class="flex justify-end gap-3 pt-4 border-t border-surface-border">
         <button
           @click="close"
-          class="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted hover:text-white transition-colors"
+          class="px-5 py-2.5 rounded-xl text-sm font-semibold text-muted hover:text-fg transition-colors"
         >
           Cancelar
         </button>

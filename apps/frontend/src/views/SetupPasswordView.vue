@@ -102,7 +102,7 @@ async function submit() {
       @submit.prevent="submit"
     >
       <header class="space-y-4 flex flex-col items-center mb-6">
-        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain mix-blend-screen" />
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
         <p class="text-sm text-muted text-center">Defina sua senha definitiva para acessar o aplicativo.</p>
       </header>
 
@@ -154,7 +154,7 @@ async function submit() {
       </template>
 
       <div class="text-center mt-4">
-        <router-link to="/login" class="text-xs text-muted hover:text-white transition-colors">
+        <router-link to="/login" class="text-xs text-muted hover:text-fg transition-colors">
           Voltar para o Login
         </router-link>
       </div>

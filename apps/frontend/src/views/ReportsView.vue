@@ -148,7 +148,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
       <!-- Header -->
       <header class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-white mb-1">Relatórios</h1>
+          <h1 class="text-3xl font-bold tracking-tight text-fg mb-1">Relatórios</h1>
           <p class="text-sm text-zinc-400">Acompanhe seus gastos e recebimentos por categoria.</p>
         </div>
         
@@ -156,14 +156,14 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
           <div class="flex rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg w-full sm:w-auto">
             <button
               class="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200"
-              :class="filterType === 'expense' ? 'bg-surface-overlay text-white shadow' : 'text-muted hover:text-white'"
+              :class="filterType === 'expense' ? 'bg-surface-overlay text-fg shadow' : 'text-muted hover:text-fg'"
               @click="filterType = 'expense'; reload()"
             >
               Despesas
             </button>
             <button
               class="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200"
-              :class="filterType === 'income' ? 'bg-surface-overlay text-white shadow' : 'text-muted hover:text-white'"
+              :class="filterType === 'income' ? 'bg-surface-overlay text-fg shadow' : 'text-muted hover:text-fg'"
               @click="filterType = 'income'; reload()"
             >
               Receitas
@@ -173,7 +173,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
           <select
             v-model="filterPeriod"
             @change="reload()"
-            class="min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
           </select>
@@ -193,7 +193,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         <div class="glass-card rounded-2xl p-5 flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-zinc-400 mb-1">Mês Anterior</p>
-            <p class="text-2xl font-bold text-white font-display">
+            <p class="text-2xl font-bold text-fg font-display">
               {{ brl(ranking.totalPrevious) }}
             </p>
           </div>

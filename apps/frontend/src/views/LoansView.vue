@@ -217,7 +217,7 @@ function onLoanSaved(status?: string) {
                   <svg v-else-if="item.type === 'received'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-expense"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01M17 12h.01M7 12h.01"/></svg>
                 </div>
-                <span class="font-medium text-sm text-white/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
+                <span class="font-medium text-sm text-fg/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
               </div>
 
               <!-- Desktop Col 1: Banco (Icon + Account) -->
@@ -233,7 +233,7 @@ function onLoanSaved(status?: string) {
 
               <!-- Desktop Col 2: Descrição -->
               <div class="hidden sm:flex items-center justify-start min-w-0">
-                <span class="font-medium text-sm text-white/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
+                <span class="font-medium text-sm text-fg/90 truncate" :class="item.status === 'paid' ? 'line-through text-muted' : ''">{{ item.description }}</span>
               </div>
               
               <!-- Center: Status -->
@@ -253,7 +253,7 @@ function onLoanSaved(status?: string) {
                 <div class="flex items-center gap-1.5 shrink-0">
                   <Paperclip
                     v-if="item.hasReceipt"
-                    class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
+                    class="w-4 h-4 text-fg/50 hover:text-fg transition-colors shrink-0" 
                     title="Comprovante de Envio Anexado"
                   />
                   <Paperclip

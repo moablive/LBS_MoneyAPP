@@ -44,15 +44,15 @@ const descricao = computed(() =>
       v-if="visivel"
       role="status"
       aria-live="polite"
-      class="fixed inset-x-2 bottom-10 z-[10000] rounded-lg border border-brand-500/40 bg-slate-900/95
-             p-3 text-slate-100 shadow-xl backdrop-blur-sm
-             sm:left-auto sm:right-2 sm:bottom-9 sm:w-80"
+      class="fixed inset-x-3 bottom-[92px] z-[10000] rounded-2xl border border-white/10 bg-ink-950
+             p-3 text-white shadow-rail
+             sm:left-auto sm:right-3 sm:bottom-9 sm:w-80"
     >
       <div class="flex items-start gap-2">
-        <span class="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-brand-500" />
+        <span class="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-lime" />
         <div class="min-w-0">
           <p class="text-sm font-semibold leading-snug">Nova versão disponível</p>
-          <p class="mt-0.5 text-xs leading-snug text-slate-400">{{ descricao }}</p>
+          <p class="mt-0.5 text-xs leading-snug text-white/60">{{ descricao }}</p>
         </div>
       </div>
 
@@ -60,8 +60,8 @@ const descricao = computed(() =>
         <button
           type="button"
           :disabled="aplicando"
-          class="rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 transition
-                 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-50"
+          class="rounded-full px-3 py-1.5 text-xs font-medium text-white/70 transition
+                 hover:bg-white/10 hover:text-white disabled:opacity-50"
           @click="dispensada = versaoNova"
         >
           Depois
@@ -69,8 +69,8 @@ const descricao = computed(() =>
         <button
           type="button"
           :disabled="aplicando"
-          class="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition
-                 hover:bg-brand-600 disabled:cursor-wait disabled:opacity-70"
+          class="rounded-full bg-lime px-3 py-1.5 text-xs font-semibold text-lime-fg transition
+                 hover:bg-lime/90 disabled:cursor-wait disabled:opacity-70"
           @click="aplicar"
         >
           {{ aplicando ? 'Atualizando…' : 'Atualizar agora' }}

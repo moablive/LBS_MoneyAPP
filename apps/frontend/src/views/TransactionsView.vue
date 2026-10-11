@@ -309,14 +309,14 @@ async function handleBulkDelete() {
   <AppShell>
     <div class="mx-auto max-w-7xl px-4 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap mb-8">
-        <h1 class="text-2xl font-bold tracking-tight text-white">Livro Caixa <span class="text-sm text-accent">(v5)</span></h1>
+        <h1 class="text-2xl font-bold tracking-tight text-fg">Livro Caixa <span class="text-sm text-accent">(v5)</span></h1>
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <div class="order-3 sm:order-1 flex sm:inline-flex w-full sm:w-auto rounded-xl border border-surface-border bg-surface-raised p-1 shadow-lg">
             <button
               v-for="opt in (['all','expense','income'] as const)"
               :key="opt"
               class="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-lg transition-colors duration-200"
-              :class="filterType === opt ? 'bg-surface-overlay text-white shadow' : 'text-muted hover:text-white'"
+              :class="filterType === opt ? 'bg-surface-overlay text-fg shadow' : 'text-muted hover:text-fg'"
               @click="filterType = opt; reload()"
             >
               {{ opt === 'all' ? 'Tudo' : opt === 'expense' ? 'Despesas' : 'Receitas' }}
@@ -325,7 +325,7 @@ async function handleBulkDelete() {
           <select
             v-model="filterPeriod"
             @change="reload()"
-            class="order-1 sm:order-2 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="order-1 sm:order-2 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="current_month">Mês Atual</option>
             <option value="next_month">Próximo Mês</option>
@@ -334,7 +334,7 @@ async function handleBulkDelete() {
           <select
             v-model="filterCategory"
             @change="reload()"
-            class="order-2 sm:order-3 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="order-2 sm:order-3 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas Categorias</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -342,7 +342,7 @@ async function handleBulkDelete() {
           <select
             v-model="filterAccount"
             @change="reload()"
-            class="order-3 sm:order-4 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+            class="order-3 sm:order-4 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
           >
             <option value="all">Todas Contas</option>
             <optgroup label="Contas" v-if="normalAccounts.length > 0">
@@ -357,7 +357,7 @@ async function handleBulkDelete() {
               v-model="filterSearch"
               type="text"
               placeholder="Buscar..."
-              class="w-full px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-1 focus:ring-accent"
+              class="w-full px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div class="order-6 flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
@@ -377,7 +377,7 @@ async function handleBulkDelete() {
               <Sparkles class="w-4 h-4" /> Importar IA
             </button>
             <button
-              class="flex items-center justify-center sm:flex-none px-3 py-2 rounded-xl bg-surface-overlay text-muted border border-surface-border text-sm font-bold shadow-lg hover:text-white transition-all hover:-translate-y-0.5 whitespace-nowrap"
+              class="flex items-center justify-center sm:flex-none px-3 py-2 rounded-xl bg-surface-overlay text-muted border border-surface-border text-sm font-bold shadow-lg hover:text-fg transition-all hover:-translate-y-0.5 whitespace-nowrap"
               @click="handleShare"
               title="Compartilhar"
             >
@@ -385,7 +385,7 @@ async function handleBulkDelete() {
             </button>
             <button
               class="flex-1 sm:flex-none px-4 py-2 rounded-xl border text-sm font-bold shadow-lg transition-all hover:-translate-y-0.5 whitespace-nowrap"
-              :class="selectMode ? 'bg-accent/20 text-accent border-accent/40' : 'bg-surface-overlay text-muted border-surface-border hover:text-white'"
+              :class="selectMode ? 'bg-accent/20 text-accent border-accent/40' : 'bg-surface-overlay text-muted border-surface-border hover:text-fg'"
               @click="toggleSelectMode"
               title="Selecionar itens"
             >{{ selectMode ? 'Cancelar' : 'Selecionar' }}</button>
@@ -462,7 +462,7 @@ async function handleBulkDelete() {
               <!-- Mobile Left: Icon & Description -->
               <div class="flex sm:hidden items-center justify-start gap-3 min-w-0">
                 <div v-if="r.accountId && accountsMap.get(r.accountId)" 
-                     class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-white/80 shrink-0">
+                     class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-fg/80 shrink-0">
                   <img v-if="accountsMap.get(r.accountId)?.customIconUrl" :src="accountsMap.get(r.accountId)?.customIconUrl ?? undefined" class="w-5 h-5 rounded-md object-contain" />
                   <Landmark v-else class="w-4 h-4 text-accent" />
                 </div>
@@ -471,7 +471,7 @@ async function handleBulkDelete() {
                 </div>
                 
                 <div class="flex flex-col min-w-0">
-                  <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
+                  <span class="font-medium text-sm text-fg/90 truncate">{{ r.description }}</span>
                   <span class="text-xs text-muted sm:hidden">{{ formatTime(r.occurredAt) }}</span>
                 </div>
               </div>
@@ -479,7 +479,7 @@ async function handleBulkDelete() {
               <!-- Desktop Col 1: Banco (Icon + Name) -->
               <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
                 <div v-if="r.accountId && accountsMap.get(r.accountId)" 
-                     class="flex items-center justify-center w-6 h-6 rounded bg-surface-base border border-surface-border text-white/80 shrink-0">
+                     class="flex items-center justify-center w-6 h-6 rounded bg-surface-base border border-surface-border text-fg/80 shrink-0">
                   <img v-if="accountsMap.get(r.accountId)?.customIconUrl" :src="accountsMap.get(r.accountId)?.customIconUrl ?? undefined" class="w-4 h-4 rounded-sm object-contain" />
                   <Landmark v-else class="w-3 h-3 text-accent" />
                 </div>
@@ -491,14 +491,14 @@ async function handleBulkDelete() {
 
               <!-- Desktop Col 2: Descrição -->
               <div class="hidden sm:flex items-center justify-start min-w-0">
-                <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
+                <span class="font-medium text-sm text-fg/90 truncate">{{ r.description }}</span>
               </div>
               
               <!-- Desktop Col 3: Comprovante -->
               <div class="hidden sm:flex items-center justify-center min-w-0">
                 <Paperclip 
                   v-if="r.hasReceipt"
-                  class="w-4 h-4 text-white/50 hover:text-white transition-colors shrink-0" 
+                  class="w-4 h-4 text-fg/50 hover:text-fg transition-colors shrink-0" 
                   title="Comprovante Anexado"
                 />
               </div>
@@ -584,7 +584,7 @@ async function handleBulkDelete() {
     <div v-if="shareModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
       <div class="bg-surface-raised border border-surface-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
         <div>
-          <h3 class="text-xl font-bold text-white mb-2">Link Compartilhado Criado!</h3>
+          <h3 class="text-xl font-bold text-fg mb-2">Link Compartilhado Criado!</h3>
           <p class="text-sm text-muted">Este link será válido por apenas 24 horas. Guarde a senha gerada, pois ela não será exibida novamente.</p>
         </div>
         
@@ -592,13 +592,13 @@ async function handleBulkDelete() {
           <div>
             <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">URL</label>
             <div class="flex items-center bg-surface-overlay border border-surface-border rounded-xl px-3 py-2">
-              <input type="text" readonly :value="shareLink" class="bg-transparent text-white text-sm w-full outline-none" />
+              <input type="text" readonly :value="shareLink" class="bg-transparent text-fg text-sm w-full outline-none" />
             </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">Senha</label>
             <div class="flex items-center bg-surface-overlay border border-surface-border rounded-xl px-3 py-2">
-              <input type="text" readonly :value="sharePassword" class="bg-transparent text-white text-sm w-full outline-none font-mono" />
+              <input type="text" readonly :value="sharePassword" class="bg-transparent text-fg text-sm w-full outline-none font-mono" />
             </div>
           </div>
         </div>
@@ -606,7 +606,7 @@ async function handleBulkDelete() {
         <div class="flex justify-end gap-3 pt-4 border-t border-surface-border/50">
           <button 
             @click="shareModalOpen = false" 
-            class="px-5 py-2.5 rounded-xl border border-surface-border font-semibold text-white shadow-sm hover:bg-surface-overlay transition-colors text-sm"
+            class="px-5 py-2.5 rounded-xl border border-surface-border font-semibold text-fg shadow-sm hover:bg-surface-overlay transition-colors text-sm"
           >
             Fechar
           </button>

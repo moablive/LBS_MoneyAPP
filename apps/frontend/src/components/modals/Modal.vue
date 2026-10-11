@@ -33,7 +33,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
             <button
               v-if="!hideCloseBtn"
               type="button"
-              class="text-muted hover:text-slate-100 transition-colors"
+              class="text-muted hover:text-fg transition-colors"
               @click="emit('close')"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

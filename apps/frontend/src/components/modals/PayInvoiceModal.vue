@@ -177,7 +177,7 @@ async function submit() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"
-            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-overlay file:text-slate-100"
+            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-overlay file:text-fg"
             @change="onFileChange"
           />
         </label>
@@ -188,7 +188,7 @@ async function submit() {
       <div class="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
+          class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg"
           @click="open = false"
         >
           Cancelar

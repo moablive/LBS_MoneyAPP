@@ -148,7 +148,7 @@ async function remove() {
         <h2 class="text-lg font-medium">
           {{ subscriptionToEdit ? 'Editar Assinatura' : 'Nova Assinatura' }}
         </h2>
-        <button @click="show = false" class="text-muted hover:text-slate-100 p-1">
+        <button @click="show = false" class="text-muted hover:text-fg p-1">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>

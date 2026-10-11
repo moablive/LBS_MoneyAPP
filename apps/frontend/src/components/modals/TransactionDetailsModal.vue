@@ -90,14 +90,14 @@ watch(() => props.transaction, async (t) => {
   <Modal :open="open" @close="open = false" :disableClickOutside="showFullscreenReceipt">
     <div v-if="transaction" class="p-6 space-y-6">
       <header>
-        <h2 class="text-2xl font-bold tracking-tight text-white">Detalhes da Transação</h2>
+        <h2 class="text-2xl font-bold tracking-tight text-fg">Detalhes da Transação</h2>
       </header>
 
       <div class="space-y-4">
         <div class="flex items-center gap-3 bg-surface-raised p-4 rounded-xl border border-surface-border">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-zinc-400">Descrição</p>
-            <p class="font-semibold text-white truncate text-base">{{ transaction.description }}</p>
+            <p class="font-semibold text-fg truncate text-base">{{ transaction.description }}</p>
           </div>
         </div>
 
@@ -114,14 +114,14 @@ watch(() => props.transaction, async (t) => {
           
           <div class="bg-surface-raised p-4 rounded-xl border border-surface-border">
             <p class="text-sm text-zinc-400 mb-1 flex items-center gap-1"><Calendar class="w-4 h-4" /> Data</p>
-            <p class="font-semibold text-white">{{ formatDay(transaction.occurredAt) }}</p>
+            <p class="font-semibold text-fg">{{ formatDay(transaction.occurredAt) }}</p>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div class="bg-surface-raised p-4 rounded-xl border border-surface-border">
             <p class="text-sm text-zinc-400 mb-1 flex items-center gap-1"><Landmark class="w-4 h-4" /> Conta</p>
-            <p class="font-semibold text-white truncate">{{ accountName || 'Sem Conta' }}</p>
+            <p class="font-semibold text-fg truncate">{{ accountName || 'Sem Conta' }}</p>
           </div>
 
           <div class="bg-surface-raised p-4 rounded-xl border border-surface-border">
@@ -129,7 +129,7 @@ watch(() => props.transaction, async (t) => {
               <div v-if="categoryColor" class="w-2 h-2 rounded-full mr-1" :style="{ backgroundColor: categoryColor }"></div>
               Categoria
             </p>
-            <p class="font-semibold text-white truncate">{{ categoryName || 'Sem Categoria' }}</p>
+            <p class="font-semibold text-fg truncate">{{ categoryName || 'Sem Categoria' }}</p>
           </div>
         </div>
 
@@ -183,7 +183,7 @@ watch(() => props.transaction, async (t) => {
         </button>
         <button
           @click="open = false"
-          class="px-5 py-2.5 rounded-xl border border-surface-border text-white text-sm font-bold hover:bg-surface-raised transition-colors"
+          class="px-5 py-2.5 rounded-xl border border-surface-border text-fg text-sm font-bold hover:bg-surface-raised transition-colors"
         >
           Fechar
         </button>

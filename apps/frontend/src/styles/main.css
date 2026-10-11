@@ -3,8 +3,43 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Tema claro (padrão): canvas creme, cards brancos, lima de destaque ── */
   :root {
+    color-scheme: light;
+    --surface-base: 243 244 238;     /* #f3f4ee */
+    --surface-raised: 255 255 255;
+    --surface-overlay: 238 240 233;  /* #eef0e9 */
+    --surface-border: 227 230 221;   /* #e3e6dd */
+    --fg: 17 17 19;                  /* #111113 */
+    --muted: 107 112 122;            /* #6b707a */
+    --accent: 17 17 19;              /* botão preto */
+    --lime: 198 241 53;              /* #c6f135 */
+    --primary: 91 79 255;            /* #5b4fff */
+    --income: 22 163 74;             /* #16a34a */
+    --expense: 220 38 38;            /* #dc2626 */
+    --alert: 217 119 6;              /* #d97706 */
+    --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 30px -12px rgba(16, 24, 40, 0.10);
+    --shadow-card-hover: 0 2px 4px rgba(16, 24, 40, 0.05), 0 18px 40px -14px rgba(16, 24, 40, 0.18);
+    --shadow-modal: 0 30px 80px rgba(16, 24, 40, 0.25);
+  }
+  /* ── Tema escuro (o antigo "premium dark") ── */
+  :root.dark {
     color-scheme: dark;
+    --surface-base: 18 18 21;        /* #121215 */
+    --surface-raised: 28 28 34;      /* #1c1c22 */
+    --surface-overlay: 39 39 48;     /* #272730 */
+    --surface-border: 51 51 64;      /* #333340 */
+    --fg: 241 242 246;
+    --muted: 122 132 153;            /* #7a8499 */
+    --accent: 139 92 246;            /* #8b5cf6 */
+    --lime: 198 241 53;
+    --primary: 124 114 255;
+    --income: 34 197 94;
+    --expense: 239 68 68;
+    --alert: 245 158 11;
+    --shadow-card: 0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35);
+    --shadow-card-hover: 0 1px 0 0 rgba(255,255,255,0.06) inset, 0 16px 40px rgba(0,0,0,0.45);
+    --shadow-modal: 0 30px 80px rgba(0,0,0,0.55);
   }
   html,
   body,
@@ -12,6 +47,7 @@
     height: 100%;
   }
   body {
+    @apply bg-surface-base text-fg;
     font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: 'cv11', 'ss01';
   }
@@ -24,25 +60,60 @@
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
+  /* Inputs nativos (date, select) seguem o tema. */
+  input, select, textarea {
+    color-scheme: inherit;
+  }
 }
 
 @layer components {
   .card {
-    /* Fundo semi-opaco sólido em vez de backdrop-blur: visual quase idêntico,
-       mas sem re-borrar o fundo a cada frame (gargalo de pintura no desktop). */
-    @apply bg-surface-raised/90 border border-surface-border rounded-2xl p-5 shadow-card;
+    /* Fundo sólido em vez de backdrop-blur: visual quase idêntico, sem
+       re-borrar o fundo a cada frame (gargalo de pintura no desktop). */
+    @apply bg-surface-raised border border-surface-border rounded-3xl p-5 shadow-card
+           transition-shadow duration-300 ease-smooth;
+  }
+  .card-hover {
+    @apply hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 ease-smooth;
+  }
+  /* Botão-pílula primário: preto no claro, violeta no escuro. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent text-white
+           px-5 py-2.5 text-sm font-semibold shadow-lg shadow-accent/20
+           transition-all duration-200 ease-smooth hover:-translate-y-0.5 hover:shadow-accent/30
+           active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0;
+  }
+  .btn-lime {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-lime text-lime-fg
+           px-5 py-2.5 text-sm font-semibold shadow-lg shadow-lime/30
+           transition-all duration-200 ease-smooth hover:-translate-y-0.5 active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-surface-border
+           bg-surface-raised text-fg/80 px-4 py-2 text-sm font-medium
+           transition-colors duration-200 hover:bg-surface-overlay hover:text-fg;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold;
   }
   .modal-shell {
     @apply fixed inset-0 z-50 flex items-end sm:items-center justify-center
-           bg-black/80;
+           bg-ink-950/40 backdrop-blur-sm;
   }
   .modal-panel {
-    @apply w-full sm:max-w-lg bg-surface-overlay border border-surface-border
+    @apply w-full sm:max-w-lg bg-surface-raised border border-surface-border
            rounded-t-3xl sm:rounded-3xl p-6 shadow-modal
            transition-transform duration-200 ease-smooth;
   }
   .skeleton {
-    @apply animate-pulse rounded-xl bg-surface-border/40;
+    @apply animate-pulse rounded-xl bg-surface-border/60;
+  }
+  /* Lista com barra fina, nas duas paletas. */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-surface-border rounded-full;
   }
 }
 

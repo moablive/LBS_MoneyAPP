@@ -9,10 +9,10 @@ const { isOpen, options, close } = useConfirmDialog();
   <Modal :open="isOpen" @close="close(false)">
     <div class="p-6 space-y-6">
       <header>
-        <h2 class="text-xl font-bold tracking-tight text-white">{{ options.title || (options.isAlert ? 'Atenção' : 'Confirmação') }}</h2>
+        <h2 class="text-xl font-bold tracking-tight text-fg">{{ options.title || (options.isAlert ? 'Atenção' : 'Confirmação') }}</h2>
       </header>
       
-      <p class="text-sm text-slate-300">
+      <p class="text-sm text-fg/70">
         {{ options.message }}
       </p>
 
@@ -20,7 +20,7 @@ const { isOpen, options, close } = useConfirmDialog();
         <button
           v-if="!options.isAlert"
           @click="close(false)"
-          class="px-5 py-2.5 rounded-xl border border-surface-border text-white text-sm font-bold hover:bg-surface-raised transition-colors"
+          class="px-5 py-2.5 rounded-xl border border-surface-border text-fg text-sm font-bold hover:bg-surface-raised transition-colors"
         >
           {{ options.cancelText || 'Cancelar' }}
         </button>

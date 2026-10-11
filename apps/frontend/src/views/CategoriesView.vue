@@ -43,7 +43,7 @@ onMounted(reload);
       <!-- Header -->
       <header class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-white mb-1">Categorias</h1>
+          <h1 class="text-3xl font-bold tracking-tight text-fg mb-1">Categorias</h1>
           <p class="text-sm text-zinc-400">Gerencie a classificação das suas finanças.</p>
         </div>
         <div class="flex items-center gap-3">
@@ -62,16 +62,16 @@ onMounted(reload);
         <div class="glass-card rounded-2xl p-5 flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-zinc-400 mb-1">Total Cadastradas</p>
-            <p class="text-2xl font-bold text-white">{{ totalCategories }}</p>
+            <p class="text-2xl font-bold text-fg">{{ totalCategories }}</p>
           </div>
-          <div class="w-10 h-10 rounded-full bg-surface border border-white/5 flex items-center justify-center">
+          <div class="w-10 h-10 rounded-full bg-surface border border-fg/5 flex items-center justify-center">
             <svg class="w-5 h-5 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
           </div>
         </div>
         <div class="glass-card rounded-2xl p-5 flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-zinc-400 mb-1">Despesas</p>
-            <p class="text-2xl font-bold text-white">{{ totalExpenses }}</p>
+            <p class="text-2xl font-bold text-fg">{{ totalExpenses }}</p>
           </div>
           <div class="w-10 h-10 rounded-full bg-expense/10 border border-expense/20 flex items-center justify-center">
             <svg class="w-5 h-5 text-expense" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
@@ -80,7 +80,7 @@ onMounted(reload);
         <div class="glass-card rounded-2xl p-5 flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-zinc-400 mb-1">Receitas</p>
-            <p class="text-2xl font-bold text-white">{{ totalIncomes }}</p>
+            <p class="text-2xl font-bold text-fg">{{ totalIncomes }}</p>
           </div>
           <div class="w-10 h-10 rounded-full bg-income/10 border border-income/20 flex items-center justify-center">
             <svg class="w-5 h-5 text-income" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
@@ -112,11 +112,11 @@ onMounted(reload);
           class="glass-card rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer"
           @click="openEditModal(c)"
         >
-          <div class="w-8 h-8 rounded-lg bg-surface border border-white/5 flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-lg bg-surface border border-fg/5 flex items-center justify-center shrink-0">
             <span class="inline-block w-3 h-3 rounded-full color-glow" :style="{ backgroundColor: c.color ?? '#6366f1' }"></span>
           </div>
           <div class="flex-1 min-w-0 flex items-center gap-3">
-            <h3 class="text-sm font-semibold text-white truncate">{{ c.name }}</h3>
+            <h3 class="text-sm font-semibold text-fg truncate">{{ c.name }}</h3>
             <span
               class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] uppercase font-bold tracking-wider ring-1 ring-inset shrink-0"
               :class="c.type === 'expense' ? 'bg-expense/10 text-expense ring-expense/20' : 'bg-income/10 text-income ring-income/20'"
@@ -126,7 +126,7 @@ onMounted(reload);
           </div>
           <button 
             @click.stop="openEditModal(c)"
-            class="text-zinc-500 hover:text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            class="text-zinc-500 hover:text-fg p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
             title="Editar Categoria"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>

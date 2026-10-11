@@ -103,7 +103,7 @@ async function desvincular() {
 
 <template>
   <div class="mb-6">
-    <p class="text-slate-100 font-medium">Conta do Telegram</p>
+    <p class="text-fg font-medium">Conta do Telegram</p>
 
     <!-- Já vinculado -->
     <template v-if="telegramId">
@@ -112,7 +112,7 @@ async function desvincular() {
       </p>
       <button
         type="button"
-        class="bg-surface-overlay border border-surface-border rounded-xl px-4 py-2 text-slate-100 text-sm hover:border-accent transition-colors"
+        class="bg-surface-overlay border border-surface-border rounded-xl px-4 py-2 text-fg text-sm hover:border-accent transition-colors"
         @click="desvincular"
       >
         Desvincular

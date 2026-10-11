@@ -158,7 +158,7 @@ async function remove() {
         <div class="flex gap-2">
           <button
             type="button"
-            class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-slate-100"
+            class="px-4 py-2 rounded-xl border border-surface-border text-muted hover:text-fg"
             @click="open = false"
           >
             Cancelar

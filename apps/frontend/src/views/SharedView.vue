@@ -97,7 +97,7 @@ const formatTime = (iso: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-base text-white font-sans antialiased overflow-y-auto w-full relative h-full flex flex-col">
+  <div class="min-h-screen bg-surface-base text-fg font-sans antialiased overflow-y-auto w-full relative h-full flex flex-col">
     <!-- Auth Screen -->
     <div v-if="!isAuthenticated" class="flex-1 flex flex-col items-center justify-center p-4">
       <div class="w-full max-w-sm bg-surface-raised border border-surface-border rounded-2xl p-6 shadow-xl text-center">
@@ -111,7 +111,7 @@ const formatTime = (iso: string) => {
               type="password" 
               v-model="password" 
               placeholder="Digite a senha" 
-              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+              class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-3 text-fg placeholder-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               required
             />
           </div>
@@ -131,7 +131,7 @@ const formatTime = (iso: string) => {
     <div v-else class="flex-1 mx-auto max-w-4xl px-4 py-8 space-y-6 w-full">
       <header class="flex items-center justify-between border-b border-surface-border pb-6 mb-8">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Extrato Compartilhado</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-fg">Extrato Compartilhado</h1>
           <p class="text-sm text-muted mt-1">Visão somente leitura (24 horas de validade)</p>
         </div>
       </header>
@@ -161,7 +161,7 @@ const formatTime = (iso: string) => {
             >
               <div class="flex items-center justify-start gap-3 min-w-0">
                 <div v-if="(r as any).account" 
-                     class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-white/80 shrink-0">
+                     class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-base border border-surface-border text-fg/80 shrink-0">
                   <img v-if="(r as any).account?.customIconUrl" :src="(r as any).account.customIconUrl" class="w-5 h-5 rounded-md object-contain" />
                   <Landmark v-else class="w-4 h-4 text-accent" />
                 </div>
@@ -170,7 +170,7 @@ const formatTime = (iso: string) => {
                 </div>
                 
                 <div class="flex flex-col min-w-0">
-                  <span class="font-medium text-sm text-white/90 truncate">{{ r.description }}</span>
+                  <span class="font-medium text-sm text-fg/90 truncate">{{ r.description }}</span>
                   <div class="flex items-center gap-2 mt-1">
                     <span class="text-xs text-muted">{{ formatTime(r.occurredAt) }}</span>
                     <div v-if="(r as any).category" class="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-surface-overlay border border-surface-border">
@@ -185,7 +185,7 @@ const formatTime = (iso: string) => {
                 <button 
                   v-if="r.hasReceipt"
                   @click="viewReceipt(r as any)"
-                  class="flex items-center justify-center p-1.5 rounded-lg bg-surface-base border border-surface-border text-white/50 hover:text-white hover:bg-surface-overlay transition-colors"
+                  class="flex items-center justify-center p-1.5 rounded-lg bg-surface-base border border-surface-border text-fg/50 hover:text-fg hover:bg-surface-overlay transition-colors"
                   title="Ver Comprovante"
                 >
                   <Paperclip class="w-4 h-4" />
@@ -208,8 +208,8 @@ const formatTime = (iso: string) => {
       <div class="absolute inset-0 bg-black/90" @click="closeReceipt"></div>
       <div class="relative w-full max-w-3xl bg-surface-raised rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
         <div class="flex items-center justify-between p-4 border-b border-surface-border">
-          <h3 class="font-bold text-white">Comprovante</h3>
-          <button @click="closeReceipt" class="p-1 rounded-lg text-muted hover:text-white hover:bg-surface-overlay transition-colors">
+          <h3 class="font-bold text-fg">Comprovante</h3>
+          <button @click="closeReceipt" class="p-1 rounded-lg text-muted hover:text-fg hover:bg-surface-overlay transition-colors">
             <XMark class="w-6 h-6" />
           </button>
         </div>

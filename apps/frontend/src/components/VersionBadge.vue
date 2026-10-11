@@ -18,8 +18,8 @@ const title = computed(() => {
 
 <template>
   <span
-    class="fixed bottom-2 right-2 z-[9999] select-none rounded-md bg-slate-900/70 px-2 py-0.5
-           font-mono text-[11px] leading-none text-slate-300 backdrop-blur-sm
+    class="fixed bottom-[84px] right-3 sm:bottom-2 sm:right-2 z-[9999] select-none rounded-md bg-ink-950/80 px-2 py-0.5
+           font-mono text-[11px] leading-none text-white/70 backdrop-blur-sm
            pointer-events-auto cursor-default"
     :title="title"
   >

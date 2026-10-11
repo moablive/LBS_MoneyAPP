@@ -295,7 +295,7 @@ async function destroy() {
     <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center bg-surface-raised">
         <h2 v-if="props.loanToEdit?.status === 'paid'" class="flex-1 text-sm font-semibold text-expense">Empréstimo Finalizado</h2>
-        <button @click="show = false" class="text-muted hover:text-white transition-colors">
+        <button @click="show = false" class="text-muted hover:text-fg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </header>
@@ -413,7 +413,7 @@ async function destroy() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"
-            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-white mb-2"
+            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-fg mb-2"
             @change="onFileChange"
           />
         </div>
@@ -433,7 +433,7 @@ async function destroy() {
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,application/pdf"
-            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-white"
+            class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-fg"
             @change="onPaymentFileChange"
           />
         </div>

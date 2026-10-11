@@ -98,12 +98,12 @@ async function toggleStatus(item: SubscriptionItem) {
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Ativas</div>
           <div v-if="loading" class="skeleton h-8 w-16" />
-          <div v-else class="text-2xl font-bold tabular-nums text-white">{{ data?.activeCount ?? 0 }}</div>
+          <div v-else class="text-2xl font-bold tabular-nums text-fg">{{ data?.activeCount ?? 0 }}</div>
         </div>
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Inativas</div>
           <div v-if="loading" class="skeleton h-8 w-16" />
-          <div v-else class="text-2xl font-bold tabular-nums text-white">{{ (data?.totalCount ?? 0) - (data?.activeCount ?? 0) }}</div>
+          <div v-else class="text-2xl font-bold tabular-nums text-fg">{{ (data?.totalCount ?? 0) - (data?.activeCount ?? 0) }}</div>
         </div>
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Projeção Mensal</div>
@@ -113,7 +113,7 @@ async function toggleStatus(item: SubscriptionItem) {
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Projeção Anual</div>
           <div v-if="loading" class="skeleton h-8 w-24 sm:ml-auto" />
-          <div v-else class="text-2xl font-bold tabular-nums text-white/90">{{ brl(((data?.gastoMensal ?? 0) + (data?.gastoTerceiros ?? 0)) * 12) }}</div>
+          <div v-else class="text-2xl font-bold tabular-nums text-fg/90">{{ brl(((data?.gastoMensal ?? 0) + (data?.gastoTerceiros ?? 0)) * 12) }}</div>
         </div>
         <div class="bg-surface-raised border border-surface-border rounded-2xl p-4 flex flex-col justify-center sm:text-right">
           <div class="text-[10px] uppercase tracking-wide text-muted font-semibold mb-1">Por Terceiros</div>
@@ -129,7 +129,7 @@ async function toggleStatus(item: SubscriptionItem) {
             v-for="opt in (['all','active','inactive'] as const)"
             :key="opt"
             class="px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200"
-            :class="tab === opt ? 'bg-surface-overlay text-white shadow-sm' : 'text-muted hover:text-white hover:bg-surface-overlay/50'"
+            :class="tab === opt ? 'bg-surface-overlay text-fg shadow-sm' : 'text-muted hover:text-fg hover:bg-surface-overlay/50'"
             @click="tab = opt"
           >
             {{ opt === 'all' ? 'Todas' : opt === 'active' ? 'Ativas' : 'Inativas' }}
@@ -139,7 +139,7 @@ async function toggleStatus(item: SubscriptionItem) {
           <input
             v-model="search"
             placeholder="Buscar assinatura…"
-            class="w-full bg-surface-base border border-surface-border rounded-xl pl-4 pr-4 py-2.5 text-sm text-white placeholder-muted focus:outline-none focus:ring-1 focus:ring-accent transition-shadow"
+            class="w-full bg-surface-base border border-surface-border rounded-xl pl-4 pr-4 py-2.5 text-sm text-fg placeholder-muted focus:outline-none focus:ring-1 focus:ring-accent transition-shadow"
           />
         </div>
       </section>
@@ -179,7 +179,7 @@ async function toggleStatus(item: SubscriptionItem) {
               />
             </div>
             <div class="flex flex-col min-w-0">
-              <span class="font-medium text-sm text-white/90 truncate">{{ item.description }}</span>
+              <span class="font-medium text-sm text-fg/90 truncate">{{ item.description }}</span>
               <span
                 v-if="item.status === 'inactive'"
                 class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 mt-0.5 rounded-md bg-surface-base text-muted border border-surface-border shrink-0 w-max"
@@ -197,7 +197,7 @@ async function toggleStatus(item: SubscriptionItem) {
 
           <!-- Desktop Col 2: Descrição -->
           <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
-            <span class="font-medium text-sm text-white/90 truncate">{{ item.description }}</span>
+            <span class="font-medium text-sm text-fg/90 truncate">{{ item.description }}</span>
             <span
               v-if="item.status === 'inactive'"
               class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-surface-base text-muted border border-surface-border shrink-0"

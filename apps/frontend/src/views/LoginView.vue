@@ -103,7 +103,7 @@ async function confirmarCodigo() {
       @submit.prevent="submit"
     >
       <header class="space-y-4 flex flex-col items-center mb-6">
-        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain mix-blend-screen" />
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
         <p class="text-sm text-muted">Entre com sua conta para continuar.</p>
       </header>
 
@@ -153,13 +153,13 @@ async function confirmarCodigo() {
       @submit.prevent="confirmarCodigo"
     >
       <header class="space-y-4 flex flex-col items-center mb-6">
-        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain mix-blend-screen" />
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
         <p class="text-sm text-muted">
           {{ usarBackup
             ? 'Digite um dos códigos de recuperação que você guardou.'
             : 'Digite o código de 6 dígitos do seu aplicativo autenticador.' }}
         </p>
-        <GoogleAuthAviso v-if="!usarBackup" modo="codigo" emissor="MoneyAPP" class="mt-4 text-white" />
+        <GoogleAuthAviso v-if="!usarBackup" modo="codigo" emissor="MoneyAPP" class="mt-4 text-fg" />
       </header>
 
       <label class="block space-y-1">
