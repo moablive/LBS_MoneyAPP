@@ -43,8 +43,12 @@ async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
 }
 
 async function parseTransactionWithOllama(transcription: string, availableCategories: {name: string, id: string}[], availableAccounts: {name: string, id: string}[]): Promise<OllamaParsedTransaction> {
-  const ollamaUrl = `${env.OLLAMA_URL}/api/generate`;
-  const model = env.OLLAMA_TEXT_MODEL;
+  // Desde 07/10/2026 o texto sai do OmniRoute (tokens de API), não do Ollama
+  // local — OMNIROUTE_URL/OMNIROUTE_API_KEY no ../shared.env. A leitura de
+  // recibo (scanReceipt/transactions) continua no Ollama, porque é visão.
+  const omniUrl = `${(process.env.OMNIROUTE_URL || 'http://172.18.0.1:20128/v1').replace(/\/+$/, '')}/chat/completions`;
+  const omniKey = process.env.OMNIROUTE_API_KEY || 'local-key';
+  const model = process.env.OMNIROUTE_TEXT_MODEL || 'auto/best-fast';
 
   const categoryNames = availableCategories.map(c => c.name).join(', ');
   const accountNames = availableAccounts.map(a => a.name).join(', ');
@@ -96,23 +100,26 @@ Transcrição do usuário: "${transcription}"
 `;
 
   try {
-    const response = await fetch(ollamaUrl, {
+    const response = await fetch(omniUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${omniKey}` },
       body: JSON.stringify({
         model: model,
-        prompt: systemPrompt,
+        messages: [{ role: 'user', content: systemPrompt }],
         stream: false,
-        format: "json"
+        response_format: { type: 'json_object' }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.statusText}`);
+      throw new Error(`OmniRoute API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.response);
+    // O OmniRoute às vezes cerca o JSON com ```json … ``` (o Ollama não punha).
+    const conteudo = (data?.choices?.[0]?.message?.content ?? '').trim()
+      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    const result = JSON.parse(conteudo);
     
     return {
       description: result.description || 'Transação sem nome',

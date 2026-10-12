@@ -61,7 +61,7 @@ const envSchema = z.object({
    * inteiro, so a rota `/api/telegram/link-token` responde CONFIG_AUSENTE.
    */
   TELEGRAM_BOT_USERNAME: z.string().optional(),
-  // Meu Bruxo: prefixo do payload do deep link (ex.: money_). O hub usa para
+  // Moabinho IA: prefixo do payload do deep link (ex.: money_). O hub usa para
   // saber de que app e o passe, porque todos os apps dividem o mesmo bot.
   TELEGRAM_START_PREFIX: z.string().regex(/^[a-z]*_?$/).default(''),
   CORS_ORIGIN: z.string().default('*').transform((val) => {

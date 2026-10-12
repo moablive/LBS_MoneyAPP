@@ -1,6 +1,6 @@
 import { Scenes, Telegraf, session } from 'telegraf';
 import { env } from './config.js';
-import { noMeuBruxo, receberDoMeuBruxo } from './lib/meubruxo.js';
+import { noMoabinhoIA, receberDoMoabinhoIA } from './lib/moabinhoia.js';
 import type { BotContext } from './context.js';
 import { auth } from './auth.js';
 import { registerScene, REGISTER_SCENE } from './ui/scenes/register.js';
@@ -171,8 +171,8 @@ bot.catch((err, ctx) => {
 // launch() resolve no stop normal e rejeita em erro fatal de polling (ex.: 409
 // quando outra instância ainda está ativa durante um redeploy). Saída limpa +
 // restart do Docker em vez de stack trace e crash.
-if (noMeuBruxo) {
-  receberDoMeuBruxo(bot);
+if (noMoabinhoIA) {
+  receberDoMoabinhoIA(bot);
 } else {
   bot.launch({ dropPendingUpdates: true }).catch((err: unknown) => {
     console.error('[bot] polling encerrado por erro (outra instância ativa / 409?):', err);
@@ -181,5 +181,5 @@ if (noMeuBruxo) {
 }
 console.log('🤖 MoneyAPP Bot rodando...');
 
-process.once('SIGINT', () => (noMeuBruxo ? process.exit(0) : bot.stop('SIGINT')));
-process.once('SIGTERM', () => (noMeuBruxo ? process.exit(0) : bot.stop('SIGTERM')));
+process.once('SIGINT', () => (noMoabinhoIA ? process.exit(0) : bot.stop('SIGINT')));
+process.once('SIGTERM', () => (noMoabinhoIA ? process.exit(0) : bot.stop('SIGTERM')));
