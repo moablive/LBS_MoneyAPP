@@ -5,6 +5,7 @@ import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { CreateTransactionInput, Receipt, TransactionType, Category, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
 import { getLocalYMDHM, formatLocalYMDHM } from '../../utils/date';
+import { useEmpresasStore } from '../../stores/empresas';
 
 import { useAuthStore } from '../../stores/auth';
 import type { Transaction } from '@moneyapp/models';
@@ -23,6 +24,13 @@ const status = ref<'paid' | 'pending'>('paid');
 const occurredAt = ref(getLocalYMDHM());
 const categoryId = ref<string | ''>('');
 const accountId = ref<string | ''>('');
+// Empresa do lançamento; null = vale a empresa da conta (sem conta = pessoal).
+const empresaId = ref<string | null>(null);
+const empresasStore = useEmpresasStore();
+const empresaDaConta = computed(() => {
+  const conta = accounts.value.find((a) => a.id === accountId.value);
+  return empresasStore.nomeDe(conta?.empresaId ?? null);
+});
 const receiptFile = ref<File | null>(null);
 const removeExistingReceipt = ref(false);
 
@@ -88,6 +96,7 @@ watch(
       occurredAt.value = formatLocalYMDHM(props.transaction.occurredAt);
       categoryId.value = props.transaction.categoryId;
       accountId.value = props.transaction.accountId || '';
+      empresaId.value = props.transaction.empresaId ?? null;
       receiptFile.value = null;
       removeExistingReceipt.value = false;
       error.value = null;
@@ -99,6 +108,7 @@ watch(
         api.get<Category[]>('/categories'),
         api.get<Account[]>('/accounts'),
       ]);
+      empresasStore.fetchEmpresas().catch(() => {});
       maybeDefaultControle();
     } catch {
       error.value = 'Não foi possível carregar categorias e contas.';
@@ -136,6 +146,7 @@ function reset() {
     
     categoryId.value = props.initialData.categoryId || '';
     accountId.value = props.initialData.accountId || '';
+    empresaId.value = props.initialData.empresaId ?? null;
     // A chave e `receiptFile` — a mesma que a TransactionsView monta ao receber
     // o `parsed` da IA. Ja se chamou `_receiptFile` aqui, e o comprovante lido
     // pela IA simplesmente nunca chegava ao formulario.
@@ -148,6 +159,7 @@ function reset() {
     occurredAt.value = getLocalYMDHM();
     categoryId.value = '';
     accountId.value = '';
+    empresaId.value = null;
     receiptFile.value = null;
   }
   
@@ -192,6 +204,7 @@ async function submit() {
       occurredAt: new Date(occurredAt.value).toISOString() as any as Date,
       categoryId: categoryId.value,
       accountId: accountId.value || null,
+      empresaId: empresaId.value,
       receipt: receiptPayload,
     };
     let saved;
@@ -323,6 +336,17 @@ function onFileChange(e: Event) {
           </select>
         </label>
       </div>
+
+      <label v-if="empresasStore.items.length > 0" class="block space-y-1">
+        <span class="text-xs uppercase tracking-wide text-muted">Empresa</span>
+        <select
+          v-model="empresaId"
+          class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
+        >
+          <option :value="null">Da conta ({{ empresaDaConta }})</option>
+          <option v-for="e in empresasStore.items" :key="e.id" :value="e.id">{{ e.nome }}</option>
+        </select>
+      </label>
 
       <label class="block space-y-1">
         <span class="text-xs uppercase tracking-wide text-muted">Comprovante (PNG/JPG/PDF, máx 15MB)</span>

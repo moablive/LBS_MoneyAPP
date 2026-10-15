@@ -47,6 +47,8 @@ export const createTransactionSchema = z
     categoryId: z.string().uuid(),
     accountId: z.string().uuid().nullish(),
     subscriptionId: z.string().uuid().nullish(),
+    // Nulo = vale a empresa da conta; sem conta ou conta sem empresa = pessoal.
+    empresaId: z.string().uuid().nullish(),
     receipt: receiptSchema.nullable().optional(),
   })
   .strict()
@@ -84,6 +86,8 @@ export const transactionFiltersSchema = z
     status: transactionStatusEnum.optional(),
     accountId: z.string().uuid().optional(),
     categoryId: z.string().uuid().optional(),
+    // Empresa efetiva (a do lançamento ou, sem ela, a da conta); `pessoal` = sem empresa.
+    empresa: z.union([z.string().uuid(), z.literal('pessoal')]).optional(),
     search: z.string().trim().min(1).max(120).optional(),
     sort: z.enum(['date_desc', 'date_asc', 'amount_desc', 'amount_asc']).default('date_desc'),
     limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -104,6 +108,7 @@ export interface Transaction {
   subscriptionId?: string | null;
   investmentId?: string | null;
   invoiceCardId?: string | null;
+  empresaId?: string | null;
   hasReceipt: boolean;
   createdAt?: string;
   updatedAt?: string;

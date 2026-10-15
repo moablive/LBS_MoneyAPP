@@ -36,6 +36,13 @@ const envSchema = z.object({
    */
   MONEYAPP_CONSUMERS: z.string().optional(),
   /**
+   * Chave do 💰 Financeiro do Conselho do Moab (perfil `conselho-financeiro` do
+   * hermes-agent). Vira o consumidor `conselho-financeiro`, com escopos FIXOS no
+   * código: ler finanças e lançar só PENDENTE (routes/agente.ts). Ausente = API
+   * do agente desligada. Sempre exige o consentimento do dono (leitoresExternos).
+   */
+  MONEYAPP_CONSELHO_KEY: z.string().min(32).optional(),
+  /**
    * Mantem o ramo LEGADO do `requireAuth` (x-api-key + x-user-id confiado cego).
    * `true` enquanto o bot ainda nao repassa JWT do LoginHub; vira `false` para
    * FECHAR de vez a delegacao cega — o buraco de ler/escrever qualquer conta so

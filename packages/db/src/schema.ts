@@ -46,6 +46,30 @@ export const userSettings = pgTable("user_settings", {
   settings: jsonb("settings").default({ requireReceipts: true }).notNull(),
 });
 
+// -------- empresas -----------------------------------------------------------
+// Empresas do dono (Moab Corp, Astral Wave, Conselho Ômega…). Conta e
+// lançamento sem empresa = finanças pessoais. `parentId` monta o grupo: a
+// holding soma a si mesma e às filhas. Ver "Projeto - MoneyAPP ／ Empresas e
+// agente financeiro" na pasta awldocs do Drive.
+export const empresas = pgTable(
+  "empresas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id").notNull(),
+    nome: varchar("nome", { length: 120 }).notNull(),
+    cnpj: varchar("cnpj", { length: 18 }),
+    cor: varchar("cor", { length: 9 }),
+    parentId: uuid("parent_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    userIdx: index("empresas_loginhub_idx").on(t.loginhubId),
+    uniqueUserNome: uniqueIndex("empresas_loginhub_nome_uq").on(t.loginhubId, t.nome),
+  }),
+);
+
 // -------- categories ---------------------------------------------------------
 export const categories = pgTable(
   "categories",
@@ -93,11 +117,17 @@ export const accounts = pgTable(
     creditLimit: numeric("credit_limit", { precision: 14, scale: 2 }),
     closingDay: numeric("closing_day"), // 1-31
     dueDay: numeric("due_day"), // 1-31
+    empresaId: uuid("empresa_id").references(() => empresas.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
   },
-  (t) => ({ userIdx: index("accounts_loginhub_idx").on(t.loginhubId) }),
+  (t) => ({
+    userIdx: index("accounts_loginhub_idx").on(t.loginhubId),
+    empresaIdx: index("accounts_empresa_idx").on(t.empresaId),
+  }),
 );
 
 // -------- subscriptions ------------------------------------------------------
@@ -171,6 +201,11 @@ export const transactions = pgTable(
     }),
     receiptBase64: text("receipt_base64"),
     receiptMimeType: varchar("receipt_mime_type", { length: 80 }),
+    // Empresa do lançamento. Nulo = vale a empresa da conta (e, sem conta ou
+    // conta sem empresa, é pessoal). Ver `empresaEfetiva` em routes/empresas.ts.
+    empresaId: uuid("empresa_id").references(() => empresas.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -190,6 +225,7 @@ export const transactions = pgTable(
     ),
     categoryIdx: index("transactions_category_idx").on(t.categoryId),
     accountIdx: index("transactions_account_idx").on(t.accountId),
+    empresaIdx: index("transactions_empresa_idx").on(t.empresaId),
     subscriptionIdx: index("transactions_subscription_idx").on(
       t.subscriptionId,
     ),

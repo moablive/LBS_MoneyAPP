@@ -348,6 +348,13 @@ O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — con
 
 ---
 
+## 🏢 Empresas e o 💰 Financeiro do conselho
+
+Desde 15/10/2026 o MoneyAPP separa as finanças por **empresa** (Moab Corp e as filhas, como Astral
+Wave e Conselho Ômega; sem empresa = pessoal) e o 💰 Financeiro do Conselho do Moab opera o app
+pela API `/api/agente/*`: lê tudo e só lança **pendente**, que o dono confirma. Detalhes no
+Google Doc "Projeto - MoneyAPP ／ Empresas e agente financeiro" (pasta awldocs do Drive).
+
 ## 🔗 Integração com TodoAPP
 
 > Documentação completa (fluxos, contratos, troubleshooting): `documentacao/integracao-todoapp-moneyapp.md` no repo de docs do servidor.

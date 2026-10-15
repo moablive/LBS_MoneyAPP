@@ -6,6 +6,7 @@ const { accounts, transactions, categories } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { authOrConsumer } from '../middleware/consumers.js';
 import { validate } from '../middleware/validate.js';
+import { garantirEmpresaDoDono } from './empresas.js';
 
 export const transactionsRouter = Router();
 // A rota de comprovante (`GET /:id/receipt`) tambem aceita o leitor de servico
@@ -266,66 +267,84 @@ Regras IMPORTANTES:
 // ---------- list -------------------------------------------------------------
 transactionsRouter.get('/', validate(transactionFiltersSchema, 'query'), async (req, res, next) => {
   try {
-    const loginhubId = req.user!.loginhubId;
     const f = req.query as unknown as import('@moneyapp/models').TransactionFilters;
-
-    const monthRange = f.month ? monthBounds(f.month) : null;
-    const from = f.from ?? monthRange?.start;
-    const to = f.to ?? monthRange?.end;
-
-    const conds = [eq(transactions.loginhubId, loginhubId), isNull(transactions.loanId)];
-    if (from) conds.push(gte(transactions.occurredAt, from));
-    if (to) conds.push(lt(transactions.occurredAt, to));
-    if (f.type) conds.push(eq(transactions.type, f.type));
-    if (f.status) conds.push(eq(transactions.status, f.status));
-    if (f.accountId) conds.push(eq(transactions.accountId, f.accountId));
-    if (f.categoryId) conds.push(eq(transactions.categoryId, f.categoryId));
-    if (f.search) conds.push(ilike(transactions.description, `%${f.search}%`));
-
-    const order = (() => {
-      switch (f.sort) {
-        case 'date_asc':
-          return [asc(transactions.occurredAt)];
-        case 'amount_desc':
-          return [desc(transactions.amount)];
-        case 'amount_asc':
-          return [asc(transactions.amount)];
-        default:
-          return [desc(transactions.occurredAt), desc(transactions.createdAt)];
-      }
-    })();
-
-    const rows = await db
-      .select({
-        id: transactions.id,
-        description: transactions.description,
-        amount: transactions.amount,
-        type: transactions.type,
-        status: transactions.status,
-        occurredAt: transactions.occurredAt,
-        categoryId: transactions.categoryId,
-        accountId: transactions.accountId,
-        subscriptionId: transactions.subscriptionId,
-        invoiceCardId: transactions.invoiceCardId,
-        hasReceipt: sql<boolean>`${transactions.receiptBase64} is not null`.as('has_receipt'),
-        createdAt: transactions.createdAt,
-      })
-      .from(transactions)
-      .where(and(...conds))
-      .orderBy(...order)
-      .limit(f.limit);
-
-    res.json(rows);
+    res.json(await listarTransacoes(req.user!.loginhubId, f));
   } catch (err) {
     next(err);
   }
 });
+
+/** Lista com os filtros da tela; também usada pela API do agente (routes/agente.ts). */
+export async function listarTransacoes(
+  loginhubId: number,
+  f: import('@moneyapp/models').TransactionFilters,
+) {
+  const monthRange = f.month ? monthBounds(f.month) : null;
+  const from = f.from ?? monthRange?.start;
+  const to = f.to ?? monthRange?.end;
+
+  const conds = [eq(transactions.loginhubId, loginhubId), isNull(transactions.loanId)];
+  if (from) conds.push(gte(transactions.occurredAt, from));
+  if (to) conds.push(lt(transactions.occurredAt, to));
+  if (f.type) conds.push(eq(transactions.type, f.type));
+  if (f.status) conds.push(eq(transactions.status, f.status));
+  if (f.accountId) conds.push(eq(transactions.accountId, f.accountId));
+  if (f.categoryId) conds.push(eq(transactions.categoryId, f.categoryId));
+  // Empresa efetiva: a do lançamento ou, sem ela, a da conta.
+  if (f.empresa === 'pessoal') {
+    conds.push(sql`coalesce(${transactions.empresaId}, ${accounts.empresaId}) is null`);
+  } else if (f.empresa) {
+    conds.push(sql`coalesce(${transactions.empresaId}, ${accounts.empresaId}) = ${f.empresa}`);
+  }
+  if (f.search) conds.push(ilike(transactions.description, `%${f.search}%`));
+
+  const order = (() => {
+    switch (f.sort) {
+      case 'date_asc':
+        return [asc(transactions.occurredAt)];
+      case 'amount_desc':
+        return [desc(transactions.amount)];
+      case 'amount_asc':
+        return [asc(transactions.amount)];
+      default:
+        return [desc(transactions.occurredAt), desc(transactions.createdAt)];
+    }
+  })();
+
+  const rows = await db
+    .select({
+      id: transactions.id,
+      description: transactions.description,
+      amount: transactions.amount,
+      type: transactions.type,
+      status: transactions.status,
+      occurredAt: transactions.occurredAt,
+      categoryId: transactions.categoryId,
+      accountId: transactions.accountId,
+      subscriptionId: transactions.subscriptionId,
+      invoiceCardId: transactions.invoiceCardId,
+      empresaId: transactions.empresaId,
+      hasReceipt: sql<boolean>`${transactions.receiptBase64} is not null`.as('has_receipt'),
+      createdAt: transactions.createdAt,
+    })
+    .from(transactions)
+    .leftJoin(accounts, eq(accounts.id, transactions.accountId))
+    .where(and(...conds))
+    .orderBy(...order)
+    .limit(f.limit);
+
+  return rows;
+}
 
 // ---------- create -----------------------------------------------------------
 transactionsRouter.post('/', validate(createTransactionSchema), async (req, res, next) => {
   try {
     const loginhubId = req.user!.loginhubId;
     const body = req.body as import('@moneyapp/models').CreateTransactionInput;
+    if (!(await garantirEmpresaDoDono(db, loginhubId, body.empresaId))) {
+      res.status(400).json({ error: 'empresa_invalida' });
+      return;
+    }
 
     const created = await db.transaction(async (tx) => {
       const isFatura = await isFaturaPaymentTx(tx, body.accountId ?? null, body.categoryId);
@@ -346,6 +365,7 @@ transactionsRouter.post('/', validate(createTransactionSchema), async (req, res,
           occurredAt: body.occurredAt,
           categoryId: body.categoryId,
           accountId: body.accountId ?? null,
+          empresaId: body.empresaId ?? null,
           receiptBase64: body.receipt?.base64 ?? null,
           receiptMimeType: body.receipt?.mimeType ?? null,
         })
@@ -380,6 +400,9 @@ transactionsRouter.post('/bulk', validate(z.array(createTransactionSchema)), asy
     const createdRows = await db.transaction(async (tx) => {
       const results = [];
       for (const body of items) {
+        if (!(await garantirEmpresaDoDono(tx, loginhubId, body.empresaId))) {
+          throw new HttpError(400, 'empresa_invalida');
+        }
         const isFatura = await isFaturaPaymentTx(tx, body.accountId ?? null, body.categoryId);
         const status = body.status ?? 'paid';
 
@@ -398,6 +421,7 @@ transactionsRouter.post('/bulk', validate(z.array(createTransactionSchema)), asy
             occurredAt: body.occurredAt,
             categoryId: body.categoryId,
             accountId: body.accountId ?? null,
+            empresaId: body.empresaId ?? null,
             receiptBase64: body.receipt?.base64 ?? null,
             receiptMimeType: body.receipt?.mimeType ?? null,
           })
@@ -456,6 +480,12 @@ transactionsRouter.patch('/:id', validate(updateTransactionSchema), async (req, 
       if (body.categoryId !== undefined) patch.categoryId = body.categoryId;
       if (body.accountId !== undefined) patch.accountId = body.accountId;
       if (body.subscriptionId !== undefined) patch.subscriptionId = body.subscriptionId;
+      if (body.empresaId !== undefined) {
+        if (!(await garantirEmpresaDoDono(tx, loginhubId, body.empresaId))) {
+          throw new HttpError(400, 'empresa_invalida');
+        }
+        patch.empresaId = body.empresaId;
+      }
       if (body.receipt !== undefined) {
         patch.receiptBase64 = body.receipt?.base64 ?? null;
         patch.receiptMimeType = body.receipt?.mimeType ?? null;
@@ -637,7 +667,7 @@ export class HttpError extends Error {
   }
 }
 
-function monthBounds(month: string): { start: Date; end: Date } {
+export function monthBounds(month: string): { start: Date; end: Date } {
   const [y, m] = month.split('-').map(Number);
   const start = new Date(Date.UTC(y!, m! - 1, 1));
   const end = new Date(Date.UTC(y!, m!, 1));

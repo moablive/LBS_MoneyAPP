@@ -3,6 +3,7 @@ import { ref, watch, useId, computed } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { AccountType, CreateAccountInput, Account } from '@moneyapp/models';
 import Modal from './Modal.vue';
+import { useEmpresasStore } from '../../stores/empresas';
 
 const open = defineModel<boolean>('open', { default: false });
 const props = defineProps<{ account?: Account | null }>();
@@ -25,6 +26,9 @@ const affectsBalance = computed<boolean>({
 const creditLimit = ref<number | null>(null);
 const closingDay = ref<number | null>(null);
 const dueDay = ref<number | null>(null);
+// Empresa da conta (null = pessoal).
+const empresaId = ref<string | null>(null);
+const empresasStore = useEmpresasStore();
 const customFile = ref<File | null>(null);
 const customPreview = ref<string | null>(null);
 const submitting = ref(false);
@@ -57,7 +61,9 @@ watch(
   open,
   (v) => {
     if (!v) return;
+    empresasStore.fetchEmpresas().catch(() => {});
     if (props.account) {
+      empresaId.value = props.account.empresaId ?? null;
       name.value = props.account.name;
       type.value = props.account.type;
       bankCode.value = props.account.bankCode;
@@ -82,6 +88,7 @@ watch(
       creditLimit.value = null;
       closingDay.value = null;
       dueDay.value = null;
+      empresaId.value = null;
       customFile.value = null;
       customPreview.value = null;
       selectedPredefined.value = null;
@@ -121,6 +128,7 @@ async function submit() {
       customIconUrl: customPreview.value || selectedPredefined.value,
       currentBalance: Number(currentBalance.value) || 0,
       freezeBalance: freezeBalance.value,
+      empresaId: empresaId.value,
       ...(type.value === 'credit_card' && {
         creditLimit: creditLimit.value ? Number(creditLimit.value) : null,
         closingDay: closingDay.value ? Number(closingDay.value) : null,
@@ -206,6 +214,18 @@ async function submit() {
             <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </option>
+          </select>
+        </label>
+
+        <label :for="formId + '-empresa'" class="block space-y-1 col-span-2">
+          <span class="text-xs uppercase tracking-wide text-muted">Empresa</span>
+          <select
+            :id="formId + '-empresa'"
+            v-model="empresaId"
+            class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2"
+          >
+            <option :value="null">Pessoal</option>
+            <option v-for="e in empresasStore.items" :key="e.id" :value="e.id">{{ e.nome }}</option>
           </select>
         </label>
 

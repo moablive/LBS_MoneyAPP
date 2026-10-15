@@ -9,6 +9,7 @@ import { BuildingLibraryIcon as Landmark, CheckCircleIcon as CheckCircle2, Clock
 import { sharesClient } from '@moneyapp/api-client';
 import type { TransactionType, Transaction, Account, Category } from '@moneyapp/models';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useEmpresasStore } from '../stores/empresas';
 
 const { confirm, alert } = useConfirmDialog();
 
@@ -22,6 +23,11 @@ const createType = ref<TransactionType>('expense');
 const filterType = ref<'all' | TransactionType>('all');
 const filterCategory = ref<string>('all');
 const filterAccount = ref<string>('all');
+// 'all' | 'pessoal' | id da empresa (empresa efetiva: a do lançamento ou a da conta).
+const filterEmpresa = ref<string>('all');
+const empresasStore = useEmpresasStore();
+/** Lançado pelo 💰 Financeiro do conselho e ainda esperando o dono confirmar. */
+const ehDoAgente = (t: Transaction) => t.status === 'pending' && t.description.startsWith('[Financeiro] ');
 const filterPeriod = ref<'current_month' | 'next_month' | 'all'>('current_month');
 const filterSearch = ref('');
 const selectedRow = ref<Transaction | null>(null);
@@ -73,6 +79,7 @@ async function reload() {
     if (filterType.value !== 'all') params.set('type', filterType.value);
     if (filterCategory.value !== 'all') params.set('categoryId', filterCategory.value);
     if (filterAccount.value !== 'all') params.set('accountId', filterAccount.value);
+    if (filterEmpresa.value !== 'all') params.set('empresa', filterEmpresa.value);
     
     if (filterPeriod.value === 'current_month') {
       const now = new Date();
@@ -104,6 +111,7 @@ onMounted(async () => {
   } catch(e) {
     console.error('Failed to load accounts or categories', e);
   }
+  empresasStore.fetchEmpresas().catch(() => {});
   await reload();
   window.addEventListener('transaction-created', reload);
 });
@@ -352,6 +360,16 @@ async function handleBulkDelete() {
               <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
             </optgroup>
           </select>
+          <select
+            v-if="empresasStore.items.length > 0"
+            v-model="filterEmpresa"
+            @change="reload()"
+            class="order-3 sm:order-4 flex-1 sm:flex-none min-w-0 px-4 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg shadow-lg focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer"
+          >
+            <option value="all">Todas Empresas</option>
+            <option value="pessoal">Pessoal</option>
+            <option v-for="e in empresasStore.items" :key="e.id" :value="e.id">{{ e.nome }}</option>
+          </select>
           <div class="order-4 sm:order-5 flex-1 sm:flex-none min-w-0">
             <input 
               v-model="filterSearch"
@@ -472,6 +490,7 @@ async function handleBulkDelete() {
                 
                 <div class="flex flex-col min-w-0">
                   <span class="font-medium text-sm text-fg/90 truncate">{{ r.description }}</span>
+                  <span v-if="ehDoAgente(r)" class="self-start px-1.5 py-0.5 rounded-md bg-lime/20 text-fg text-[10px] font-semibold" title="Lançado pelo agente financeiro: confira e confirme">💰 agente – confirmar</span>
                   <span class="text-xs text-muted sm:hidden">{{ formatTime(r.occurredAt) }}</span>
                 </div>
               </div>
@@ -490,8 +509,9 @@ async function handleBulkDelete() {
               </div>
 
               <!-- Desktop Col 2: Descrição -->
-              <div class="hidden sm:flex items-center justify-start min-w-0">
+              <div class="hidden sm:flex items-center justify-start gap-2 min-w-0">
                 <span class="font-medium text-sm text-fg/90 truncate">{{ r.description }}</span>
+                <span v-if="ehDoAgente(r)" class="shrink-0 px-1.5 py-0.5 rounded-md bg-lime/20 text-fg text-[10px] font-semibold" title="Lançado pelo agente financeiro: confira e confirme">💰 agente – confirmar</span>
               </div>
               
               <!-- Desktop Col 3: Comprovante -->

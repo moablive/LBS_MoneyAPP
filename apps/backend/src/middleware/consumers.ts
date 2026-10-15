@@ -36,7 +36,22 @@ interface Consumer {
  * identifica QUEM chama e limita a QUE ele acessa, e o `x-user-id` so vale se a
  * conta consentir — ao contrario da confianca cega no id.
  */
+/** Escopos do 💰 Financeiro do conselho: fixos aqui, nunca vindos do env. */
+export const ESCOPOS_CONSELHO_FINANCEIRO = ['financas.read', 'financas.lancar-pendente'] as const;
+
 function carregarConsumidores(): Consumer[] {
+  const lista = carregarConsumidoresDoEnv();
+  if (env.MONEYAPP_CONSELHO_KEY) {
+    lista.push({
+      id: 'conselho-financeiro',
+      secret: env.MONEYAPP_CONSELHO_KEY,
+      scopes: new Set(ESCOPOS_CONSELHO_FINANCEIRO),
+    });
+  }
+  return lista;
+}
+
+function carregarConsumidoresDoEnv(): Consumer[] {
   const bruto = env.MONEYAPP_CONSUMERS?.trim();
   if (!bruto) {
     return [{
@@ -140,6 +155,48 @@ export function authOrConsumer(...escoposExigidos: string[]) {
       }
     }
 
+    req.consumer = { id: consumer.id, scopes: [...consumer.scopes] };
+    req.user = { loginhubId, email: '' };
+    next();
+  };
+}
+
+/**
+ * Guarda das rotas que SÓ consumidor de serviço usa (hoje, a API do agente
+ * financeiro em routes/agente.ts). Mais estrita que `authOrConsumer`: não cai
+ * para a sessão de usuário e exige SEMPRE o consentimento do dono
+ * (`leitoresExternos`), independente de ENFORCE_CONSUMER_CONSENT.
+ */
+export function somenteConsumidor(...escoposExigidos: string[]) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const apiKey = req.headers['x-api-key'];
+    if (typeof apiKey !== 'string' || apiKey.length === 0) {
+      res.status(401).json({ error: 'unauthorized' });
+      return;
+    }
+    if (veioDaBordaPublica(req) && !env.TRUST_EDGE_SERVICE_KEY) {
+      res.status(401).json({ error: 'unauthorized' });
+      return;
+    }
+    const consumer = resolverConsumidor(apiKey);
+    if (!consumer) {
+      res.status(401).json({ error: 'unauthorized' });
+      return;
+    }
+    if (!escoposExigidos.every((s) => consumer.scopes.has(s))) {
+      res.status(403).json({ error: 'forbidden_scope' });
+      return;
+    }
+    const onBehalfOf = req.headers['x-user-id'];
+    if (typeof onBehalfOf !== 'string' || !/^\d+$/.test(onBehalfOf)) {
+      res.status(401).json({ error: 'unauthorized' });
+      return;
+    }
+    const loginhubId = parseInt(onBehalfOf, 10);
+    if (!(await contaConsenteLeitor(loginhubId, consumer.id))) {
+      res.status(403).json({ error: 'sem_consentimento' });
+      return;
+    }
     req.consumer = { id: consumer.id, scopes: [...consumer.scopes] };
     req.user = { loginhubId, email: '' };
     next();

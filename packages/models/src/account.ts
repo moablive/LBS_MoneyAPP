@@ -22,6 +22,7 @@ export const createAccountSchema = z
     creditLimit: z.number().finite().nullish(),
     closingDay: z.number().int().min(1).max(31).nullish(),
     dueDay: z.number().int().min(1).max(31).nullish(),
+    empresaId: z.string().uuid().nullish(),
   })
   .strict();
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
@@ -40,6 +41,7 @@ export interface Account {
   creditLimit?: string | null;
   closingDay?: string | null;
   dueDay?: string | null;
+  empresaId?: string | null;
   createdAt?: string;
 }
 

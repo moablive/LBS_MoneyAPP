@@ -14,12 +14,15 @@ import { botRouter } from './bot';
 import { telegramRouter, telegramBotRouter } from './telegram';
 import { calendarRouter } from './calendar';
 import { pushRouter } from './push';
+import { empresasRouter } from './empresas';
+import { agenteRouter } from './agente';
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/users', usersRouter);
 apiRouter.use('/categories', categoriesRouter);
 apiRouter.use('/accounts', accountsRouter);
+apiRouter.use('/empresas', empresasRouter);
 apiRouter.use('/transactions', transactionsRouter);
 apiRouter.use('/subscriptions', subscriptionsRouter);
 apiRouter.use('/investments', investmentsRouter);
@@ -33,3 +36,5 @@ apiRouter.use('/bot', botRouter);
 apiRouter.use('/calendar', calendarRouter);
 apiRouter.use('/push', pushRouter);
 apiRouter.use('/telegram', requireAuth, telegramRouter);
+// API do 💰 Financeiro do conselho: só consumidor de serviço, lê e lança pendente.
+apiRouter.use('/agente', agenteRouter);

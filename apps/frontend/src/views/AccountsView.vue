@@ -4,6 +4,7 @@ import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
+import { useEmpresasStore } from '../stores/empresas';
 
 const { confirm } = useConfirmDialog();
 import type { AccountType, Account } from '@moneyapp/models';
@@ -34,7 +35,11 @@ async function remove(id: string) {
   await reload();
 }
 
-onMounted(reload);
+const empresasStore = useEmpresasStore();
+onMounted(() => {
+  empresasStore.fetchEmpresas().catch(() => {});
+  reload();
+});
 
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -96,7 +101,7 @@ const typeLabels: Record<AccountType, string> = {
         <article
           v-for="a in items"
           :key="a.id"
-          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type, a.freezeBalance]"
+          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type, a.freezeBalance, a.empresaId, empresasStore.items.length]"
           class="bg-surface-raised border border-surface-border rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer hover:bg-surface-overlay/50 transition-colors"
           @click="editAccount(a)"
         >
@@ -116,6 +121,10 @@ const typeLabels: Record<AccountType, string> = {
                 class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25"
                 title="Conta histórica — pagamentos não alteram o saldo"
               >Histórico</span>
+              <span
+                v-if="a.empresaId"
+                class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-lime/20 text-fg truncate"
+              >{{ empresasStore.nomeDe(a.empresaId) }}</span>
             </div>
             <div class="mt-0.5 text-base font-semibold tabular-nums"
                  :class="Number(a.currentBalance) < 0 ? 'text-expense' : ''">

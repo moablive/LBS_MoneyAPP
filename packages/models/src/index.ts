@@ -8,3 +8,4 @@ export * from './subscription';
 export * from './investment';
 export * from './loan';
 export * from './push';
+export * from './empresa';

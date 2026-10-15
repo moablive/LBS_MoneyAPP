@@ -11,6 +11,7 @@ export const router = createRouter({
     { path: '/recorrentes', name: 'recurrents',   component: () => import('./views/RecurrentsView.vue') },
     { path: '/emprestimos/:type', name: 'loans',  component: () => import('./views/LoansView.vue'), props: true },
     { path: '/contas',      name: 'accounts',     component: () => import('./views/AccountsView.vue') },
+    { path: '/empresas',    name: 'empresas',     component: () => import('./views/EmpresasView.vue') },
     { path: '/categorias',  name: 'categories',   component: () => import('./views/CategoriesView.vue') },
     { path: '/cartoes',     name: 'credit_cards', component: () => import('./views/CreditCardsView.vue') },
     { path: '/investimentos', name: 'investments', component: () => import('./views/InvestmentsView.vue') },

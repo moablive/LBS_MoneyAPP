@@ -11,6 +11,7 @@ const { accounts, transactions } = schema;
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { applyBalanceDelta, isFaturaPaymentTx, HttpError } from './transactions.js';
+import { garantirEmpresaDoDono } from './empresas.js';
 
 export const accountsRouter = Router();
 accountsRouter.use(requireAuth);
@@ -33,6 +34,10 @@ accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) =
   try {
     const loginhubId = req.user!.loginhubId;
     const body = req.body as import('@moneyapp/models').CreateAccountInput;
+    if (!(await garantirEmpresaDoDono(db, loginhubId, body.empresaId))) {
+      res.status(400).json({ error: 'empresa_invalida' });
+      return;
+    }
     const [row] = await db
       .insert(accounts)
       .values({
@@ -46,6 +51,7 @@ accountsRouter.post('/', validate(createAccountSchema), async (req, res, next) =
         creditLimit: body.creditLimit ? body.creditLimit.toFixed(2) : null,
         closingDay: body.closingDay ? String(body.closingDay) : null,
         dueDay: body.dueDay ? String(body.dueDay) : null,
+        empresaId: body.empresaId ?? null,
       })
       .returning();
     res.status(201).json(row);
@@ -59,6 +65,10 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
     const loginhubId = req.user!.loginhubId;
     const id = req.params.id!;
     const body = req.body as import('@moneyapp/models').UpdateAccountInput;
+    if (!(await garantirEmpresaDoDono(db, loginhubId, body.empresaId))) {
+      res.status(400).json({ error: 'empresa_invalida' });
+      return;
+    }
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) patch.name = body.name;
     if (body.type !== undefined) patch.type = body.type;
@@ -69,6 +79,7 @@ accountsRouter.patch('/:id', validate(updateAccountSchema), async (req, res, nex
     if (body.creditLimit !== undefined) patch.creditLimit = body.creditLimit ? body.creditLimit.toFixed(2) : null;
     if (body.closingDay !== undefined) patch.closingDay = body.closingDay ? String(body.closingDay) : null;
     if (body.dueDay !== undefined) patch.dueDay = body.dueDay ? String(body.dueDay) : null;
+    if (body.empresaId !== undefined) patch.empresaId = body.empresaId;
     const [row] = await db
       .update(accounts)
       .set(patch)
