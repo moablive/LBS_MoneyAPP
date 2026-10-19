@@ -35,7 +35,7 @@ services:
         - moneyapp_backend
     expose:
     - "3000"
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -62,7 +62,7 @@ services:
       awl_network:
         aliases:
         - moneyapp_frontend
-    restart: unless-stopped
+    restart: always
 
   lbs_moneyapp_bot:
     build:
@@ -89,7 +89,7 @@ services:
       awl_network:
         aliases:
         - telegram_moneyapp_bot
-    restart: unless-stopped
+    restart: always
 
 networks:
   # External — already exists on the host alongside `awlsrvDB_postgres`.
