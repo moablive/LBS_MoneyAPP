@@ -8,6 +8,9 @@ export const accountTypeEnum = z.enum([
   'wallet',
   'investment',
   'other',
+  // Dinheiro em espécie: pagamento por ela não exige comprovante. No fim, como no
+  // banco (ALTER TYPE ADD VALUE acrescenta no fim).
+  'cash',
 ]);
 export type AccountType = z.infer<typeof accountTypeEnum>;
 

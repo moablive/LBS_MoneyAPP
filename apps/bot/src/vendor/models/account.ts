@@ -7,6 +7,7 @@ export const accountTypeEnum = z.enum([
   'wallet',
   'investment',
   'other',
+  'cash', // dinheiro em espécie (igual a packages/models)
 ]);
 export type AccountType = z.infer<typeof accountTypeEnum>;
 

@@ -42,6 +42,9 @@ const eligibleAccounts = computed(() => {
   return accounts.value;
 });
 
+// Pago em dinheiro (conta do tipo Dinheiro) não tem comprovante para anexar.
+const isCashAccount = computed(() => accounts.value.find(a => a.id === accountId.value)?.type === 'cash');
+
 const bankAccounts = computed(() => eligibleAccounts.value.filter(a => a.type !== 'credit_card'));
 const creditCards = computed(() => eligibleAccounts.value.filter(a => a.type === 'credit_card'));
 
@@ -82,7 +85,7 @@ async function submit() {
   const isControleCategory = props.item?.categoryId && 
     (props.item?.originalItem?.category?.name?.toUpperCase().includes('CONTROLE') || false);
 
-  if (requireReceipts && !receiptFile.value && !isControleCategory) {
+  if (requireReceipts && !receiptFile.value && !isControleCategory && !isCashAccount.value) {
     error.value = 'É obrigatório anexar um comprovante antes de confirmar o pagamento.';
     return;
   }
@@ -236,6 +239,7 @@ async function submit() {
               </span>
             </div>
           </div>
+          <p v-if="isCashAccount && (authStore.user?.settings?.requireReceipts ?? true)" class="text-xs text-muted mt-1">Pago em dinheiro: comprovante opcional.</p>
         </label>
       </div>
 

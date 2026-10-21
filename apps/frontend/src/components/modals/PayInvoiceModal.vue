@@ -36,6 +36,8 @@ function onFileChange(e: Event) {
 }
 
 const sourceAccounts = computed(() => accounts.value.filter(a => a.id !== props.creditCard?.id));
+// Fatura paga em dinheiro (conta do tipo Dinheiro) não tem comprovante para anexar.
+const isCashAccount = computed(() => accounts.value.find(a => a.id === sourceAccountId.value)?.type === 'cash');
 const normalAccounts = computed(() => sourceAccounts.value.filter(a => a.type !== 'credit_card'));
 const creditCardAccounts = computed(() => sourceAccounts.value.filter(a => a.type === 'credit_card'));
 
@@ -80,7 +82,7 @@ async function submit() {
   }
   
   const requireReceipts = authStore.user?.settings?.requireReceipts ?? true;
-  if (requireReceipts && !receiptFile.value) {
+  if (requireReceipts && !receiptFile.value && !isCashAccount.value) {
     error.value = 'Para registrar o pagamento da fatura, é obrigatório anexar o comprovante.';
     return;
   }

@@ -30,6 +30,7 @@ export const accountTypeEnum = pgEnum("account_type", [
   "wallet",
   "investment",
   "other",
+  "cash", // dinheiro em espécie (0002_conta_dinheiro)
 ]);
 export const investmentTypeEnum = pgEnum("investment_type", [
   "stock",

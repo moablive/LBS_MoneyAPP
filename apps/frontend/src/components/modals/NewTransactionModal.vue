@@ -61,6 +61,9 @@ const isControleCategory = computed(() => {
   return !!sel && /controle/i.test(sel.name);
 });
 
+// Pago em dinheiro (conta do tipo Dinheiro) não tem comprovante para anexar.
+const isCashAccount = computed(() => accounts.value.find((a) => a.id === accountId.value)?.type === 'cash');
+
 const statusOptions = computed(() => {
   if (type.value === 'income') {
     return [
@@ -179,7 +182,7 @@ async function submit() {
   
   // Categoria "Controle" é isenta: registra-se rápido no mobile sem comprovante.
   // Ao mudar para outra categoria (ex.: no PC), a exigência normal volta a valer.
-  if (requireReceipts && type.value === 'expense' && status.value === 'paid' && !isControleCategory.value && !hasUploadedReceipt && !hasExistingReceipt) {
+  if (requireReceipts && type.value === 'expense' && status.value === 'paid' && !isControleCategory.value && !isCashAccount.value && !hasUploadedReceipt && !hasExistingReceipt) {
     error.value = 'É necessário anexar um comprovante para marcar a despesa como paga.';
     return;
   }
@@ -375,7 +378,8 @@ function onFileChange(e: Event) {
         />
         
         <p v-if="removeExistingReceipt && !receiptFile" class="text-xs text-muted mt-1">O comprovante atual será removido ao salvar.</p>
-        <p v-if="isControleCategory && type === 'expense'" class="text-xs text-muted mt-1">Categoria Controle: comprovante opcional. Ao trocar para a categoria definitiva, o comprovante passa a ser exigido.</p>
+        <p v-if="isCashAccount && type === 'expense' && status === 'paid'" class="text-xs text-muted mt-1">Pago em dinheiro: comprovante opcional.</p>
+        <p v-else-if="isControleCategory && type === 'expense'" class="text-xs text-muted mt-1">Categoria Controle: comprovante opcional. Ao trocar para a categoria definitiva, o comprovante passa a ser exigido.</p>
       </label>
 
       <p v-if="error" class="text-sm text-expense">{{ error }}</p>

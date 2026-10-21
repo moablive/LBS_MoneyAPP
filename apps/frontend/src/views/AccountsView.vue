@@ -53,6 +53,7 @@ const typeLabels: Record<AccountType, string> = {
   savings: 'Poupança',
   credit_card: 'Cartão de Crédito',
   wallet: 'Carteira',
+  cash: 'Dinheiro',
   investment: 'Investimento',
   other: 'Outro',
 };

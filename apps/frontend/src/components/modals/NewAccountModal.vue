@@ -53,6 +53,7 @@ const typeOptions: { value: AccountType; label: string }[] = [
   { value: 'savings',     label: 'Poupança' },
   { value: 'credit_card', label: 'Cartão de Crédito' },
   { value: 'wallet',      label: 'Carteira / PIX' },
+  { value: 'cash',        label: 'Dinheiro (espécie)' },
   { value: 'investment',  label: 'Investimento' },
   { value: 'other',       label: 'Outro' },
 ];
