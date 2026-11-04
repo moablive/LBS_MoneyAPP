@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
+import InstallBanner from './components/InstallBanner.vue';
 import UpdateBanner from './components/UpdateBanner.vue';
 import VersionBadge from './components/VersionBadge.vue';
 </script>
@@ -23,6 +24,9 @@ import VersionBadge from './components/VersionBadge.vue';
 
   <!-- Fora do RouterView de proposito: precisam sobreviver a troca de rota. -->
   <VersionBadge />
+  <!-- Oferta de instalar o PWA — no topo, para não disputar o rodapé com o
+       aviso de versão quando os dois caírem na mesma carga. -->
+  <InstallBanner />
   <UpdateBanner />
 </template>
 
