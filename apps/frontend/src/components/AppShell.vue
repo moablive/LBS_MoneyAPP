@@ -36,6 +36,7 @@ const nav: NavItem[] = [
   { to: '/transacoes', label: 'Livro Caixa',  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>' },
   { to: '/recorrentes', label: 'Mensalidades', icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>' },
   {
+    to: '/emprestimos',
     label: 'Empréstimos',
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
     children: [
@@ -85,7 +86,7 @@ const brl = (n: number | string) => Number(n).toLocaleString('pt-BR', { style: '
 /** Ativo por prefixo: '/' só quando é exatamente a home; grupo (Empréstimos)
  *  quando qualquer filho casa. */
 function isActive(item: NavItem): boolean {
-  if (item.children) return item.children.some(c => route.path === c.to);
+  if (item.children) return route.path === item.to || item.children.some(c => route.path === c.to);
   if (item.to === '/') return route.path === '/';
   return route.path === item.to || (!!item.to && route.path.startsWith(item.to + '/'));
 }
@@ -202,7 +203,7 @@ const totalPaidLoansAmount = computed(() => {
           <div v-else-if="item.label === 'Empréstimos'" class="rail-pop-wrap">
             <div class="rail-pop">
               <div class="rail-pop-head flex-col !items-start gap-2">
-                <span class="rail-pop-title"><span v-html="item.icon" class="w-4 h-4 text-fg"></span> Empréstimos</span>
+                <RouterLink to="/emprestimos" class="rail-pop-title hover:opacity-80"><span v-html="item.icon" class="w-4 h-4 text-fg"></span> Empréstimos <span class="text-[10px] font-semibold text-muted normal-case tracking-normal">· painel →</span></RouterLink>
                 <div class="grid grid-cols-2 gap-1 w-full">
                   <RouterLink
                     v-for="child in item.children"
@@ -340,7 +341,17 @@ const totalPaidLoansAmount = computed(() => {
             </RouterLink>
 
             <div v-else>
-              <div class="flex items-center gap-3 px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted/70">
+              <RouterLink
+                v-if="item.to"
+                :to="item.to"
+                @click="showMore = false"
+                class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-muted transition-colors hover:bg-surface-overlay hover:text-fg"
+                exact-active-class="!text-white !bg-accent"
+              >
+                <span v-html="item.icon" class="flex-shrink-0"></span>
+                {{ item.label }}
+              </RouterLink>
+              <div v-else class="flex items-center gap-3 px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted/70">
                 <span v-html="item.icon" class="flex-shrink-0 opacity-70"></span>
                 {{ item.label }}
               </div>

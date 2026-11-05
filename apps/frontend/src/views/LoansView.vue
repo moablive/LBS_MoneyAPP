@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import LoanModal from '../components/modals/LoanModal.vue';
+import LoansDashboard from '../components/loans/LoansDashboard.vue';
 import { PaperClipIcon as Paperclip, CheckCircleIcon as CheckCircle2, ClockIcon as Clock } from '@heroicons/vue/24/outline';
 import type { LoanSummaryResponse, LoanItem } from '@moneyapp/models';
 
@@ -109,7 +110,7 @@ function openEditModal(item: LoanItem) {
 
 function onLoanSaved(status?: string) {
   loadData();
-  if (status === 'paid' && tab.value !== 'paid') {
+  if (status === 'paid' && tab.value !== 'paid' && tab.value !== 'all') {
     router.push('/emprestimos/pagos');
   }
 }
@@ -117,9 +118,15 @@ function onLoanSaved(status?: string) {
 
 <template>
   <AppShell>
-    <div class="mx-auto max-w-7xl px-6 py-8 space-y-6">
+    <!-- /emprestimos: painel com tudo junto -->
+    <div v-if="tab === 'all'" class="mx-auto max-w-7xl px-6 py-8">
+      <LoansDashboard :data="data" :loading="loading" @novo="openCreateModal" @abrir="openEditModal" />
+    </div>
+
+    <div v-else class="mx-auto max-w-7xl px-6 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap">
         <div>
+          <RouterLink to="/emprestimos" class="text-xs font-semibold text-muted hover:text-fg">← Painel de empréstimos</RouterLink>
           <h1 class="text-2xl font-semibold tracking-tight">{{ tab === 'given' ? 'Vou receber' : tab === 'received' ? 'Vou pagar' : tab === 'fgts' ? 'Antecipei o FGTS' : tab === 'paid' ? 'Pagos' : 'Empréstimos' }}</h1>
           <p class="text-sm text-muted">{{ tab === 'given' ? 'O que eu emprestei e ainda vão me devolver.' : tab === 'received' ? 'O que eu pedi emprestado e ainda devo.' : tab === 'fgts' ? 'O que eu antecipei do saque-aniversário e o FGTS ainda vai quitar.' : tab === 'paid' ? 'Empréstimos já quitados.' : 'Quem me deve e quanto eu devo.' }}</p>
         </div>
