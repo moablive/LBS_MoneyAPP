@@ -164,6 +164,12 @@ const totalPaidLoansAmount = computed(() => {
                   {{ brl(checkingAccounts.reduce((acc, a) => acc + Number(a.currentBalance), 0)) }}
                 </span>
               </div>
+              <!-- Gerenciar as contas pelo balão (05/11/2026, pedido do dono): cadastrar uma nova ou ir à lista para modificar e
+                   excluir — antes o balão só mostrava os saldos. -->
+              <div class="grid grid-cols-2 gap-1 px-2 pt-2">
+                <RouterLink to="/contas?nova=1" class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-accent text-white hover:opacity-90 transition-opacity">+ Nova conta</RouterLink>
+                <RouterLink to="/contas" class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-fg/80 border border-surface-border hover:bg-surface-overlay hover:text-fg transition-colors">Gerenciar / excluir</RouterLink>
+              </div>
               <ul class="p-2 space-y-0.5">
                 <li v-for="acc in checkingAccounts" :key="acc.id" class="rail-pop-row" @click="router.push('/contas')">
                   <div class="flex justify-between items-center">

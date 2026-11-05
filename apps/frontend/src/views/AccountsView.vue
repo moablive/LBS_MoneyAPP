@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
@@ -34,6 +35,16 @@ async function remove(id: string) {
   await api.delete(`/accounts/${id}`);
   await reload();
 }
+
+// `/contas?nova=1` (botão "+ Nova conta" do balão Contas do menu) abre o cadastro direto.
+const route = useRoute();
+const router = useRouter();
+watch(() => route.query.nova, (nova) => {
+  if (nova !== '1') return;
+  editingAccount.value = null;
+  showCreate.value = true;
+  router.replace({ query: {} });
+}, { immediate: true });
 
 const empresasStore = useEmpresasStore();
 onMounted(() => {
@@ -132,7 +143,8 @@ const typeLabels: Record<AccountType, string> = {
               {{ brl(a.currentBalance) }}
             </div>
           </div>
-          <div class="flex items-center gap-2 opacity-0 group-[.hover]:opacity-100 group-hover:opacity-100 transition-opacity">
+          <!-- No celular (sem hover) Modificar e Remover ficam sempre à vista; no computador aparecem ao passar o mouse. -->
+          <div class="flex items-center gap-2 sm:opacity-0 group-[.hover]:opacity-100 group-hover:opacity-100 transition-opacity">
             <button
               class="bg-accent/15 text-accent hover:bg-accent hover:text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg transition-colors"
               title="Modificar"
