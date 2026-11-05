@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import BarraLimite from '../BarraLimite.vue';
+import SeloPessoa from '../SeloPessoa.vue';
+import { useEmpresasStore } from '../../stores/empresas';
 import { nivelLimite, type NivelLimite } from '../../utils/limite';
 
 /**
@@ -16,6 +18,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'action', account: any): void;
 }>();
+
+// Selo PF/PJ e nome da empresa no cartão (05/11/2026); o store só busca a lista uma vez.
+const empresas = useEmpresasStore();
+onMounted(() => { empresas.fetchEmpresas().catch(() => {}); });
 
 const creditCards = computed(() => props.accounts.filter(a => a.type === 'credit_card'));
 
@@ -70,10 +76,14 @@ const usage = (card: any) => {
 
         <div class="relative flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm font-semibold truncate">{{ card.name }}</p>
-            <p class="text-[10px] font-semibold uppercase tracking-wider" :class="palette(card).sub">
+            <div class="flex items-center gap-2 min-w-0">
+              <p class="text-sm font-semibold truncate">{{ card.name }}</p>
+              <SeloPessoa :empresa-id="card.empresaId" sobre-cor />
+            </div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider truncate" :class="palette(card).sub">
               <template v-if="card.dueDay || card.closingDay">Vence dia {{ card.dueDay || card.closingDay }}</template>
               <template v-else>Cartão de crédito</template>
+              <template v-if="card.empresaId"> · {{ empresas.nomeDe(card.empresaId) }}</template>
             </p>
           </div>
           <div class="w-9 h-9 rounded-lg bg-white/90 flex items-center justify-center shrink-0 shadow-sm">
