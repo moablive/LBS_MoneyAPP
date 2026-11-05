@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import SeloPessoa from '../SeloPessoa.vue';
+import { useEmpresasStore } from '../../stores/empresas';
 
 const props = defineProps<{
   accounts: any[];
@@ -29,6 +31,9 @@ const sortedAccounts = computed(() => {
     .sort((a, b) => Number(b.currentBalance) - Number(a.currentBalance));
 });
 
+// O selo PF/PJ cita a empresa no title; a lista é carregada uma vez só (o store guarda).
+onMounted(() => { useEmpresasStore().fetchEmpresas().catch(() => {}); });
+
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 </script>
@@ -52,7 +57,10 @@ const brl = (n: number | string) =>
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-fg/70"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a8 8 0 0 1-5.45 7.49 1 1 0 0 1-1.22-1.08L14 16.5a1 1 0 0 0-1-1H7.5a1 1 0 0 0-1 1L5.5 20.41a1 1 0 0 1-1.22 1.08A8 8 0 0 1 2 14v-5"/><path d="M20 12v4M20 16a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2"/></svg>
           </div>
           <div class="flex-1 flex items-baseline justify-between text-sm gap-2 min-w-0">
-            <span class="font-medium text-fg group-hover:text-accent transition-colors truncate">{{ acc.name }}</span>
+            <span class="flex items-center gap-1.5 min-w-0">
+              <span class="font-medium text-fg group-hover:text-accent transition-colors truncate">{{ acc.name }}</span>
+              <SeloPessoa :empresa-id="acc.empresaId" />
+            </span>
             <span class="tabular-nums font-semibold font-display shrink-0" :class="Number(acc.currentBalance) >= 0 ? 'text-fg' : 'text-expense'">{{ brl(Number(acc.currentBalance)) }}</span>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
+import SeloPessoa from '../components/SeloPessoa.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 import { useEmpresasStore } from '../stores/empresas';
 
@@ -123,20 +124,19 @@ const typeLabels: Record<AccountType, string> = {
             class="h-10 w-10 rounded-xl shrink-0 border border-surface-border"
           />
           <div class="min-w-0 flex-1 flex flex-col justify-center">
-            <div class="flex items-center gap-2">
+            <!-- Nome com o selo PF/PJ (05/11/2026); tipo, Histórico e empresa na linha de baixo, para o nome não sumir em "PicP…". -->
+            <div class="flex items-center gap-2 min-w-0">
               <div class="font-medium text-sm truncate">{{ a.name }}</div>
-              <div class="text-[10px] text-muted uppercase font-semibold tracking-wide">
-                {{ typeLabels[a.type] }}
-              </div>
+              <SeloPessoa :empresa-id="a.empresaId" />
+            </div>
+            <div class="mt-0.5 flex items-center gap-1.5 min-w-0 text-[10px] text-muted uppercase font-semibold tracking-wide">
+              <span class="shrink-0">{{ typeLabels[a.type] }}</span>
               <span
                 v-if="a.freezeBalance"
                 class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/25"
                 title="Conta histórica — pagamentos não alteram o saldo"
               >Histórico</span>
-              <span
-                v-if="a.empresaId"
-                class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-lime/20 text-fg truncate"
-              >{{ empresasStore.nomeDe(a.empresaId) }}</span>
+              <span v-if="a.empresaId" class="truncate">· {{ empresasStore.nomeDe(a.empresaId) }}</span>
             </div>
             <div class="mt-0.5 text-base font-semibold tabular-nums"
                  :class="Number(a.currentBalance) < 0 ? 'text-expense' : ''">
