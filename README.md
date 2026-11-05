@@ -79,7 +79,7 @@ Visão geral do mês com resumo financeiro (Saldo Atual, Cartões, Receitas e De
 CRUD completo de receitas e despesas com filtros por período, tipo, categoria e conta. Upload de comprovantes inline de até 15MB na interface (suportado até 30MB via API) (base64 — PNG, JPEG, WebP, PDF).
 
 ### 🏦 Contas
-Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total. Cartões de crédito têm suas faturas isoladas no painel "Cartões", separadas do "Saldo Atual" geral, garantindo que dívidas não se misturem com o dinheiro disponível.
+Gerenciamento de contas bancárias (corrente, poupança, cartão de crédito, carteira, investimento) com **saldo denormalizado** e atualizado automaticamente. Contas encerradas podem ser marcadas como **históricas** (`freezeBalance`): o saldo congela e fica fora do total. Cartões de crédito têm suas faturas isoladas no painel "Cartões", separadas do "Saldo Atual" geral, garantindo que dívidas não se misturem com o dinheiro disponível. A tela Contas mostra as contas e, numa seção à parte, todos os cartões; cada conta e cada cartão leva o selo PF/PJ (`SeloPessoa`: ligado a uma empresa = PJ).
 
 ### 🤝 Empréstimos
 Controle de empréstimos concedidos, recebidos e FGTS, com status (ativo/pago), parcelas, valor de retorno esperado e comprovantes. 
@@ -642,7 +642,7 @@ docker compose --env-file .env up -d --build
 
 ## 🎨 Design System
 
-> Documentação completa no Google Doc **"Projeto - MoneyAPP ／ Interface V5 (tema claro e escuro)"**, pasta awldocs do Drive.
+> Documentação completa no Google Doc **"Projeto - MoneyAPP ／ Interface V5 (tema claro e escuro)"**, pasta 📦 Documentação do servidor do Drive.
 
 Desde 11/10/2026 a interface segue a referência **"Dashboard V5"** (reel do code.xr):
 canvas creme, cards brancos com sombra suave, **botões-pílula pretos**, **lima** como
@@ -671,7 +671,7 @@ mapeadas no `tailwind.config.ts` como `rgb(var(--x) / <alpha-value>)`, então
 | `muted` | `#6b707a` | `#7a8499` | Texto secundário |
 | `accent` | `#111113` | `#8b5cf6` | Ação primária (`.btn-primary`, nav ativo no mobile) |
 | `lime` | `#c6f135` | `#c6f135` | Destaque: ícone ativo do rail, FAB, card "Custo fixo", chips "Hoje" |
-| `primary` | `#5b4fff` | `#7c72ff` | Índigo dos painéis de detalhe (4º cartão) |
+| `primary` | `#5b4fff` | `#7c72ff` | Índigo dos painéis de detalhe |
 | `income` / `expense` | `#16a34a` / `#dc2626` | `#22c55e` / `#ef4444` | Valores positivos / negativos |
 
 </td>
@@ -688,7 +688,7 @@ mapeadas no `tailwind.config.ts` como `rgb(var(--x) / <alpha-value>)`, então
   (fluxo entradas/saídas, barras por cartão, % comprometido, sparkline
   de `/dashboard/spending-evolution`, card lima de custo fixo)
 - `Sparkline.vue` — linha suave em SVG puro, sem Chart.js
-- `DashboardCreditCards` — cartões "físicos" empilhados (lima, preto, grafite, índigo)
+- `DashboardCreditCards` — cartões "físicos" empilhados, pintados pelo nível do limite livre (verde > 50%, amarelo até 50%, vermelho até 20%; regra em `utils/limite.ts`), com o disponível em destaque, a fatura ao lado, selo PF/PJ e a `BarraLimite`
 - `DashboardCategories` — radar (Chart.js) das 6 maiores + lista
 
 **Tipografia** — Inter (ss01 + cv11); títulos e valores em **Outfit** (`font-display`); monetários `tabular-nums`
