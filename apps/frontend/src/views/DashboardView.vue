@@ -633,14 +633,16 @@ onUnmounted(() => {
           <button @click="choosePayCreditCardInvoice" 
                   class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   :disabled="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0"
-                  :class="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0 ? 'bg-surface-border text-muted cursor-not-allowed opacity-50' : 'bg-gradient-to-b from-accent/90 to-accent hover:from-accent hover:to-accent/90 shadow-accent/25'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span class="text-white font-bold tracking-wide">Pagar Fatura</span>
+                  :class="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0 ? 'bg-surface-overlay border border-dashed border-surface-border text-muted shadow-none cursor-not-allowed hover:translate-y-0' : 'bg-gradient-to-b from-accent/90 to-accent hover:from-accent hover:to-accent/90 shadow-accent/25 text-white'">
+            <!-- Fatura zerada: botão desabilitado com texto escuro (o branco sumia no fundo claro, 05/11/2026). -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span class="font-bold tracking-wide">Pagar Fatura</span>
+            <span v-if="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0" class="text-xs font-medium">Sem fatura em aberto</span>
           </button>
           
           <button @click="chooseLinkCreditCard"
                   :disabled="Math.abs(Number(creditCardActionItem?.currentBalance)) === 0"
-                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+                  class="col-span-1 sm:col-span-2 flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl bg-surface-overlay/80 hover:bg-surface-raised border border-accent/40 hover:border-accent text-fg transition-all shadow-sm hover:shadow hover:-translate-y-0.5 group disabled:opacity-80 disabled:border-surface-border disabled:cursor-not-allowed disabled:hover:translate-y-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent group-hover:scale-110 transition-transform"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span class="text-sm font-bold text-fg">Vincular Lançamento do Livro Caixa</span>
           </button>
