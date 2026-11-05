@@ -1,39 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { nivelLimite, pctLivre, type NivelLimite } from '../utils/limite';
 
-// Barra do limite LIVRE do cartão em três faixas (05/11/2026, pedido do dono): enche da esquerda
-// conforme o que ainda dá para gastar — vermelho até 20% livre, amarelo de 20% a 50%, verde acima
-// de 50%. Cartão zerado = barra cheia; cartão estourado = quase vazia, só no vermelho. O que já foi
-// consumido fica na cor da faixa, apagado.
-const props = defineProps<{ usado: number; limite: number; altura?: string }>();
+// Barra do limite LIVRE do cartão (05/11/2026, pedido do dono): enche conforme o que ainda dá para
+// gastar e a barra inteira toma a cor do nível — vermelho até 20% livre, amarelo até 50%, verde acima.
+// `cheio`/`trilho` trocam as cores quando o próprio cartão já está pintado com o nível (painel).
+const props = defineProps<{ usado: number; limite: number; altura?: string; cheio?: string; trilho?: string }>();
 
-const faixas = [
-  { de: 0, ate: 20, cheio: 'bg-red-500', vazio: 'bg-red-500/25' },
-  { de: 20, ate: 50, cheio: 'bg-amber-400', vazio: 'bg-amber-400/25' },
-  { de: 50, ate: 100, cheio: 'bg-emerald-500', vazio: 'bg-emerald-500/25' },
-];
+const cores: Record<NivelLimite, { cheio: string; trilho: string }> = {
+  verde: { cheio: 'bg-emerald-500', trilho: 'bg-emerald-500/20' },
+  amarelo: { cheio: 'bg-amber-400', trilho: 'bg-amber-400/25' },
+  vermelho: { cheio: 'bg-red-500', trilho: 'bg-red-500/20' },
+};
 
-const livre = computed(() => props.limite - Math.abs(props.usado));
-const pct = computed(() => (props.limite > 0 ? Math.max(0, (livre.value / props.limite) * 100) : 0));
-const preenchimento = (f: { de: number; ate: number }) =>
-  Math.min(100, Math.max(0, ((pct.value - f.de) / (f.ate - f.de)) * 100));
+const pct = computed(() => pctLivre(props.usado, props.limite) ?? 0);
+const cor = computed(() => cores[nivelLimite(props.usado, props.limite) ?? 'verde']);
 const titulo = computed(() => {
   const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  return `${Math.round(pct.value)}% do limite livre · ${brl(livre.value)} de ${brl(props.limite)}`;
+  const livre = props.limite - Math.abs(props.usado);
+  return `${Math.round(pct.value)}% do limite livre · ${brl(livre)} de ${brl(props.limite)}`;
 });
 </script>
 
 <template>
-  <div class="flex gap-0.5 w-full" :class="altura ?? 'h-1.5'" :title="titulo" role="meter"
-       :aria-valuenow="Math.round(pct)" aria-valuemin="0" aria-valuemax="100" :aria-label="titulo">
-    <div
-      v-for="f in faixas"
-      :key="f.de"
-      class="relative h-full overflow-hidden first:rounded-l-full last:rounded-r-full"
-      :class="f.vazio"
-      :style="{ width: `${f.ate - f.de}%` }"
-    >
-      <div class="absolute inset-y-0 left-0 transition-[width] duration-700 ease-smooth" :class="f.cheio" :style="{ width: `${preenchimento(f)}%` }" />
-    </div>
+  <div class="relative w-full rounded-full overflow-hidden" :class="[altura ?? 'h-1.5', trilho ?? cor.trilho]" :title="titulo"
+       role="meter" :aria-valuenow="Math.round(pct)" aria-valuemin="0" aria-valuemax="100" :aria-label="titulo">
+    <!-- Mínimo de 2% para o vermelho aparecer mesmo com quase nada livre. -->
+    <div class="absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-smooth" :class="cheio ?? cor.cheio"
+         :style="{ width: `${pct > 0 ? Math.max(2, pct) : 0}%` }" />
   </div>
 </template>

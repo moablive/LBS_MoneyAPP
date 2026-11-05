@@ -7,6 +7,7 @@ import PayInvoiceModal from '../components/modals/PayInvoiceModal.vue';
 import LinkTransactionModal from '../components/modals/LinkTransactionModal.vue';
 import SeloPessoa from '../components/SeloPessoa.vue';
 import BarraLimite from '../components/BarraLimite.vue';
+import { fundoCartao } from '../utils/limite';
 import { useEmpresasStore } from '../stores/empresas';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
@@ -124,8 +125,9 @@ const totalLimit = computed(() =>
         <article
           v-for="a in items"
           :key="a.id"
-          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type, a.empresaId, empresasStore.items.length]"
-          class="bg-surface-raised border border-surface-border rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer hover:bg-surface-overlay/50 transition-colors"
+          v-memo="[a.id, a.currentBalance, a.creditLimit, a.name, a.customIconUrl, a.type, a.empresaId, empresasStore.items.length]"
+          class="border rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer hover:brightness-95 transition-colors"
+          :class="fundoCartao(a.currentBalance, a.creditLimit)"
           @click="editAccount(a)"
         >
           <img

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import BarraLimite from '../BarraLimite.vue';
+import { nivelLimite, type NivelLimite } from '../../utils/limite';
 
 /**
  * Cartões como "cartões físicos" empilhados (lima, preto, grafite, índigo),
@@ -21,13 +22,17 @@ const creditCards = computed(() => props.accounts.filter(a => a.type === 'credit
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const palettes = [
-  { card: 'bg-lime text-ink-950', sub: 'text-ink-950/60', track: 'bg-ink-950/15', deco: 'bg-white/30' },
-  { card: 'bg-ink-950 text-white', sub: 'text-white/60', track: 'bg-white/15', deco: 'bg-white/10' },
-  { card: 'bg-[#1f2437] text-white', sub: 'text-white/60', track: 'bg-white/15', deco: 'bg-white/10' },
-  { card: 'bg-primary text-white', sub: 'text-white/70', track: 'bg-white/20', deco: 'bg-white/15' },
-];
-const palette = (i: number) => palettes[i % palettes.length]!;
+// Cor do cartão = nível do limite livre (05/11/2026, pedido do dono): verde com folga, amarelo
+// passando da metade, vermelho com 20% ou menos livre. Sem limite cadastrado fica grafite.
+// A barra vai em branco/preto sobre a cor do cartão, senão some no fundo da mesma cor.
+type Paleta = { card: string; sub: string; track: string; deco: string; cheio: string; trilho: string };
+const paletas: Record<NivelLimite | 'sem', Paleta> = {
+  verde:    { card: 'bg-emerald-500 text-white', sub: 'text-white/75', track: 'bg-black/15', deco: 'bg-white/15', cheio: 'bg-white', trilho: 'bg-white/25' },
+  amarelo:  { card: 'bg-amber-400 text-ink-950', sub: 'text-ink-950/65', track: 'bg-black/10', deco: 'bg-white/30', cheio: 'bg-ink-950', trilho: 'bg-ink-950/15' },
+  vermelho: { card: 'bg-red-500 text-white', sub: 'text-white/80', track: 'bg-black/15', deco: 'bg-white/15', cheio: 'bg-white', trilho: 'bg-white/25' },
+  sem:      { card: 'bg-[#1f2437] text-white', sub: 'text-white/60', track: 'bg-white/10', deco: 'bg-white/10', cheio: 'bg-lime', trilho: 'bg-white/15' },
+};
+const palette = (card: any) => paletas[nivelLimite(card.currentBalance, card.creditLimit) ?? 'sem'];
 
 const usage = (card: any) => {
   const limit = Number(card.creditLimit);
@@ -56,17 +61,17 @@ const usage = (card: any) => {
         @click="emit('action', card)"
         class="relative overflow-hidden rounded-2xl p-4 min-h-[112px] flex flex-col justify-between cursor-pointer
                shadow-lg shadow-black/10 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 ease-smooth animate-fade-in-up"
-        :class="palette(idx).card"
+        :class="palette(card).card"
         :style="{ animationDelay: `${(idx * 90) + 300}ms` }"
       >
         <!-- decoração de "plástico" -->
-        <div class="absolute -right-8 -top-10 w-32 h-32 rounded-full pointer-events-none" :class="palette(idx).deco"></div>
-        <div class="absolute right-10 -bottom-14 w-28 h-28 rounded-full pointer-events-none opacity-60" :class="palette(idx).deco"></div>
+        <div class="absolute -right-8 -top-10 w-32 h-32 rounded-full pointer-events-none" :class="palette(card).deco"></div>
+        <div class="absolute right-10 -bottom-14 w-28 h-28 rounded-full pointer-events-none opacity-60" :class="palette(card).deco"></div>
 
         <div class="relative flex items-start justify-between gap-3">
           <div class="min-w-0">
             <p class="text-sm font-semibold truncate">{{ card.name }}</p>
-            <p class="text-[10px] font-semibold uppercase tracking-wider" :class="palette(idx).sub">
+            <p class="text-[10px] font-semibold uppercase tracking-wider" :class="palette(card).sub">
               <template v-if="card.dueDay || card.closingDay">Vence dia {{ card.dueDay || card.closingDay }}</template>
               <template v-else>Cartão de crédito</template>
             </p>
@@ -81,14 +86,14 @@ const usage = (card: any) => {
           <p class="text-2xl font-bold font-display tabular-nums tracking-tight leading-none">
             {{ brl(Math.abs(Number(card.currentBalance))) }}
           </p>
-          <p v-if="usage(card)" class="text-[10px] font-semibold uppercase tracking-wider text-right" :class="palette(idx).sub">
+          <p v-if="usage(card)" class="text-[10px] font-semibold uppercase tracking-wider text-right" :class="palette(card).sub">
             Livre {{ brl(usage(card)!.free) }}
           </p>
         </div>
 
-        <!-- Moldura na cor do cartão para as faixas verde/amarela/vermelha se destacarem até no cartão lima. -->
-        <div v-if="usage(card)" class="relative mt-3 rounded-full p-0.5" :class="palette(idx).track">
-          <BarraLimite :usado="Number(card.currentBalance)" :limite="usage(card)!.limit" />
+        <!-- Moldura escura leve para a barra destacar sobre a cor do cartão. -->
+        <div v-if="usage(card)" class="relative mt-3 rounded-full p-0.5" :class="palette(card).track">
+          <BarraLimite :usado="Number(card.currentBalance)" :limite="usage(card)!.limit" :cheio="palette(card).cheio" :trilho="palette(card).trilho" />
         </div>
       </li>
     </ul>
