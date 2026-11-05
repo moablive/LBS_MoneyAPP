@@ -47,6 +47,29 @@ const TIPOS = {
   fgts: { rotulo: 'Antecipei o FGTS', sub: 'O FGTS quita sozinho', cor: 'blue' },
 } as const;
 const tipo = computed(() => (form.value.type ? TIPOS[form.value.type] : null));
+
+/** Termos de cada tipo, na ordem em que as coisas acontecem: o dinheiro sai/entra, depois volta. */
+const TERMOS = {
+  given: {
+    valor: 'Valor que emprestei', conta: 'Conta de onde saiu o Pix',
+    comp1: 'Comprovante do Pix que enviei', comp1Dica: 'O Pix de saída, quando você emprestou.',
+    etapa2: 'Devolução', aberto: 'Ainda não devolveu', pago: 'Já me devolveu',
+    comp2: 'Comprovante da devolução', comp2Dica: 'O Pix que entrou quando ele te pagou de volta.',
+  },
+  received: {
+    valor: 'Valor que vou devolver', conta: 'Conta onde entrou o Pix',
+    comp1: 'Comprovante do Pix que recebi', comp1Dica: 'O Pix de entrada, quando ele te emprestou.',
+    etapa2: 'Pagamento', aberto: 'Ainda devo', pago: 'Já paguei',
+    comp2: 'Comprovante do meu pagamento', comp2Dica: 'O Pix que você enviou para devolver.',
+  },
+  fgts: {
+    valor: 'Valor antecipado', conta: 'Conta onde entrou',
+    comp1: 'Comprovante da antecipação', comp1Dica: 'O crédito da antecipação na conta.',
+    etapa2: 'Quitação', aberto: 'Em aberto', pago: 'Quitado',
+    comp2: 'Comprovante da quitação', comp2Dica: 'O extrato do FGTS mostrando a quitação.',
+  },
+} as const;
+const termos = computed(() => TERMOS[form.value.type ?? 'given']);
 const corBorda = computed(() =>
   form.value.type === 'given' ? 'border-t-4 border-t-income'
   : form.value.type === 'received' ? 'border-t-4 border-t-expense'
@@ -221,7 +244,7 @@ async function save() {
   if (form.value.status === 'paid') {
     const hasExistingPaymentReceipt = !!props.loanToEdit?.hasPaymentReceipt;
     if (!paymentReceiptFile.value && !hasExistingPaymentReceipt) {
-      await alert('É necessário anexar um comprovante de pagamento para marcar como pago.');
+      await alert(`Anexe o ${termos.value.comp2.toLowerCase()} para marcar como "${termos.value.pago}".`);
       return;
     }
   }
@@ -282,7 +305,7 @@ async function save() {
 async function handlePagoClick() {
   const hasExistingPaymentReceipt = !!props.loanToEdit?.hasPaymentReceipt;
   if (!paymentReceiptFile.value && !hasExistingPaymentReceipt && !paymentReceiptBlobUrl.value) {
-    await alert('É obrigatório anexar um comprovante de pagamento antes de marcar como pago.');
+    await alert(`Anexe o ${termos.value.comp2.toLowerCase()} antes de marcar como "${termos.value.pago}".`);
     return;
   }
   form.value.status = 'paid';
@@ -373,7 +396,7 @@ async function destroy() {
 
         <div class="grid grid-cols-2 gap-4">
           <div :class="loanToEdit && form.type !== 'given' ? 'col-span-2' : ''">
-            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ form.type === 'received' ? 'Valor a Pagar' : 'Valor Emprestado' }}</label>
+            <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">{{ termos.valor }}</label>
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-medium">R$</span>
               <input
@@ -423,7 +446,7 @@ async function destroy() {
 
         <div>
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">
-            {{ form.type === 'given' ? 'Conta' : 'Conta (Opcional)' }}
+            {{ termos.conta }}{{ form.type === 'given' ? '' : ' (opcional)' }}
           </label>
           <select
             v-model="form.accountId"
@@ -439,29 +462,11 @@ async function destroy() {
           </select>
         </div>
 
-        <div v-if="loanToEdit">
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Status</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              @click="form.status = 'active'"
-              class="px-4 py-2.5 rounded-xl border border-surface-border font-medium transition-colors"
-              :class="form.status === 'active' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-surface-overlay text-muted'"
-            >
-              Ativo
-            </button>
-            <button
-              @click="handlePagoClick"
-              class="px-4 py-2.5 rounded-xl border border-surface-border font-medium transition-colors"
-              :class="form.status === 'paid' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-surface-overlay text-muted'"
-            >
-              Pago
-            </button>
-          </div>
-        </div>
-
-
         <div>
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante do Empréstimo</label>
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider">
+            <span class="inline-flex items-center justify-center h-4 w-4 mr-1 rounded-full bg-surface-overlay text-[10px]">1</span>{{ termos.comp1 }}
+          </label>
+          <p class="text-[11px] text-muted mb-1.5">{{ termos.comp1Dica }}</p>
           
           <!-- View Existing Receipt -->
           <div v-if="loadingReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
@@ -480,8 +485,29 @@ async function destroy() {
         </div>
 
         <!-- Payment Receipt -->
-        <div v-if="loanToEdit || form.status === 'paid'" class="border-t border-surface-border/50 pt-4">
-          <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Comprovante de Pagamento (Recebimento / Quitação)</label>
+        <div v-if="loanToEdit || form.status === 'paid'" class="border-t border-surface-border/50 pt-4 space-y-3">
+          <label class="block text-xs font-medium text-muted uppercase tracking-wider">
+            <span class="inline-flex items-center justify-center h-4 w-4 mr-1 rounded-full bg-surface-overlay text-[10px]">2</span>{{ termos.etapa2 }}
+          </label>
+          <div v-if="loanToEdit" class="grid grid-cols-2 gap-2">
+            <button
+              @click="form.status = 'active'"
+              class="px-4 py-2.5 rounded-xl border border-surface-border font-medium transition-colors"
+              :class="form.status === 'active' ? 'bg-orange-500/15 text-orange-500 border-orange-500/50' : 'bg-surface-overlay text-muted'"
+            >
+              {{ termos.aberto }}
+            </button>
+            <button
+              @click="handlePagoClick"
+              class="px-4 py-2.5 rounded-xl border border-surface-border font-medium transition-colors"
+              :class="form.status === 'paid' ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50' : 'bg-surface-overlay text-muted'"
+            >
+              {{ termos.pago }}
+            </button>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-muted uppercase tracking-wider">{{ termos.comp2 }}</div>
+            <p class="text-[11px] text-muted mb-1.5">{{ termos.comp2Dica }}</p>
           
           <!-- View Existing Payment Receipt -->
           <div v-if="loadingPaymentReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
@@ -497,6 +523,7 @@ async function destroy() {
             class="w-full text-sm text-muted file:mr-3 file:px-3 file:py-2 file:rounded-xl file:border-0 file:bg-surface-raised file:text-fg"
             @change="onPaymentFileChange"
           />
+          </div>
         </div>
       </div>
 
