@@ -5,6 +5,8 @@ import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import PayInvoiceModal from '../components/modals/PayInvoiceModal.vue';
 import LinkTransactionModal from '../components/modals/LinkTransactionModal.vue';
+import SeloPessoa from '../components/SeloPessoa.vue';
+import { useEmpresasStore } from '../stores/empresas';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
 const { confirm } = useConfirmDialog();
@@ -58,6 +60,12 @@ async function remove(id: string) {
 }
 
 onMounted(reload);
+
+// O selo PF/PJ cita a empresa no title e na linha de baixo (05/11/2026, igual à tela Contas).
+const empresasStore = useEmpresasStore();
+onMounted(() => {
+  empresasStore.fetchEmpresas().catch(() => {});
+});
 
 const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -115,7 +123,7 @@ const totalLimit = computed(() =>
         <article
           v-for="a in items"
           :key="a.id"
-          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type]"
+          v-memo="[a.id, a.currentBalance, a.name, a.customIconUrl, a.type, a.empresaId, empresasStore.items.length]"
           class="bg-surface-raised border border-surface-border rounded-xl p-3 px-4 flex items-center gap-3 group cursor-pointer hover:bg-surface-overlay/50 transition-colors"
           @click="editAccount(a)"
         >
@@ -125,11 +133,14 @@ const totalLimit = computed(() =>
             class="h-10 w-10 rounded-xl shrink-0 border border-surface-border"
           />
           <div class="min-w-0 flex-1 flex flex-col justify-center">
-            <div class="flex items-center gap-2">
+            <!-- Nome com o selo PF/PJ (05/11/2026); vencimento e empresa na linha de baixo, para o nome não sumir em "Mercado P…". -->
+            <div class="flex items-center gap-2 min-w-0">
               <div class="font-medium text-sm truncate">{{ a.name }}</div>
-              <div class="text-[10px] text-muted uppercase font-semibold tracking-wide" v-if="a.closingDay">
-                Vence dia {{ a.dueDay || a.closingDay }}
-              </div>
+              <SeloPessoa :empresa-id="a.empresaId" />
+            </div>
+            <div class="mt-0.5 flex items-center gap-1.5 min-w-0 text-[10px] text-muted uppercase font-semibold tracking-wide">
+              <span v-if="a.closingDay" class="shrink-0">Vence dia {{ a.dueDay || a.closingDay }}</span>
+              <span v-if="a.empresaId" class="truncate">· {{ empresasStore.nomeDe(a.empresaId) }}</span>
             </div>
             
             <div class="mt-2 w-full bg-surface-overlay h-1.5 rounded-full overflow-hidden border border-surface-border" v-if="a.creditLimit && Number(a.creditLimit) > 0">
