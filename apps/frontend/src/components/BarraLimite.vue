@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-// Barra do limite do cartão em três faixas (05/11/2026, pedido do dono): verde até 50% usado,
-// amarelo de 50% a 80%, vermelho acima de 80%. Cada faixa enche conforme o consumo; o que falta
-// fica na mesma cor, apagado, para mostrar quanto ainda cabe em cada zona.
+// Barra do limite LIVRE do cartão em três faixas (05/11/2026, pedido do dono): enche da esquerda
+// conforme o que ainda dá para gastar — vermelho até 20% livre, amarelo de 20% a 50%, verde acima
+// de 50%. Cartão zerado = barra cheia; cartão estourado = quase vazia, só no vermelho. O que já foi
+// consumido fica na cor da faixa, apagado.
 const props = defineProps<{ usado: number; limite: number; altura?: string }>();
 
 const faixas = [
-  { de: 0, ate: 50, cheio: 'bg-emerald-500', vazio: 'bg-emerald-500/25' },
-  { de: 50, ate: 80, cheio: 'bg-amber-400', vazio: 'bg-amber-400/25' },
-  { de: 80, ate: 100, cheio: 'bg-red-500', vazio: 'bg-red-500/25' },
+  { de: 0, ate: 20, cheio: 'bg-red-500', vazio: 'bg-red-500/25' },
+  { de: 20, ate: 50, cheio: 'bg-amber-400', vazio: 'bg-amber-400/25' },
+  { de: 50, ate: 100, cheio: 'bg-emerald-500', vazio: 'bg-emerald-500/25' },
 ];
 
-const pct = computed(() => (props.limite > 0 ? (Math.abs(props.usado) / props.limite) * 100 : 0));
+const livre = computed(() => props.limite - Math.abs(props.usado));
+const pct = computed(() => (props.limite > 0 ? Math.max(0, (livre.value / props.limite) * 100) : 0));
 const preenchimento = (f: { de: number; ate: number }) =>
   Math.min(100, Math.max(0, ((pct.value - f.de) / (f.ate - f.de)) * 100));
 const titulo = computed(() => {
-  const livre = props.limite - Math.abs(props.usado);
   const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  return `${Math.round(pct.value)}% do limite usado · livre ${brl(livre)} de ${brl(props.limite)}`;
+  return `${Math.round(pct.value)}% do limite livre · ${brl(livre.value)} de ${brl(props.limite)}`;
 });
 </script>
 
