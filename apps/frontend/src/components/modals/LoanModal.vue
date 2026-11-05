@@ -19,7 +19,6 @@ const { confirm, alert } = useConfirmDialog();
 const show = defineModel<boolean>('show', { default: false });
 const props = defineProps<{
   loanToEdit: LoanItem | null;
-  defaultType?: 'given' | 'received' | 'fgts';
 }>();
 
 const emit = defineEmits<{
@@ -138,7 +137,7 @@ function resetForm() {
       accountId: null,
       installments: 1,
       date: getLocalYMD() as string,
-      type: props.defaultType ?? null,
+      type: null, // sempre começa pela pergunta "O que você vai fazer?"
       status: 'active',
       categoryId: null,
     };
@@ -323,7 +322,7 @@ async function destroy() {
             <span class="h-2 w-2 rounded-full" :class="form.type === 'given' ? 'bg-income' : form.type === 'received' ? 'bg-expense' : 'bg-blue-400'"></span>
             {{ tipo.rotulo }}
           </span>
-          <button v-if="!loanToEdit" @click="form.type = null" class="text-xs text-muted hover:text-fg underline-offset-2 hover:underline">trocar</button>
+          <button v-if="!loanToEdit" @click="form.type = null" class="text-xs text-muted hover:text-fg">trocar</button>
         </div>
         <button @click="show = false" class="text-muted hover:text-fg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

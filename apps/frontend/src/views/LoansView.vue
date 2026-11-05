@@ -120,8 +120,8 @@ function onLoanSaved(status?: string) {
     <div class="mx-auto max-w-7xl px-6 py-8 space-y-6">
       <header class="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">{{ tab === 'given' ? 'Emprestei (A Receber)' : tab === 'received' ? 'Peguei (A Pagar)' : tab === 'fgts' ? 'Governamental (FGTS)' : tab === 'paid' ? 'Pagos' : 'Empréstimos' }}</h1>
-          <p class="text-sm text-muted">Controle seus empréstimos.</p>
+          <h1 class="text-2xl font-semibold tracking-tight">{{ tab === 'given' ? 'Vou receber' : tab === 'received' ? 'Vou pagar' : tab === 'fgts' ? 'Governamental (FGTS)' : tab === 'paid' ? 'Pagos' : 'Empréstimos' }}</h1>
+          <p class="text-sm text-muted">{{ tab === 'given' ? 'O que eu emprestei e ainda vão me devolver.' : tab === 'received' ? 'O que eu pedi emprestado e ainda devo.' : tab === 'fgts' ? 'Saques e antecipações do FGTS.' : tab === 'paid' ? 'Empréstimos já quitados.' : 'Quem me deve e quanto eu devo.' }}</p>
         </div>
         <div class="flex items-center gap-3">
           <button
@@ -298,8 +298,7 @@ function onLoanSaved(status?: string) {
     <LoanModal
       v-model:show="showModal"
       :loanToEdit="loanToEdit"
-      :defaultType="tab === 'given' || tab === 'received' || tab === 'fgts' ? tab : undefined"
-      @saved="onLoanSaved"
+            @saved="onLoanSaved"
       @deleted="loadData"
     />
   </AppShell>
