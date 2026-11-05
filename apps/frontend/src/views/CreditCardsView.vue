@@ -149,12 +149,14 @@ const totalLimit = computed(() =>
             <BarraLimite v-if="a.creditLimit && Number(a.creditLimit) > 0" class="mt-2" :usado="Number(a.currentBalance)" :limite="Number(a.creditLimit)" />
             
             <div class="mt-1 flex justify-between items-center w-full">
-              <div class="text-base font-semibold tabular-nums text-expense">
-                {{ brl(Math.abs(Number(a.currentBalance))) }}
-              </div>
-              <div class="text-[10px] text-muted" v-if="a.creditLimit && Number(a.creditLimit) > 0">
-                Livre: {{ brl(Number(a.creditLimit) - Math.abs(Number(a.currentBalance))) }}
-              </div>
+              <template v-if="a.creditLimit && Number(a.creditLimit) > 0">
+                <!-- Grande = disponível para gastar; a fatura fica pequena (05/11/2026, pedido do dono). -->
+                <div class="text-base font-semibold tabular-nums" :class="Number(a.creditLimit) - Math.abs(Number(a.currentBalance)) < 0 ? 'text-expense' : ''">
+                  <span class="text-[10px] font-semibold uppercase tracking-wide text-muted mr-1">Disponível</span>{{ brl(Number(a.creditLimit) - Math.abs(Number(a.currentBalance))) }}
+                </div>
+                <div class="text-[10px] text-muted tabular-nums">Fatura: <span class="text-expense font-semibold">{{ brl(Math.abs(Number(a.currentBalance))) }}</span></div>
+              </template>
+              <div v-else class="text-base font-semibold tabular-nums text-expense">{{ brl(Math.abs(Number(a.currentBalance))) }}</div>
             </div>
           </div>
           <div class="flex items-center gap-2 opacity-0 group-[.hover]:opacity-100 group-hover:opacity-100 transition-opacity">

@@ -82,13 +82,20 @@ const usage = (card: any) => {
           </div>
         </div>
 
-        <div class="relative mt-3 flex items-end justify-between gap-3">
-          <p class="text-2xl font-bold font-display tabular-nums tracking-tight leading-none">
-            {{ brl(Math.abs(Number(card.currentBalance))) }}
+        <!-- Número grande = disponível para gastar (05/11/2026, pedido do dono); a fatura fica pequena ao lado.
+             Sem limite cadastrado não há disponível: aí o grande continua sendo a fatura. -->
+        <div v-if="usage(card)" class="relative mt-3 flex items-end justify-between gap-3">
+          <div>
+            <p class="text-[10px] font-semibold uppercase tracking-wider mb-1" :class="palette(card).sub">Disponível</p>
+            <p class="text-2xl font-bold font-display tabular-nums tracking-tight leading-none">{{ brl(usage(card)!.free) }}</p>
+          </div>
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-right" :class="palette(card).sub">
+            Fatura {{ brl(Math.abs(Number(card.currentBalance))) }}
           </p>
-          <p v-if="usage(card)" class="text-[10px] font-semibold uppercase tracking-wider text-right" :class="palette(card).sub">
-            Livre {{ brl(usage(card)!.free) }}
-          </p>
+        </div>
+        <div v-else class="relative mt-3">
+          <p class="text-[10px] font-semibold uppercase tracking-wider mb-1" :class="palette(card).sub">Fatura</p>
+          <p class="text-2xl font-bold font-display tabular-nums tracking-tight leading-none">{{ brl(Math.abs(Number(card.currentBalance))) }}</p>
         </div>
 
         <!-- Moldura escura leve para a barra destacar sobre a cor do cartão. -->
