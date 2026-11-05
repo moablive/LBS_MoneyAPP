@@ -44,7 +44,7 @@ const form = ref({
 const TIPOS = {
   given: { rotulo: 'Vou emprestar', sub: 'Alguém fica me devendo', cor: 'income' },
   received: { rotulo: 'Vou pedir emprestado', sub: 'Eu fico devendo', cor: 'expense' },
-  fgts: { rotulo: 'FGTS / governamental', sub: 'Saque ou antecipação', cor: 'blue' },
+  fgts: { rotulo: 'Antecipei o FGTS', sub: 'O FGTS quita sozinho', cor: 'blue' },
 } as const;
 const tipo = computed(() => (form.value.type ? TIPOS[form.value.type] : null));
 const corBorda = computed(() =>
@@ -357,7 +357,7 @@ async function destroy() {
           </span>
         </button>
         <button @click="form.type = 'fgts'" class="w-full text-center text-xs text-muted hover:text-blue-400 pt-1">
-          É FGTS / governamental?
+          É antecipação do FGTS?
         </button>
       </div>
 
