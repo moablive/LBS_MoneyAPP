@@ -17,13 +17,14 @@ export default defineConfig({
         name: 'MoneyAPP',
         short_name: 'MoneyAPP',
         theme_color: '#f3f4ee',
-        background_color: 'transparent',
+        background_color: '#121212',
         display: 'standalone',
         start_url: '/',
         icons: [
-          { src: '/logo/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/logo/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/logo/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          // Ícone instalado = quadrado opaco (moeda sobre #121212): o PNG transparente virava quadrado branco no Mac/iOS
+          { src: '/logo/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/logo/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/logo/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),
