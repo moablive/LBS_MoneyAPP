@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import BarraLimite from '../BarraLimite.vue';
 
 /**
  * Cartões como "cartões físicos" empilhados (lima, preto, grafite, índigo),
@@ -21,10 +22,10 @@ const brl = (n: number | string) =>
   Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const palettes = [
-  { card: 'bg-lime text-ink-950', sub: 'text-ink-950/60', bar: 'bg-ink-950', track: 'bg-ink-950/15', deco: 'bg-white/30' },
-  { card: 'bg-ink-950 text-white', sub: 'text-white/60', bar: 'bg-lime', track: 'bg-white/15', deco: 'bg-white/10' },
-  { card: 'bg-[#1f2437] text-white', sub: 'text-white/60', bar: 'bg-lime', track: 'bg-white/15', deco: 'bg-white/10' },
-  { card: 'bg-primary text-white', sub: 'text-white/70', bar: 'bg-lime', track: 'bg-white/20', deco: 'bg-white/15' },
+  { card: 'bg-lime text-ink-950', sub: 'text-ink-950/60', track: 'bg-ink-950/15', deco: 'bg-white/30' },
+  { card: 'bg-ink-950 text-white', sub: 'text-white/60', track: 'bg-white/15', deco: 'bg-white/10' },
+  { card: 'bg-[#1f2437] text-white', sub: 'text-white/60', track: 'bg-white/15', deco: 'bg-white/10' },
+  { card: 'bg-primary text-white', sub: 'text-white/70', track: 'bg-white/20', deco: 'bg-white/15' },
 ];
 const palette = (i: number) => palettes[i % palettes.length]!;
 
@@ -32,7 +33,7 @@ const usage = (card: any) => {
   const limit = Number(card.creditLimit);
   if (!limit || limit <= 0) return null;
   const used = Math.abs(Number(card.currentBalance));
-  return { pct: Math.min(100, Math.max(0, (used / limit) * 100)), free: limit - used, limit };
+  return { free: limit - used, limit };
 };
 </script>
 
@@ -85,8 +86,9 @@ const usage = (card: any) => {
           </p>
         </div>
 
-        <div v-if="usage(card)" class="relative mt-3 h-1.5 rounded-full overflow-hidden" :class="palette(idx).track">
-          <div class="h-full rounded-full transition-[width] duration-700 ease-smooth" :class="palette(idx).bar" :style="{ width: `${usage(card)!.pct}%` }" />
+        <!-- Moldura na cor do cartão para as faixas verde/amarela/vermelha se destacarem até no cartão lima. -->
+        <div v-if="usage(card)" class="relative mt-3 rounded-full p-0.5" :class="palette(idx).track">
+          <BarraLimite :usado="Number(card.currentBalance)" :limite="usage(card)!.limit" />
         </div>
       </li>
     </ul>

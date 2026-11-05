@@ -6,6 +6,7 @@ import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import PayInvoiceModal from '../components/modals/PayInvoiceModal.vue';
 import LinkTransactionModal from '../components/modals/LinkTransactionModal.vue';
 import SeloPessoa from '../components/SeloPessoa.vue';
+import BarraLimite from '../components/BarraLimite.vue';
 import { useEmpresasStore } from '../stores/empresas';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 
@@ -143,9 +144,7 @@ const totalLimit = computed(() =>
               <span v-if="a.empresaId" class="truncate">· {{ empresasStore.nomeDe(a.empresaId) }}</span>
             </div>
             
-            <div class="mt-2 w-full bg-surface-overlay h-1.5 rounded-full overflow-hidden border border-surface-border" v-if="a.creditLimit && Number(a.creditLimit) > 0">
-              <div class="bg-expense h-full transition-all" :style="{ width: Math.min(100, Math.max(0, (Math.abs(Number(a.currentBalance)) / Number(a.creditLimit)) * 100)) + '%' }"></div>
-            </div>
+            <BarraLimite v-if="a.creditLimit && Number(a.creditLimit) > 0" class="mt-2" :usado="Number(a.currentBalance)" :limite="Number(a.creditLimit)" />
             
             <div class="mt-1 flex justify-between items-center w-full">
               <div class="text-base font-semibold tabular-nums text-expense">

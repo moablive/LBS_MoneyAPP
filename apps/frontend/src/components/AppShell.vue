@@ -8,6 +8,7 @@ import { useTheme } from '../composables/useTheme';
 import NewTransactionModal from './modals/NewTransactionModal.vue';
 import GlobalConfirmDialog from './modals/GlobalConfirmDialog.vue';
 import CsvImportModal from './modals/CsvImportModal.vue';
+import BarraLimite from './BarraLimite.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -147,9 +148,7 @@ const totalPaidLoansAmount = computed(() => {
                     </div>
                     <span class="text-xs font-bold font-display text-expense">{{ brl(Math.abs(Number(card.currentBalance))) }}</span>
                   </div>
-                  <div class="h-1 rounded-full bg-surface-overlay overflow-hidden" v-if="card.creditLimit && Number(card.creditLimit) > 0">
-                    <div class="h-full bg-expense" :style="{ width: `${Math.min(100, Math.max(0, (Math.abs(Number(card.currentBalance)) / Number(card.creditLimit)) * 100))}%` }" />
-                  </div>
+                  <BarraLimite v-if="card.creditLimit && Number(card.creditLimit) > 0" altura="h-1" :usado="Number(card.currentBalance)" :limite="Number(card.creditLimit)" />
                 </li>
               </ul>
             </div>

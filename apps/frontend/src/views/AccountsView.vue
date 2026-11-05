@@ -5,6 +5,7 @@ import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
 import NewAccountModal from '../components/modals/NewAccountModal.vue';
 import SeloPessoa from '../components/SeloPessoa.vue';
+import BarraLimite from '../components/BarraLimite.vue';
 import { useConfirmDialog } from '../composables/useConfirmDialog';
 import { useEmpresasStore } from '../stores/empresas';
 
@@ -213,6 +214,7 @@ const typeLabels: Record<AccountType, string> = {
                   Livre: {{ brl(Number(a.creditLimit) - Math.abs(Number(a.currentBalance))) }}
                 </div>
               </div>
+              <BarraLimite v-if="a.creditLimit && Number(a.creditLimit) > 0" class="mt-1.5" :usado="Number(a.currentBalance)" :limite="Number(a.creditLimit)" />
             </div>
             <div class="flex items-center gap-2 sm:opacity-0 group-[.hover]:opacity-100 group-hover:opacity-100 transition-opacity">
               <button
