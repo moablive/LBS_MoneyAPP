@@ -44,7 +44,7 @@ const form = ref({
 const TIPOS = {
   given: { rotulo: 'Vou emprestar', sub: 'Alguém fica me devendo', cor: 'income' },
   received: { rotulo: 'Vou pedir emprestado', sub: 'Eu fico devendo', cor: 'expense' },
-  fgts: { rotulo: 'Antecipei o FGTS', sub: 'O FGTS quita sozinho', cor: 'blue' },
+  fgts: { rotulo: 'Vou antecipar o FGTS', sub: 'O próprio FGTS quita', cor: 'blue' },
 } as const;
 const tipo = computed(() => (form.value.type ? TIPOS[form.value.type] : null));
 
@@ -379,8 +379,17 @@ async function destroy() {
             <span class="block text-xs text-muted">{{ TIPOS.received.sub }} · entra em "A Pagar"</span>
           </span>
         </button>
-        <button @click="form.type = 'fgts'" class="w-full text-center text-xs text-muted hover:text-blue-400 pt-1">
-          É antecipação do FGTS?
+        <button
+          @click="form.type = 'fgts'"
+          class="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-left transition-colors"
+        >
+          <span class="h-11 w-11 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01M17 12h.01M7 12h.01"/></svg>
+          </span>
+          <span>
+            <span class="block font-semibold text-blue-500">{{ TIPOS.fgts.rotulo }}</span>
+            <span class="block text-xs text-muted">{{ TIPOS.fgts.sub }} · entra em "FGTS"</span>
+          </span>
         </button>
       </div>
 
