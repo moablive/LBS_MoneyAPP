@@ -298,7 +298,7 @@ function onLoanSaved(status?: string) {
     <LoanModal
       v-model:show="showModal"
       :loanToEdit="loanToEdit"
-      :defaultType="tab === 'received' ? 'received' : 'given'"
+      :defaultType="tab === 'given' || tab === 'received' || tab === 'fgts' ? tab : undefined"
       @saved="onLoanSaved"
       @deleted="loadData"
     />

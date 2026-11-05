@@ -36,10 +36,26 @@ const form = ref({
   accountId: null as string | null,
   installments: 1,
   date: getLocalYMD() as string,
-  type: 'given' as 'given' | 'received' | 'fgts',
+  // null = ainda não escolheu: o modal pergunta primeiro se vai emprestar (verde) ou pedir emprestado (vermelho)
+  type: null as 'given' | 'received' | 'fgts' | null,
   status: 'active' as 'active' | 'paid',
   categoryId: null as string | null,
 });
+
+const TIPOS = {
+  given: { rotulo: 'Vou emprestar', sub: 'Alguém fica me devendo', cor: 'income' },
+  received: { rotulo: 'Vou pedir emprestado', sub: 'Eu fico devendo', cor: 'expense' },
+  fgts: { rotulo: 'FGTS / governamental', sub: 'Saque ou antecipação', cor: 'blue' },
+} as const;
+const tipo = computed(() => (form.value.type ? TIPOS[form.value.type] : null));
+const corBorda = computed(() =>
+  form.value.type === 'given' ? 'border-t-4 border-t-income'
+  : form.value.type === 'received' ? 'border-t-4 border-t-expense'
+  : form.value.type === 'fgts' ? 'border-t-4 border-t-blue-400' : '');
+const corSalvar = computed(() =>
+  form.value.type === 'given' ? 'bg-income hover:bg-income/90'
+  : form.value.type === 'received' ? 'bg-expense hover:bg-expense/90'
+  : 'bg-accent hover:bg-accent/90');
 
 const accounts = ref<Account[]>([]);
 const categories = ref<Category[]>([]);
@@ -122,7 +138,7 @@ function resetForm() {
       accountId: null,
       installments: 1,
       date: getLocalYMD() as string,
-      type: props.defaultType || 'given',
+      type: props.defaultType ?? null,
       status: 'active',
       categoryId: null,
     };
@@ -202,6 +218,7 @@ watch(show, async (val) => {
 }, { immediate: true });
 
 async function save() {
+  if (!form.value.type) return;
   if (form.value.status === 'paid') {
     const hasExistingPaymentReceipt = !!props.loanToEdit?.hasPaymentReceipt;
     if (!paymentReceiptFile.value && !hasExistingPaymentReceipt) {
@@ -292,21 +309,66 @@ async function destroy() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-    <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center bg-surface-raised">
+    <div class="bg-surface-base border border-surface-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" :class="corBorda">
+      <header class="px-6 py-4 border-b border-surface-border flex justify-end items-center gap-3 bg-surface-raised">
         <h2 v-if="props.loanToEdit?.status === 'paid'" class="flex-1 text-sm font-semibold text-expense">Empréstimo Finalizado</h2>
+        <h2 v-else-if="!tipo" class="flex-1 text-sm font-semibold">Novo empréstimo</h2>
+        <div v-else class="flex-1 flex items-center gap-2 min-w-0">
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border"
+            :class="form.type === 'given' ? 'bg-income/15 text-income border-income/40'
+              : form.type === 'received' ? 'bg-expense/15 text-expense border-expense/40'
+              : 'bg-blue-500/15 text-blue-400 border-blue-500/40'"
+          >
+            <span class="h-2 w-2 rounded-full" :class="form.type === 'given' ? 'bg-income' : form.type === 'received' ? 'bg-expense' : 'bg-blue-400'"></span>
+            {{ tipo.rotulo }}
+          </span>
+          <button v-if="!loanToEdit" @click="form.type = null" class="text-xs text-muted hover:text-fg underline-offset-2 hover:underline">trocar</button>
+        </div>
         <button @click="show = false" class="text-muted hover:text-fg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </header>
 
-      <div class="p-6 overflow-y-auto space-y-4">
+      <!-- Passo 1: o que você vai fazer? -->
+      <div v-if="!form.type" class="p-6 space-y-3">
+        <p class="text-sm text-muted">O que você vai fazer?</p>
+        <button
+          @click="form.type = 'given'"
+          class="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-income/40 bg-income/10 hover:bg-income/20 text-left transition-colors"
+        >
+          <span class="h-11 w-11 rounded-xl bg-income text-white flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+          </span>
+          <span>
+            <span class="block font-semibold text-income">{{ TIPOS.given.rotulo }}</span>
+            <span class="block text-xs text-muted">{{ TIPOS.given.sub }} · entra em "A Receber"</span>
+          </span>
+        </button>
+        <button
+          @click="form.type = 'received'"
+          class="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-expense/40 bg-expense/10 hover:bg-expense/20 text-left transition-colors"
+        >
+          <span class="h-11 w-11 rounded-xl bg-expense text-white flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+          </span>
+          <span>
+            <span class="block font-semibold text-expense">{{ TIPOS.received.rotulo }}</span>
+            <span class="block text-xs text-muted">{{ TIPOS.received.sub }} · entra em "A Pagar"</span>
+          </span>
+        </button>
+        <button @click="form.type = 'fgts'" class="w-full text-center text-xs text-muted hover:text-blue-400 pt-1">
+          É FGTS / governamental?
+        </button>
+      </div>
+
+      <div v-else class="p-6 overflow-y-auto space-y-4">
         <div>
           <label class="block text-xs font-medium text-muted uppercase tracking-wider mb-1">Descrição</label>
           <input
             v-model="form.description"
             class="w-full bg-surface-overlay border border-surface-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/60"
-            placeholder="Ex: Empréstimo do João"
+            :placeholder="form.type === 'received' ? 'Ex: Peguei com o João' : form.type === 'fgts' ? 'Ex: Saque-aniversário FGTS' : 'Ex: Emprestei para o João'"
           />
         </div>
 
@@ -460,8 +522,10 @@ async function destroy() {
           </button>
           <button
             @click="save"
+            v-if="form.type"
             :disabled="loading || !form.description || !form.amount"
-            class="px-6 py-2 rounded-xl bg-accent text-white font-medium text-sm hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+            class="px-6 py-2 rounded-xl text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+            :class="corSalvar"
           >
             <div v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             Salvar
