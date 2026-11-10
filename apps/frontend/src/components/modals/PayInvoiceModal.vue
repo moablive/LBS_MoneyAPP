@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nomeDaConta } from '../../utils/conta';
 import { computed, ref, watch } from 'vue';
 import { api, fileToBase64 } from '@moneyapp/api-client';
 import type { Account, Category, Receipt, PayInvoiceInput } from '@moneyapp/models';
@@ -153,10 +154,10 @@ async function submit() {
           >
             <option value="">— Sem conta (Apenas zerar dívida) —</option>
             <optgroup label="Contas" v-if="normalAccounts.length > 0">
-              <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+              <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ nomeDaConta(a) }}</option>
             </optgroup>
             <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
-              <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+              <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ nomeDaConta(a) }}</option>
             </optgroup>
           </select>
           <p class="text-[10px] text-muted mt-1">O valor será debitado desta conta.</p>

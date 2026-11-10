@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nomeDaConta } from '../utils/conta';
 import { computed, onMounted, onUnmounted, ref, shallowRef, triggerRef, watch } from 'vue';
 import { api } from '@moneyapp/api-client';
 import AppShell from '../components/AppShell.vue';
@@ -354,10 +355,10 @@ async function handleBulkDelete() {
           >
             <option value="all">Todas Contas</option>
             <optgroup label="Contas" v-if="normalAccounts.length > 0">
-              <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+              <option v-for="acc in normalAccounts" :key="acc.id" :value="acc.id">{{ nomeDaConta(acc) }}</option>
             </optgroup>
             <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
-              <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ acc.name }}</option>
+              <option v-for="acc in creditCardAccounts" :key="acc.id" :value="acc.id">{{ nomeDaConta(acc) }}</option>
             </optgroup>
           </select>
           <select

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nomeDaConta } from '../../utils/conta';
 import { ref, watch, onMounted, computed } from 'vue';
 import { api } from '@moneyapp/api-client';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
@@ -214,10 +215,10 @@ async function remove() {
             >
               <option value="">Outro</option>
               <optgroup label="Contas" v-if="normalAccounts.length > 0">
-                <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+                <option v-for="a in normalAccounts" :key="a.id" :value="a.id">{{ nomeDaConta(a) }}</option>
               </optgroup>
               <optgroup label="Cartões de Crédito" v-if="creditCardAccounts.length > 0">
-                <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ a.name }}</option>
+                <option v-for="a in creditCardAccounts" :key="a.id" :value="a.id">{{ nomeDaConta(a) }}</option>
               </optgroup>
             </select>
           </div>
