@@ -292,6 +292,38 @@ export const sharedLinks = pgTable(
   }),
 );
 
+// -------- clientes (venda do MoneyAPP) ----------------------------------------
+// Quem preencheu o formulário de assinatura da página /assine. A assinatura e o
+// pagamento são do LoginHUB (`pedido` é a referência de lá); aqui fica o
+// cadastro: nome, e-mail, WhatsApp e CPF ou CNPJ. Migration 0003.
+export const clientes = pgTable(
+  "clientes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: varchar("nome", { length: 255 }).notNull(),
+    // Sempre em minúsculas: é a chave do cadastro.
+    email: varchar("email", { length: 255 }).notNull(),
+    telefone: varchar("telefone", { length: 20 }),
+    // Só dígitos: 11 (CPF) ou 14 (CNPJ).
+    documento: varchar("documento", { length: 14 }).notNull(),
+    tipoDocumento: varchar("tipo_documento", { length: 4 }).notNull(),
+    // Código do afiliado que veio no link, se houve.
+    afiliado: varchar("afiliado", { length: 40 }),
+    // Referência da assinatura no LoginHUB (LH-3-…), quando o checkout abriu.
+    pedido: varchar("pedido", { length: 64 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => ({
+    emailUq: uniqueIndex("clientes_email_uq").on(t.email),
+    documentoIdx: index("clientes_documento_idx").on(t.documento),
+  }),
+);
+
 // -------- relations ----------------------------------------------------------
 
 // -------- investments --------------------------------------------------------

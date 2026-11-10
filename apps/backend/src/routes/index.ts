@@ -16,6 +16,7 @@ import { calendarRouter } from './calendar';
 import { pushRouter } from './push';
 import { empresasRouter } from './empresas';
 import { agenteRouter } from './agente';
+import { clientesRouter } from './clientes';
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
@@ -38,3 +39,5 @@ apiRouter.use('/push', pushRouter);
 apiRouter.use('/telegram', requireAuth, telegramRouter);
 // API do 💰 Financeiro do conselho: só consumidor de serviço, lê e lança pendente.
 apiRouter.use('/agente', agenteRouter);
+// Venda do MoneyAPP: cadastro de quem preenche o formulário da página /assine (público, só grava).
+apiRouter.use('/clientes', clientesRouter);

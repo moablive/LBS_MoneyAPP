@@ -14,7 +14,17 @@ import {
   PresentationChartLineIcon,
   ReceiptPercentIcon,
 } from '@heroicons/vue/24/solid';
-import { afiliadoGuardado, assinar, buscarPlano, dinheiro, guardarAfiliado, type PlanoPublico } from '../lib/venda';
+import {
+  afiliadoGuardado,
+  assinar,
+  buscarPlano,
+  dinheiro,
+  documentoValido,
+  guardarAfiliado,
+  mascararDocumento,
+  salvarCliente,
+  type PlanoPublico,
+} from '../lib/venda';
 
 /**
  * Página de venda do MoneyAPP (assinatura mensal, cartão automático no Mercado
@@ -30,6 +40,7 @@ const afiliado = ref<string | null>(null);
 const nome = ref('');
 const email = ref('');
 const telefone = ref('');
+const documento = ref('');
 const enviando = ref(false);
 const erro = ref<string | null>(null);
 
@@ -55,7 +66,20 @@ async function enviar() {
   erro.value = null;
   enviando.value = true;
   try {
-    const r = await assinar({ nome: nome.value.trim(), email: email.value.trim(), telefone: telefone.value.trim(), ref: afiliado.value });
+    if (!documentoValido(documento.value)) throw new Error('CPF ou CNPJ inválido. Confira os números.');
+    const cliente = {
+      nome: nome.value.trim(),
+      email: email.value.trim(),
+      telefone: telefone.value.trim(),
+      documento: documento.value,
+      afiliado: afiliado.value,
+    };
+    // 1) cadastro do cliente no MoneyAPP; 2) assinatura no LoginHUB (abre o
+    // Mercado Pago); 3) o pedido volta para o cadastro. O passo 3 não segura a
+    // pessoa: o cadastro já existe, e o pedido também fica no LoginHUB.
+    await salvarCliente(cliente);
+    const r = await assinar({ nome: cliente.nome, email: cliente.email, telefone: cliente.telefone, ref: afiliado.value });
+    await salvarCliente({ ...cliente, pedido: r.ref }).catch(() => {});
     // A volta do Mercado Pago traz o pedido na URL; isto cobre quem voltar à mão.
     try {
       sessionStorage.setItem('moneyapp.pedido', r.ref);
@@ -109,7 +133,7 @@ const passos = [
 
 // Endereço do aplicativo e do bot (os mesmos do e-mail de boas-vindas).
 const ENDERECO_APP = 'https://money.astralwavelabel.com';
-const BOT = 'https://t.me/moabinho_bot';
+const BOT = 'https://t.me/awl_money_bot';
 
 const instalar = [
   { aparelho: 'iPhone e iPad', como: 'abra pelo Safari (só ele instala), toque em Compartilhar e depois em “Adicionar à Tela de Início”.' },
@@ -197,6 +221,21 @@ const campo =
               <span class="block text-xs text-muted">Será o seu login. Se você tem conta no Mercado Pago, use o mesmo e-mail dela.</span>
             </label>
             <label class="block space-y-1">
+              <span class="text-xs uppercase tracking-wide text-muted">CPF ou CNPJ</span>
+              <input
+                :value="documento"
+                type="text"
+                required
+                inputmode="numeric"
+                maxlength="18"
+                autocomplete="off"
+                placeholder="000.000.000-00"
+                :class="campo"
+                @input="documento = mascararDocumento(($event.target as HTMLInputElement).value)"
+              />
+              <span class="block text-xs text-muted">Do titular da assinatura: CPF para pessoa física, CNPJ para empresa.</span>
+            </label>
+            <label class="block space-y-1">
               <span class="text-xs uppercase tracking-wide text-muted">WhatsApp (opcional)</span>
               <input v-model="telefone" type="tel" maxlength="20" autocomplete="tel" inputmode="tel" :class="campo" />
             </label>
@@ -211,13 +250,19 @@ const campo =
               {{ enviando ? 'Abrindo o Mercado Pago…' : `Assinar por ${preco}/mês` }}
               <ArrowRightIcon v-if="!enviando" class="h-4 w-4" />
             </button>
+            <!-- O pagamento é feito na página do Mercado Pago; aqui só se preenche o cadastro. -->
+            <div class="flex items-center gap-3 rounded-2xl border border-surface-border bg-surface-overlay px-3 py-2.5">
+              <img src="/banks/oficial/mercado-pago.png" alt="" class="h-9 w-9 shrink-0 rounded-lg" />
+              <p class="min-w-0 flex-1 text-xs text-muted">
+                <strong class="block text-sm text-fg">Pagamento via Mercado Pago</strong>
+                No cartão de crédito, cobrado todo mês. Não guardamos os dados do cartão.
+              </p>
+              <img src="/banks/oficial/visa.png" alt="Visa" title="Visa" class="h-7 w-7 shrink-0" />
+              <img src="/banks/oficial/mastercard.png" alt="Mastercard" title="Mastercard" class="h-7 w-7 shrink-0" />
+            </div>
             <p class="flex items-center justify-center gap-1.5 text-xs text-muted">
               <LockClosedIcon class="h-3.5 w-3.5" />
-              Pagamento no cartão pelo Mercado Pago. Não guardamos os dados do cartão.
-            </p>
-            <p class="flex items-center justify-center gap-2">
-              <img src="/banks/oficial/visa.png" alt="Visa" title="Visa" class="h-8 w-8" />
-              <img src="/banks/oficial/mastercard.png" alt="Mastercard" title="Mastercard" class="h-8 w-8" />
+              Seus dados ficam protegidos e são usados só para a sua assinatura.
             </p>
           </form>
         </template>
@@ -293,8 +338,44 @@ const campo =
             <ArrowRightIcon class="h-4 w-4" />
           </a>
           <p class="mt-3 text-xs text-muted">
-            O bot começa a lançar na sua conta depois que você entra no aplicativo e toca em Configurações → Vincular Telegram.
+            É o bot oficial do MoneyAPP. Ele começa a lançar na sua conta depois que você entra no aplicativo e toca em
+            Configurações → Vincular Telegram.
           </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- uma conta para tudo: tecnologia LoginHUB -->
+    <section class="mt-20">
+      <div class="card grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+        <div>
+          <p class="inline-flex items-center gap-2 rounded-full bg-surface-overlay px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted">
+            <img src="/logo/loginhub.svg" alt="" class="h-4 w-4 rounded" />
+            Tecnologia LoginHUB
+          </p>
+          <h2 class="mt-3 font-display text-3xl font-semibold tracking-tight">Uma conta só liga o aplicativo e o bot</h2>
+          <p class="mt-2 max-w-xl text-sm text-muted">
+            A sua conta do MoneyAPP é protegida pelo LoginHUB: é ele que confere a senha, a verificação em duas etapas
+            e a biometria do aparelho, e é por ele que o bot do Telegram reconhece você. A senha nunca é digitada no
+            chat: você entra no aplicativo e vincula o Telegram com um toque.
+          </p>
+        </div>
+        <!-- App ↔ LoginHUB ↔ Bot -->
+        <div class="flex items-center justify-center gap-3 sm:gap-4" role="img" aria-label="O LoginHUB conecta o aplicativo MoneyAPP e o bot do Telegram">
+          <figure class="flex flex-col items-center gap-2 text-xs text-muted">
+            <img src="/logo/icon-192.png" alt="" class="h-14 w-14 rounded-2xl shadow-card" />
+            <figcaption>Aplicativo</figcaption>
+          </figure>
+          <span class="mb-6 h-0.5 w-8 rounded-full bg-surface-border sm:w-12" aria-hidden="true" />
+          <figure class="flex flex-col items-center gap-2 text-xs font-medium text-fg">
+            <img src="/logo/loginhub.svg" alt="" class="h-20 w-20 rounded-3xl shadow-card" />
+            <figcaption>LoginHUB</figcaption>
+          </figure>
+          <span class="mb-6 h-0.5 w-8 rounded-full bg-surface-border sm:w-12" aria-hidden="true" />
+          <figure class="flex flex-col items-center gap-2 text-xs text-muted">
+            <img src="/banks/oficial/telegram.svg" alt="" class="h-14 w-14" />
+            <figcaption>Bot do Telegram</figcaption>
+          </figure>
         </div>
       </div>
     </section>

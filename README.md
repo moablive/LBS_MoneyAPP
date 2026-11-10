@@ -351,6 +351,11 @@ Quem cuida da venda é o LoginHUB; aqui ficam só as telas públicas:
 - Cartão autorizado → o LoginHUB cria o usuário e manda o e-mail com o link da senha, o endereço para instalar o
   PWA e o bot do Telegram. Assinatura cancelada ou pausada → a conta fica `inativo` e o login para de entrar.
 
+- O formulário pede **CPF ou CNPJ** e grava o cliente na tabela `clientes` do banco do MoneyAPP
+  (`POST /api/clientes`, rota pública que só grava; migration `0003_clientes.sql`): nome, e-mail, WhatsApp,
+  documento, afiliado e a referência do pedido no LoginHUB. O pagamento é via Mercado Pago, na página de lá.
+- A página mostra a faixa "Tecnologia LoginHUB": a mesma conta liga o aplicativo e o bot do Telegram.
+
 Preço, afiliados, assinantes e comissões: painel do LoginHUB, botão de vendas do app. Documento:
 "Projeto - LoginHUB ／ Venda por assinatura e afiliados", pasta 📦 Documentação do servidor do Drive.
 
@@ -363,11 +368,18 @@ Preço, afiliados, assinantes e comissões: painel do LoginHUB, botão de vendas
 
 ## 🤖 Telegram Bot
 
-🔗 **[Acessar o Bot: @moabinho_bot](https://t.me/moabinho_bot)**
+🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
 
 O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
 
 > [!NOTE]
+> **Bot próprio de novo (10/11/2026).** O MoneyAPP passou a ser vendido, e o cliente usa o bot oficial dele, o
+> **@awl_money_bot**, não o @moabinho_bot do dono. O serviço `lbs_moneyapp_bot` do compose zera o
+> `MOABINHOIA_GATEWAY_SECRET` (que continua no `../shared.env` para o TodoAPP e o NotesAPP), então o bot faz o
+> próprio long-polling com o `TELEGRAM_BOT_TOKEN` do `.env`; `TELEGRAM_BOT_USERNAME=awl_money_bot` e
+> `TELEGRAM_START_PREFIX` vazio. No Moabinho IA, `money` saiu de `MOABINHOIA_MODULOS`. O parágrafo abaixo descreve
+> o modo hub, que continua no código como caminho de volta.
+
 > **Modo hub (Moabinho IA).** Com `MOABINHOIA_GATEWAY_SECRET` no ambiente (vem do `../shared.env`), o bot **não faz long-polling**: quem recebe as mensagens é o hub do painel, o **@moabinho_bot**, que guarda em que módulo cada usuário está e entrega aqui só os updates do Money, por `POST /update` na porta `8090` da `awl_network`. A resposta sai direto do bot para a API do Telegram, com o token do @moabinho_bot (`TELEGRAM_BOT_TOKEN` e `TELEGRAM_BOT_USERNAME` passam a ser os dele). O teclado ganha o botão **🏠 Moabinho IA**, que o hub intercepta para voltar ao menu de módulos, e o deep link de vínculo leva o prefixo `TELEGRAM_START_PREFIX` para o hub saber de que app é o passe. Sem o segredo, o bot volta ao polling com o token que estiver no `.env` — é o caminho de volta, sem tocar em código. As variáveis `MOABINHOIA_*` (antes `MEUBRUXO_*`) são compartilhadas entre os apps da suíte, e o cabeçalho que autentica o hub passou a ser `x-moabinhoia-secret`.
 
 > [!IMPORTANT]

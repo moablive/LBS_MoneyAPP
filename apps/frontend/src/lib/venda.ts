@@ -53,6 +53,84 @@ export const assinar = (dados: { nome: string; email: string; telefone?: string;
 export const consultarPedido = (pedido: string) =>
   chamar<{ status: StatusAssinatura; email: string; acesso_liberado: boolean }>(`/venda/assinaturas/${encodeURIComponent(pedido)}`);
 
+// ── Cliente (cadastro no banco do MoneyAPP) ─────────────────────────────────
+// O formulário grava nome, e-mail, WhatsApp e CPF ou CNPJ em `clientes` ANTES
+// de abrir o Mercado Pago, e de novo com o `pedido` quando o checkout abre.
+const BACKEND_API = (import.meta.env.VITE_API_BASE_URL as string) || '/api';
+
+export async function salvarCliente(dados: {
+  nome: string;
+  email: string;
+  telefone?: string;
+  documento: string;
+  afiliado?: string | null;
+  pedido?: string;
+}): Promise<void> {
+  let resposta: Response;
+  try {
+    resposta = await fetch(`${BACKEND_API}/clientes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados),
+    });
+  } catch {
+    throw new ErroDeVenda('Sem conexão. Confira a internet e tente de novo.', 0);
+  }
+  if (!resposta.ok) {
+    const corpo = (await resposta.json().catch(() => ({}))) as { message?: string };
+    throw new ErroDeVenda(corpo.message || 'Confira os dados e tente de novo.', resposta.status);
+  }
+}
+
+// ── CPF / CNPJ ──────────────────────────────────────────────────────────────
+// A mesma conferência dos dígitos verificadores que o backend faz
+// (apps/backend/src/routes/clientes.ts); aqui é só para avisar antes de enviar.
+const repetido = (d: string) => /^(\d)\1+$/.test(d);
+
+function cpfValido(d: string): boolean {
+  if (d.length !== 11 || repetido(d)) return false;
+  const digito = (ate: number) => {
+    let soma = 0;
+    for (let i = 0; i < ate; i++) soma += Number(d[i]) * (ate + 1 - i);
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+  return digito(9) === Number(d[9]) && digito(10) === Number(d[10]);
+}
+
+function cnpjValido(d: string): boolean {
+  if (d.length !== 14 || repetido(d)) return false;
+  const digito = (ate: number) => {
+    const pesos = ate === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let soma = 0;
+    for (let i = 0; i < ate; i++) soma += Number(d[i]) * pesos[i]!;
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  return digito(12) === Number(d[12]) && digito(13) === Number(d[13]);
+}
+
+export function documentoValido(texto: string): boolean {
+  const d = texto.replace(/\D/g, '');
+  return d.length === 14 ? cnpjValido(d) : cpfValido(d);
+}
+
+/** "12345678909" → "123.456.789-09"; com 12+ dígitos vira CNPJ "12.345.678/0001-95". */
+export function mascararDocumento(texto: string): string {
+  const d = texto.replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 11) {
+    return d
+      .replace(/^(\d{3})(\d)/, '$1.$2')
+      .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+  }
+  return d
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+}
+
 // ── Afiliado ────────────────────────────────────────────────────────────────
 // O `?ref=` do link fica guardado por 30 dias: quem chega pelo afiliado, sai e
 // volta depois direto no endereço ainda conta como indicação dele.
