@@ -73,12 +73,17 @@ function irParaAssinar() {
   document.getElementById('assinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-const recursos: { icone: Component; giro?: string; titulo: string; texto: string }[] = [
+const recursos: { icone: Component; giro?: string; titulo: string; texto: string; bancos?: string[] }[] = [
   { icone: PaperAirplaneIcon, giro: '-rotate-45 translate-x-0.5', titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
   { icone: ReceiptPercentIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
   { icone: LinkIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
   { icone: PresentationChartLineIcon, titulo: 'Painel com projeção de 60 dias', texto: 'Saldo de hoje e o que vem pela frente: contas a vencer, faturas e recorrentes já entram na conta.' },
-  { icone: CreditCardIcon, titulo: 'Contas e cartões, PF e PJ', texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista.' },
+  {
+    icone: CreditCardIcon,
+    titulo: 'Contas e cartões, PF e PJ',
+    texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista. Cada conta e cartão leva o ícone do banco, ou o ícone que você subir.',
+    bancos: ['nubank', 'itau', 'inter', 'c6', 'bradesco', 'santander', 'mercado-pago', 'picpay'],
+  },
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
   { icone: ArrowsRightLeftIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
   { icone: ChartPieIcon, titulo: 'Relatórios', texto: 'Para onde foi o dinheiro, por período e por categoria, em poucos toques.' },
@@ -196,6 +201,11 @@ const campo =
           <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-950 text-lime shadow-card"><component :is="r.icone" class="h-6 w-6" :class="r.giro" aria-hidden="true" /></span>
           <h3 class="mt-4 font-semibold">{{ r.titulo }}</h3>
           <p class="mt-1 text-sm text-muted">{{ r.texto }}</p>
+          <!-- Os mesmos ícones de banco que o aplicativo oferece ao criar a conta (public/banks). -->
+          <div v-if="r.bancos" class="mt-3 flex flex-wrap items-center gap-2">
+            <img v-for="b in r.bancos" :key="b" :src="`/banks/${b}.svg`" :alt="b" loading="lazy" class="h-7 w-7 rounded-lg object-contain" />
+            <span class="flex h-7 items-center rounded-lg border border-dashed border-surface-border px-2 text-xs text-muted">+ o seu</span>
+          </div>
         </article>
       </div>
     </section>
