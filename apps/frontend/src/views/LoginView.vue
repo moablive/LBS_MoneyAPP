@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import GoogleAuthAviso from '../components/GoogleAuthAviso.vue';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { FingerPrintIcon } from '@heroicons/vue/24/outline';
+import { biometriaAtivaAqui, dispensarOfertaDeBiometria, podeOferecerBiometria } from '../lib/biometria';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import TwoFactorEnroll from '../components/TwoFactorEnroll.vue';
@@ -34,6 +36,65 @@ const loading = ref(false);
 const codigo = ref('');
 const usarBackup = ref(false);
 
+// ── Biometria (passkey, junto com o LoginHUB) ───────────────────────────────
+// `biometriaNoLogin`: o hub tem biometria ligada e este navegador sabe usar.
+// `biometriaEmDestaque`: ela já foi ativada neste aparelho, então o botão sobe
+// para o topo do formulário. `ofertaBiometria`: depois de um login completo,
+// oferece ativar aqui (uma vez; "agora não" vale 30 dias).
+const biometriaNoLogin = ref(false);
+const biometriaEmDestaque = ref(biometriaAtivaAqui());
+const ofertaBiometria = ref(false);
+
+onMounted(async () => {
+  biometriaNoLogin.value = await auth.biometriaDisponivel();
+});
+
+async function entrarComBiometria() {
+  error.value = null;
+  loading.value = true;
+  try {
+    await auth.entrarComBiometria();
+    irParaApp();
+  } catch (e) {
+    // Fechar a janela da digital não é erro: a pessoa só desistiu.
+    if ((e as { code?: string })?.code !== 'CANCELADO') error.value = traduzir(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+/** Login completo feito: oferece a biometria deste aparelho antes de seguir. */
+async function depoisDeEntrar() {
+  if (biometriaNoLogin.value && podeOferecerBiometria() && (await auth.aparelhoTemBiometria())) {
+    // O enrolamento de 2FA, se foi o caminho até aqui, sai da tela.
+    enrolarToken.value = null;
+    ofertaBiometria.value = true;
+    return;
+  }
+  irParaApp();
+}
+
+async function ativarBiometria() {
+  error.value = null;
+  loading.value = true;
+  try {
+    await auth.ativarBiometria();
+    irParaApp();
+  } catch (e) {
+    const codigoErro = (e as { code?: string })?.code;
+    // Já cadastrado neste aparelho conta como ativado.
+    if (codigoErro === 'PASSKEY_JA_CADASTRADA') return irParaApp();
+    if (codigoErro !== 'CANCELADO') error.value = traduzir(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function agoraNao() {
+  dispensarOfertaDeBiometria();
+  irParaApp();
+}
+
 function irParaApp() {
   const next = router.currentRoute.value.query.next as string | undefined;
   router.replace(next || '/');
@@ -47,6 +108,8 @@ function traduzir(e: unknown): string {
   if (codigoErro === 'CODIGO_INVALIDO') return 'Código inválido. Confira o relógio do celular e tente o próximo.';
   if (codigoErro === 'CHALLENGE_INVALIDO') return 'A janela de verificação expirou. Faça login de novo.';
   if (codigoErro === 'REDE') return 'Sem conexão com o servidor de login.';
+  if (codigoErro === 'PASSKEY_INVALIDA') return 'Não foi possível confirmar a biometria. Entre com e-mail e senha.';
+  if (codigoErro === 'NAO_SUPORTADO') return 'Este aparelho não conseguiu usar a biometria. Entre com e-mail e senha.';
   return msg || 'Não foi possível entrar. Tente novamente.';
 }
 
@@ -64,7 +127,7 @@ async function submit() {
       return;
     }
     // '2fa': o template troca para o campo de código; nada a fazer aqui.
-    if (r.etapa === 'sessao') irParaApp();
+    if (r.etapa === 'sessao') await depoisDeEntrar();
   } catch (e) {
     error.value = traduzir(e);
   } finally {
@@ -77,7 +140,7 @@ async function confirmarCodigo() {
   loading.value = true;
   try {
     await auth.verificarSegundoFator(codigo.value.trim(), usarBackup.value);
-    irParaApp();
+    await depoisDeEntrar();
   } catch (e) {
     error.value = traduzir(e);
   } finally {
@@ -93,8 +156,32 @@ async function confirmarCodigo() {
       v-if="enrolarToken"
       class="w-full max-w-sm"
       :setup-token="enrolarToken"
-      @concluido="irParaApp"
+      @concluido="depoisDeEntrar"
     />
+
+    <!-- Login completo feito: oferta de ativar a biometria deste aparelho. -->
+    <div v-else-if="ofertaBiometria" class="card w-full max-w-sm space-y-5 text-center">
+      <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-ink-950 text-lime">
+        <FingerPrintIcon class="h-9 w-9" />
+      </span>
+      <div class="space-y-2">
+        <h1 class="font-display text-xl font-semibold">Entrar com biometria neste aparelho?</h1>
+        <p class="text-sm text-muted">
+          Da próxima vez, a digital ou o rosto entra direto, sem senha e sem código. A biometria não sai do seu
+          aparelho.
+        </p>
+      </div>
+      <p v-if="error" class="text-sm text-expense">{{ error }}</p>
+      <button
+        type="button"
+        :disabled="loading"
+        class="w-full bg-accent hover:bg-accent/90 text-white font-medium rounded-xl py-2.5 transition-colors duration-150 ease-smooth disabled:opacity-60"
+        @click="ativarBiometria"
+      >
+        {{ loading ? 'Aguardando a biometria…' : 'Ativar biometria' }}
+      </button>
+      <button type="button" class="w-full text-sm text-muted hover:text-accent" :disabled="loading" @click="agoraNao">Agora não</button>
+    </div>
 
     <!-- Etapa 1: credenciais -->
     <form
@@ -106,6 +193,20 @@ async function confirmarCodigo() {
         <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
         <p class="text-sm text-muted">Entre com sua conta para continuar.</p>
       </header>
+
+      <!-- Biometria já ativada aqui: o caminho rápido vem primeiro. -->
+      <template v-if="biometriaNoLogin && biometriaEmDestaque">
+        <button
+          type="button"
+          :disabled="loading"
+          class="flex w-full items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-medium rounded-xl py-3 transition-colors duration-150 ease-smooth disabled:opacity-60"
+          @click="entrarComBiometria"
+        >
+          <FingerPrintIcon class="h-5 w-5" />
+          Entrar com biometria
+        </button>
+        <p class="text-center text-xs uppercase tracking-wide text-muted">ou com e-mail e senha</p>
+      </template>
 
       <label class="block space-y-1">
         <span class="text-xs uppercase tracking-wide text-muted">Email</span>
@@ -142,6 +243,18 @@ async function confirmarCodigo() {
                disabled:opacity-60"
       >
         {{ loading ? 'Entrando…' : 'Entrar' }}
+      </button>
+
+      <!-- Sem biometria ativada aqui: discreto, para quem tem a passkey sincronizada de outro aparelho. -->
+      <button
+        v-if="biometriaNoLogin && !biometriaEmDestaque"
+        type="button"
+        :disabled="loading"
+        class="flex w-full items-center justify-center gap-2 text-sm text-muted hover:text-accent"
+        @click="entrarComBiometria"
+      >
+        <FingerPrintIcon class="h-4 w-4" />
+        Entrar com biometria
       </button>
     </form>
 

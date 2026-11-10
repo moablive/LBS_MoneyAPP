@@ -98,7 +98,7 @@ const recursos: { icone: Component; giro?: string; titulo: string; texto: string
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
   { icone: ArrowsRightLeftIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
   { icone: ChartPieIcon, titulo: 'Relatórios', texto: 'Para onde foi o dinheiro, por período e por categoria, em poucos toques.' },
-  { icone: FingerPrintIcon, titulo: 'Protegido em duas etapas', texto: 'Login com verificação pelo Google Authenticator. Seus dados não ficam atrás só de uma senha.' },
+  { icone: FingerPrintIcon, titulo: 'Entre com a digital ou o rosto', texto: 'Ative a biometria do aparelho e entre com um toque, sem senha. A conta também é protegida por verificação em duas etapas.' },
 ];
 
 const passos = [

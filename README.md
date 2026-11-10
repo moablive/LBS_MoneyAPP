@@ -323,6 +323,21 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 - O usuário acessa a tela `/setup-password` no MoneyAPP pelo link e define sua **senha definitiva** imediatamente (sem passar por senha temporária).
 - Após definida a senha, o usuário pode fazer o login e acessar normalmente o sistema.
 
+### Login por biometria (desde 10/11/2026)
+
+Depois de um login completo (senha + código), o MoneyAPP oferece **ativar a biometria do aparelho** (passkey /
+WebAuthn). Dali em diante o botão "Entrar com biometria" da tela de login entra direto, sem senha e sem código — a
+passkey com digital ou rosto já vale pelos dois fatores. Quem cadastra e confere é o LoginHUB.
+
+- `lib/hubPasskeyClient.ts` — cliente do hub (arquivo **sincronizado** do auth-kit do LoginHUB; não editar aqui).
+- `lib/biometria.ts` — o que é deste navegador: se a biometria já foi ativada nele e o "agora não" (30 dias).
+- `stores/auth.ts` — `entrarComBiometria`, `ativarBiometria`, `listarBiometrias`, `removerBiometria`.
+- `views/LoginView.vue` — botão e oferta; `components/BiometriaCard.vue` — Configurações: ativar e remover aparelhos.
+- As passkeys ficam presas ao domínio `money.astralwavelabel.com`. Perdeu o aparelho: remova em Configurações ou
+  peça o "Resetar 2FA" no painel do LoginHUB, que revoga todas.
+
+Documento: "Projeto - LoginHUB ／ Plano Biometria (passkeys)", pasta 📦 Documentação do servidor do Drive.
+
 ### Venda por assinatura (desde 10/11/2026)
 
 O MoneyAPP é vendido como **assinatura mensal** (cartão automático no Mercado Pago, conta da Astral Wave).

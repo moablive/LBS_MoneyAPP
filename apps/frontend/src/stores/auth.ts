@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, PersistedState } from '@moneyapp/models';
 import { createHubAuth, type HubStorage } from '../lib/hubAuthClient';
+import { createHubPasskey, biometriaDoAparelho, type HubPasskey } from '../lib/hubPasskeyClient';
+import { marcarBiometriaAtiva, nomeDoAparelho } from '../lib/biometria';
 
 const STORAGE_KEY = 'moneyapp.auth';
 // Fallback obrigatório: sem ele, um build arg ausente virava string vazia e o
@@ -59,6 +61,9 @@ const hub = createHubAuth({
   userKey: 'hubUser',
   appKey: 'hubApp',
 });
+
+// Login por biometria (passkey): cadastro e conferência são do LoginHUB.
+const passkey = createHubPasskey({ baseUrl: LOGINHUB_API, appId: LOGINHUB_APP_ID || '3' });
 
 export const useAuthStore = defineStore('auth', () => {
   const state = load();
@@ -165,6 +170,44 @@ export const useAuthStore = defineStore('auth', () => {
     await bootstrap(sessao.token, sessao.usuario?.nome);
   }
 
+  // ── Biometria (passkey) ────────────────────────────────────────────────────
+
+  /** O LoginHUB tem biometria ligada para o MoneyAPP e este navegador sabe usar? */
+  const biometriaDisponivel = () => passkey.disponivel();
+
+  /** Este aparelho tem digital, rosto ou PIN do sistema para cadastrar? */
+  const aparelhoTemBiometria = () => biometriaDoAparelho();
+
+  /**
+   * Entra com a digital ou o rosto, sem senha nem código: a passkey já vale
+   * pelos dois fatores. O hub devolve a mesma sessão do login completo.
+   */
+  async function entrarComBiometria() {
+    challengeToken.value = null;
+    const sessao = await passkey.entrar();
+    await bootstrap(sessao.token, sessao.usuario?.nome);
+    // Passkey sincronizada (iCloud, Google) entra num aparelho novo: lembra aqui também.
+    marcarBiometriaAtiva(true);
+  }
+
+  /** Cadastra a biometria deste aparelho. Só com sessão completa (a que está aberta). */
+  async function ativarBiometria(): Promise<HubPasskey> {
+    if (!token.value) throw new Error('sem_sessao');
+    const p = await passkey.ativar(token.value, nomeDoAparelho());
+    marcarBiometriaAtiva(true);
+    return p;
+  }
+
+  async function listarBiometrias(): Promise<HubPasskey[]> {
+    if (!token.value) return [];
+    return passkey.listar(token.value);
+  }
+
+  async function removerBiometria(id: number): Promise<void> {
+    if (!token.value) throw new Error('sem_sessao');
+    await passkey.remover(token.value, id);
+  }
+
   /**
    * Define a senha definitiva no LoginHub via Magic Link (1º acesso ou pós-reset).
    *
@@ -234,6 +277,12 @@ export const useAuthStore = defineStore('auth', () => {
     iniciarEnrolamento,
     confirmarEnrolamento,
     verificarSegundoFator,
+    biometriaDisponivel,
+    aparelhoTemBiometria,
+    entrarComBiometria,
+    ativarBiometria,
+    listarBiometrias,
+    removerBiometria,
     logout,
     setupPassword,
     refresh,

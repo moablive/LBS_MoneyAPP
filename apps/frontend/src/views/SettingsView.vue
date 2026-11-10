@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TelegramLinkCard from '../components/TelegramLinkCard.vue';
+import BiometriaCard from '../components/BiometriaCard.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
@@ -116,6 +117,9 @@ function logout() {
       <!-- Vinculo da conta: vem antes do nome de exibicao porque sem vinculo o
            bot nao fala com voce, e o nome nao tem onde aparecer. -->
       <TelegramLinkCard />
+
+      <!-- Login por digital ou rosto neste aparelho (passkey, junto com o LoginHUB). -->
+      <BiometriaCard />
 
       <div class="mb-6">
         <p class="text-fg font-medium">Nome de exibição no bot</p>
