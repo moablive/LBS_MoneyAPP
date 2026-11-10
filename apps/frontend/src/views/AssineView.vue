@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, type Component } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowRightIcon, ChatBubbleLeftRightIcon, CheckIcon, DevicePhoneMobileIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
+import { ArrowRightIcon, CheckIcon, DevicePhoneMobileIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
 // Ícones dos cartões de recurso: sólidos, para terem peso dentro do quadrado escuro.
 import {
   ArrowsRightLeftIcon,
@@ -107,10 +107,26 @@ const passos = [
   { titulo: 'Instale e use', texto: 'O aplicativo instala direto do navegador, no celular e no computador.' },
 ];
 
+// Endereço do aplicativo e do bot (os mesmos do e-mail de boas-vindas).
+const ENDERECO_APP = 'https://money.astralwavelabel.com';
+const BOT = 'https://t.me/moabinho_bot';
+
+const instalar = [
+  { aparelho: 'iPhone e iPad', como: 'abra pelo Safari (só ele instala), toque em Compartilhar e depois em “Adicionar à Tela de Início”.' },
+  { aparelho: 'Android', como: 'abra pelo Google Chrome (recomendado) e toque em “Instalar”.', link: 'https://play.google.com/store/apps/details?id=com.android.chrome', rotulo: 'Baixar o Chrome' },
+  { aparelho: 'Computador', como: 'abra pelo Google Chrome (recomendado) e clique em “Instalar”.', link: 'https://www.google.com/chrome/', rotulo: 'Baixar o Chrome' },
+];
+
+const telegram = [
+  { rotulo: 'Telegram para iPhone', link: 'https://apps.apple.com/app/telegram-messenger/id686449807' },
+  { rotulo: 'Telegram para Android', link: 'https://play.google.com/store/apps/details?id=org.telegram.messenger' },
+  { rotulo: 'Telegram para computador', link: 'https://desktop.telegram.org/' },
+];
+
 const perguntas = [
   { p: 'Como é a cobrança?', r: 'Todo mês, automaticamente, no cartão de crédito que você cadastrar no Mercado Pago. Sem fidelidade.' },
   { p: 'Como cancelo?', r: 'Na sua conta do Mercado Pago, em Assinaturas, ou respondendo o e-mail de boas-vindas. O acesso vale enquanto a assinatura estiver ativa.' },
-  { p: 'Preciso baixar na loja de aplicativos?', r: 'Não. O MoneyAPP instala pelo navegador: no Android e no computador aparece o botão Instalar; no iPhone, Compartilhar → Adicionar à Tela de Início.' },
+  { p: 'Preciso baixar na loja de aplicativos?', r: 'Não. O MoneyAPP instala pelo navegador: no Android e no computador, pelo Google Chrome, aparece o botão Instalar; no iPhone, pelo Safari, Compartilhar → Adicionar à Tela de Início.' },
   { p: 'O bot do Telegram está incluso?', r: 'Sim. Depois de entrar no aplicativo, você liga o bot à sua conta em Configurações → Telegram.' },
 ];
 
@@ -238,13 +254,47 @@ const campo =
         </li>
       </ol>
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
-        <div class="card flex items-start gap-3">
-          <DevicePhoneMobileIcon class="h-6 w-6 shrink-0" />
-          <p class="text-sm text-muted"><strong class="text-fg">Aplicativo instalável.</strong> Abre em janela própria, como aplicativo da loja, e atualiza sozinho.</p>
+        <!-- Como instalar o aplicativo (PWA) em cada aparelho. -->
+        <div class="card">
+          <h3 class="flex items-center gap-2 font-semibold">
+            <DevicePhoneMobileIcon class="h-6 w-6 shrink-0" />
+            Como instalar o aplicativo
+          </h3>
+          <p class="mt-1 text-sm text-muted">
+            O MoneyAPP instala direto do navegador, sem loja. Abre em janela própria e atualiza sozinho. Depois de
+            assinar, abra <a :href="ENDERECO_APP" class="font-medium text-fg underline">{{ ENDERECO_APP.replace('https://', '') }}</a>
+            no aparelho:
+          </p>
+          <ul class="mt-3 space-y-2 text-sm text-muted">
+            <li v-for="item in instalar" :key="item.aparelho">
+              <strong class="text-fg">{{ item.aparelho }}:</strong> {{ item.como }}
+              <a v-if="item.link" :href="item.link" target="_blank" rel="noopener" class="whitespace-nowrap font-medium text-fg underline">{{ item.rotulo }}</a>
+            </li>
+          </ul>
         </div>
-        <div class="card flex items-start gap-3">
-          <ChatBubbleLeftRightIcon class="h-6 w-6 shrink-0" />
-          <p class="text-sm text-muted"><strong class="text-fg">Bot no Telegram.</strong> Lançamentos por mensagem, áudio ou foto e avisos de vencimento todo dia.</p>
+
+        <!-- Telegram: instala pela loja e o bot abre pelo link. -->
+        <div class="card">
+          <h3 class="flex items-center gap-2 font-semibold">
+            <img src="/banks/oficial/telegram.svg" alt="" class="h-6 w-6 shrink-0" />
+            Bot no Telegram
+          </h3>
+          <p class="mt-1 text-sm text-muted">
+            Lançamentos por mensagem, áudio ou foto do comprovante e aviso de vencimento todo dia. Instale o Telegram
+            pela loja do aparelho e abra o bot:
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2 text-sm">
+            <a v-for="loja in telegram" :key="loja.rotulo" :href="loja.link" target="_blank" rel="noopener" class="rounded-full border border-surface-border bg-surface-overlay px-3 py-1.5 font-medium hover:bg-surface-raised">
+              {{ loja.rotulo }}
+            </a>
+          </div>
+          <a :href="BOT" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90">
+            Abrir o bot: {{ BOT.replace('https://', '') }}
+            <ArrowRightIcon class="h-4 w-4" />
+          </a>
+          <p class="mt-3 text-xs text-muted">
+            O bot começa a lançar na sua conta depois que você entra no aplicativo e toca em Configurações → Vincular Telegram.
+          </p>
         </div>
       </div>
     </section>
