@@ -73,7 +73,7 @@ function irParaAssinar() {
   document.getElementById('assinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-const recursos: { icone: Component; giro?: string; titulo: string; texto: string; bancos?: string[] }[] = [
+const recursos: { icone: Component; giro?: string; titulo: string; texto: string; bancos?: { id: string; nome: string }[] }[] = [
   { icone: PaperAirplaneIcon, giro: '-rotate-45 translate-x-0.5', titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
   { icone: ReceiptPercentIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
   { icone: LinkIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
@@ -82,7 +82,18 @@ const recursos: { icone: Component; giro?: string; titulo: string; texto: string
     icone: CreditCardIcon,
     titulo: 'Contas e cartões, PF e PJ',
     texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista. Cada conta e cartão leva o ícone do banco, ou o ícone que você subir.',
-    bancos: ['visa', 'mastercard', 'nubank', 'itau', 'inter', 'c6', 'bradesco', 'santander', 'mercado-pago', 'picpay'],
+    bancos: [
+      { id: 'visa', nome: 'Visa' },
+      { id: 'mastercard', nome: 'Mastercard' },
+      { id: 'nubank', nome: 'Nubank' },
+      { id: 'itau', nome: 'Itaú' },
+      { id: 'inter', nome: 'Inter' },
+      { id: 'c6', nome: 'C6 Bank' },
+      { id: 'bradesco', nome: 'Bradesco' },
+      { id: 'santander', nome: 'Santander' },
+      { id: 'mercado-pago', nome: 'Mercado Pago' },
+      { id: 'picpay', nome: 'PicPay' },
+    ],
   },
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
   { icone: ArrowsRightLeftIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
@@ -189,8 +200,8 @@ const campo =
               Pagamento no cartão pelo Mercado Pago. Não guardamos os dados do cartão.
             </p>
             <p class="flex items-center justify-center gap-2">
-              <img src="/banks/visa.svg" alt="Visa" class="h-7 w-7 rounded-lg" />
-              <img src="/banks/mastercard.svg" alt="Mastercard" class="h-7 w-7 rounded-lg" />
+              <img src="/banks/oficial/visa.png" alt="Visa" title="Visa" class="h-8 w-8" />
+              <img src="/banks/oficial/mastercard.png" alt="Mastercard" title="Mastercard" class="h-8 w-8" />
             </p>
           </form>
         </template>
@@ -205,10 +216,10 @@ const campo =
           <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-950 text-lime shadow-card"><component :is="r.icone" class="h-6 w-6" :class="r.giro" aria-hidden="true" /></span>
           <h3 class="mt-4 font-semibold">{{ r.titulo }}</h3>
           <p class="mt-1 text-sm text-muted">{{ r.texto }}</p>
-          <!-- Os mesmos ícones de banco que o aplicativo oferece ao criar a conta (public/banks). -->
+          <!-- Ícones oficiais (public/banks/oficial): bancos = ícone do aplicativo de cada um; Visa e Mastercard = Icons8. -->
           <div v-if="r.bancos" class="mt-3 flex flex-wrap items-center gap-2">
-            <img v-for="b in r.bancos" :key="b" :src="`/banks/${b}.svg`" :alt="b" loading="lazy" class="h-7 w-7 rounded-lg object-contain" />
-            <span class="flex h-7 items-center rounded-lg border border-dashed border-surface-border px-2 text-xs text-muted">+ o seu</span>
+            <img v-for="b in r.bancos" :key="b.id" :src="`/banks/oficial/${b.id}.png`" :alt="b.nome" :title="b.nome" loading="lazy" class="h-8 w-8 rounded-lg object-cover" />
+            <span class="flex h-8 items-center rounded-lg border border-dashed border-surface-border px-2 text-xs text-muted">+ o seu</span>
           </div>
         </article>
       </div>
@@ -259,6 +270,8 @@ const campo =
 
     <footer class="mt-12 text-center text-xs text-muted">
       MoneyAPP · Astral Wave · <RouterLink to="/login" class="underline">Entrar</RouterLink>
+      <!-- A licença gratuita do Icons8 pede o link de crédito. -->
+      · Ícones Visa e Mastercard por <a href="https://icons8.com.br" target="_blank" rel="noopener" class="underline">Icons8</a>
     </footer>
   </div>
 </template>
