@@ -77,7 +77,7 @@ const recursos: { icone: Component; logo?: string; titulo: string; texto: string
   { icone: PaperAirplaneIcon, logo: '/banks/oficial/telegram.svg', titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
   { icone: ReceiptPercentIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
   { icone: LinkIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
-  { icone: PresentationChartLineIcon, titulo: 'Painel com projeção de 60 dias', texto: 'Saldo de hoje e o que vem pela frente: contas a vencer, faturas e recorrentes já entram na conta.' },
+  { icone: PresentationChartLineIcon, titulo: 'Projeção de gastos para 60 dias', texto: 'O MoneyAPP calcula quanto você vai gastar até 60 dias para a frente: contas a vencer, faturas dos cartões e gastos recorrentes entram na estimativa.' },
   {
     icone: CreditCardIcon,
     titulo: 'Contas e cartões, PF e PJ',
