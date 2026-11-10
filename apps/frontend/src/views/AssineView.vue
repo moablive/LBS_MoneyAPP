@@ -6,12 +6,15 @@ import {
   BanknotesIcon,
   BellAlertIcon,
   ChartBarIcon,
+  ChartPieIcon,
   ChatBubbleLeftRightIcon,
   CheckIcon,
   CreditCardIcon,
   DevicePhoneMobileIcon,
   LockClosedIcon,
-  MicrophoneIcon,
+  PaperAirplaneIcon,
+  PaperClipIcon,
+  ShareIcon,
   ShieldCheckIcon,
 } from '@heroicons/vue/24/outline';
 import { afiliadoGuardado, assinar, buscarPlano, dinheiro, guardarAfiliado, type PlanoPublico } from '../lib/venda';
@@ -74,11 +77,14 @@ function irParaAssinar() {
 }
 
 const recursos = [
+  { icone: PaperAirplaneIcon, titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
+  { icone: PaperClipIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
+  { icone: ShareIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
   { icone: ChartBarIcon, titulo: 'Painel com projeção de 60 dias', texto: 'Saldo de hoje e o que vem pela frente: contas a vencer, faturas e recorrentes já entram na conta.' },
   { icone: CreditCardIcon, titulo: 'Contas e cartões, PF e PJ', texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista.' },
-  { icone: MicrophoneIcon, titulo: 'Lance gastos por áudio ou foto', texto: 'Mande um áudio, uma mensagem ou a foto do comprovante para o bot do Telegram e o lançamento aparece.' },
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
   { icone: BanknotesIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
+  { icone: ChartPieIcon, titulo: 'Relatórios', texto: 'Para onde foi o dinheiro, por período e por categoria, em poucos toques.' },
   { icone: ShieldCheckIcon, titulo: 'Protegido em duas etapas', texto: 'Login com verificação pelo Google Authenticator. Seus dados não ficam atrás só de uma senha.' },
 ];
 
@@ -124,7 +130,7 @@ const campo =
           mandando um áudio no Telegram.
         </p>
         <ul class="mt-6 space-y-2 text-sm">
-          <li v-for="item in ['Painel com projeção dos próximos 60 dias', 'Bot do Telegram que entende áudio e comprovante', 'Instala no celular e no computador']" :key="item" class="flex items-center gap-2">
+          <li v-for="item in ['Bot do Telegram que entende áudio e foto de comprovante', 'Comprovantes guardados em cada lançamento', 'Compartilhamento por link com senha, sem planilha', 'Instala no celular e no computador']" :key="item" class="flex items-center gap-2">
             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-white"><CheckIcon class="h-3.5 w-3.5" stroke-width="3" /></span>
             {{ item }}
           </li>
