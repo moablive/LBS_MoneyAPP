@@ -82,7 +82,7 @@ const recursos: { icone: Component; giro?: string; titulo: string; texto: string
     icone: CreditCardIcon,
     titulo: 'Contas e cartões, PF e PJ',
     texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista. Cada conta e cartão leva o ícone do banco, ou o ícone que você subir.',
-    bancos: ['nubank', 'itau', 'inter', 'c6', 'bradesco', 'santander', 'mercado-pago', 'picpay'],
+    bancos: ['visa', 'mastercard', 'nubank', 'itau', 'inter', 'c6', 'bradesco', 'santander', 'mercado-pago', 'picpay'],
   },
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
   { icone: ArrowsRightLeftIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
@@ -187,6 +187,10 @@ const campo =
             <p class="flex items-center justify-center gap-1.5 text-xs text-muted">
               <LockClosedIcon class="h-3.5 w-3.5" />
               Pagamento no cartão pelo Mercado Pago. Não guardamos os dados do cartão.
+            </p>
+            <p class="flex items-center justify-center gap-2">
+              <img src="/banks/visa.svg" alt="Visa" class="h-7 w-7 rounded-lg" />
+              <img src="/banks/mastercard.svg" alt="Mastercard" class="h-7 w-7 rounded-lg" />
             </p>
           </form>
         </template>
