@@ -6,6 +6,9 @@ export const router = createRouter({
   routes: [
     { path: '/login',       name: 'login',        component: () => import('./views/LoginView.vue'), meta: { public: true } },
     { path: '/setup-password', name: 'setup_password', component: () => import('./views/SetupPasswordView.vue'), meta: { public: true } },
+    // Página de venda (assinatura mensal) e a volta do Mercado Pago. Quem vende é o LoginHUB: lib/venda.ts.
+    { path: '/assine', name: 'assine', component: () => import('./views/AssineView.vue'), meta: { public: true } },
+    { path: '/assine/obrigado', name: 'assine_obrigado', component: () => import('./views/AssineObrigadoView.vue'), meta: { public: true } },
     { path: '/',            name: 'dashboard',    component: () => import('./views/DashboardView.vue') },
     { path: '/transacoes',  name: 'transactions', component: () => import('./views/TransactionsView.vue') },
     { path: '/recorrentes', name: 'recurrents',   component: () => import('./views/RecurrentsView.vue') },
@@ -22,10 +25,18 @@ export const router = createRouter({
   ],
 });
 
+const appInstalado = () =>
+  typeof window !== 'undefined' &&
+  (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true);
+
 router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.public) return true;
   if (!auth.isAuthenticated) {
+    // Visitante que chega na raiz pelo navegador vê a página de venda. No
+    // aplicativo instalado a raiz continua levando ao login: quem instalou já
+    // é assinante com a sessão vencida.
+    if (to.path === '/' && !appInstalado()) return { name: 'assine', query: to.query };
     return { name: 'login', query: { next: to.fullPath } };
   }
   return true;

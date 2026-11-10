@@ -323,6 +323,22 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 - O usuário acessa a tela `/setup-password` no MoneyAPP pelo link e define sua **senha definitiva** imediatamente (sem passar por senha temporária).
 - Após definida a senha, o usuário pode fazer o login e acessar normalmente o sistema.
 
+### Venda por assinatura (desde 10/11/2026)
+
+O MoneyAPP é vendido como **assinatura mensal** (cartão automático no Mercado Pago, conta da Astral Wave).
+Quem cuida da venda é o LoginHUB; aqui ficam só as telas públicas:
+
+- `/assine` — página de venda (`views/AssineView.vue`). O preço vem do LoginHUB (`GET /venda/apps/3/plano`) e o
+  `?ref=<código>` do link de afiliado fica guardado por 30 dias (`lib/venda.ts`).
+- `/assine/obrigado` — volta do Mercado Pago (`views/AssineObrigadoView.vue`): consulta o pedido até a assinatura
+  ficar ativa.
+- Visitante sem sessão que abre `/` no navegador cai em `/assine`; no aplicativo instalado continua indo ao login.
+- Cartão autorizado → o LoginHUB cria o usuário e manda o e-mail com o link da senha, o endereço para instalar o
+  PWA e o bot do Telegram. Assinatura cancelada ou pausada → a conta fica `inativo` e o login para de entrar.
+
+Preço, afiliados, assinantes e comissões: painel do LoginHUB, botão de vendas do app. Documento:
+"Projeto - LoginHUB ／ Venda por assinatura e afiliados", pasta 📦 Documentação do servidor do Drive.
+
 ### Vínculo com o Bot do Telegram
 
 - É **expressamente bloqueado** usar o bot do Telegram com uma senha temporária. O usuário convidado DEVE acessar o painel web primeiro, mudar a senha e, só então, ir até o Telegram (`/login`) usando o email e a **nova senha personalizada**.
@@ -332,7 +348,7 @@ O administrador do sistema cria os usuários diretamente no painel do LoginHUB (
 
 ## 🤖 Telegram Bot
 
-🔗 **[Acessar o Bot: @awl_money_bot](https://t.me/awl_money_bot)**
+🔗 **[Acessar o Bot: @moabinho_bot](https://t.me/moabinho_bot)**
 
 O bot do Telegram (`lbs_moneyapp_bot`) é um **cliente HTTP do backend** — conversa com `moneyapp_backend:3000/api` pela rede `awl_network` e **não acessa o banco diretamente**. Agora integrado no `docker-compose.yml` principal da aplicação. O bot também é responsável por enviar notificações diárias de **vencimentos do dia e de exatos 7 dias** — a mensagem usa o **nome de exibição** configurado em Configurações → Preferências (`user_settings.settings.displayName`, ex.: "Patrão Moab, você tem lançamentos vencendo HOJE…").
 

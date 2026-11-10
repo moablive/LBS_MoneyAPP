@@ -1,8 +1,8 @@
 <div align="center">
-  <h1>💰 MoneyAPP Bot (@awl_money_bot)</h1>
+  <h1>💰 MoneyAPP Bot (@moabinho_bot)</h1>
   <p>Bot de Telegram do MoneyAPP (Telegraf + TypeScript) — cliente HTTP do backend. Agora integrado nativamente no ecossistema e deploy do <b>MoneyAPP</b> principal.</p>
 
-  <a href="https://t.me/awl_money_bot"><b>🔗 Acessar: @awl_money_bot</b></a>
+  <a href="https://t.me/moabinho_bot"><b>🔗 Acessar: @moabinho_bot</b></a>
 
   <p>
     <a href="https://skillicons.dev">
