@@ -354,6 +354,10 @@ Quem cuida da venda é o LoginHUB; aqui ficam só as telas públicas:
 - O formulário pede **CPF ou CNPJ** e grava o cliente na tabela `clientes` do banco do MoneyAPP
   (`POST /api/clientes`, rota pública que só grava; migration `0003_clientes.sql`): nome, e-mail, WhatsApp,
   documento, afiliado e a referência do pedido no LoginHUB. O pagamento é via Mercado Pago, na página de lá.
+- Botão **Link de afiliado**: nome completo, WhatsApp, CPF e e-mail; o LoginHUB cria o afiliado e devolve o link
+  `/assine?ref=<código>` na hora (`cadastrarAfiliado` em `lib/venda.ts`).
+- "Veja por dentro" são telas **ilustrativas**, desenhadas na própria página com dados de exemplo; os dois cartões
+  "Em breve" (Open Finance e assistente de Pix) anunciam o que ainda não existe.
 - A página mostra a faixa "Tecnologia LoginHUB": a mesma conta liga o aplicativo e o bot do Telegram.
 
 Preço, afiliados, assinantes e comissões: painel do LoginHUB, botão de vendas do app. Documento:

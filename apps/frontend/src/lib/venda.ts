@@ -18,6 +18,8 @@ export interface PlanoPublico {
   descricao: string;
   /** Nome do afiliado quando o `?ref=` do link existe e está ativo. */
   afiliado?: string | null;
+  /** Comissão de quem se cadastra como afiliado pela página (% de cada mensalidade). */
+  comissao_afiliado_pct?: number;
 }
 
 export type StatusAssinatura = 'iniciada' | 'ativa' | 'pausada' | 'cancelada';
@@ -49,6 +51,16 @@ export const buscarPlano = (ref?: string | null) =>
 /** Abre a assinatura e devolve a página do Mercado Pago onde se cadastra o cartão. */
 export const assinar = (dados: { nome: string; email: string; telefone?: string; ref?: string | null }) =>
   chamar<{ url: string; ref: string }>(`/venda/apps/${APP_ID}/assinar`, { method: 'POST', body: JSON.stringify(dados) });
+
+/**
+ * Botão "link de afiliado": cadastra a pessoa no LoginHUB e devolve o link dela.
+ * Quem repete o formulário com o mesmo e-mail recebe o link que já tinha.
+ */
+export const cadastrarAfiliado = (dados: { nome: string; email: string; telefone: string; documento: string }) =>
+  chamar<{ codigo: string; link: string; comissao_pct: number; ja_existia: boolean }>(`/venda/apps/${APP_ID}/afiliados`, {
+    method: 'POST',
+    body: JSON.stringify(dados),
+  });
 
 export const consultarPedido = (pedido: string) =>
   chamar<{ status: StatusAssinatura; email: string; acesso_liberado: boolean }>(`/venda/assinaturas/${encodeURIComponent(pedido)}`);
