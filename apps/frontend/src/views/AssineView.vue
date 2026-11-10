@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, type Component } from 'vue';
 import { useRoute } from 'vue-router';
+import { ArrowRightIcon, ChatBubbleLeftRightIcon, CheckIcon, DevicePhoneMobileIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
+// Ícones dos cartões de recurso: sólidos, para terem peso dentro do quadrado escuro.
 import {
-  ArrowRightIcon,
-  BanknotesIcon,
+  ArrowsRightLeftIcon,
   BellAlertIcon,
-  ChartBarIcon,
   ChartPieIcon,
-  ChatBubbleLeftRightIcon,
-  CheckIcon,
   CreditCardIcon,
-  DevicePhoneMobileIcon,
-  LockClosedIcon,
+  FingerPrintIcon,
+  LinkIcon,
   PaperAirplaneIcon,
-  PaperClipIcon,
-  ShareIcon,
-  ShieldCheckIcon,
-} from '@heroicons/vue/24/outline';
+  PresentationChartLineIcon,
+  ReceiptPercentIcon,
+} from '@heroicons/vue/24/solid';
 import { afiliadoGuardado, assinar, buscarPlano, dinheiro, guardarAfiliado, type PlanoPublico } from '../lib/venda';
 
 /**
@@ -76,16 +73,16 @@ function irParaAssinar() {
   document.getElementById('assinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-const recursos = [
-  { icone: PaperAirplaneIcon, titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
-  { icone: PaperClipIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
-  { icone: ShareIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
-  { icone: ChartBarIcon, titulo: 'Painel com projeção de 60 dias', texto: 'Saldo de hoje e o que vem pela frente: contas a vencer, faturas e recorrentes já entram na conta.' },
+const recursos: { icone: Component; giro?: string; titulo: string; texto: string }[] = [
+  { icone: PaperAirplaneIcon, giro: '-rotate-45 translate-x-0.5', titulo: 'Bot do Telegram', texto: 'Lance um gasto mandando uma mensagem, um áudio ou a foto do comprovante. O bot entende e o lançamento aparece no aplicativo.' },
+  { icone: ReceiptPercentIcon, titulo: 'Comprovantes guardados', texto: 'Anexe a foto ou o PDF do comprovante em cada lançamento e ache quando precisar, sem procurar na galeria do celular.' },
+  { icone: LinkIcon, titulo: 'Compartilhe por link', texto: 'Mande seus lançamentos, com os comprovantes, para o contador ou o sócio por um link protegido por senha. Sem exportar planilha.' },
+  { icone: PresentationChartLineIcon, titulo: 'Painel com projeção de 60 dias', texto: 'Saldo de hoje e o que vem pela frente: contas a vencer, faturas e recorrentes já entram na conta.' },
   { icone: CreditCardIcon, titulo: 'Contas e cartões, PF e PJ', texto: 'Pessoa física e empresa separadas na mesma tela, com o limite livre de cada cartão sempre à vista.' },
   { icone: BellAlertIcon, titulo: 'Aviso antes de vencer', texto: 'Alerta diário do que vence, com o botão “Marcar como pago” na própria mensagem.' },
-  { icone: BanknotesIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
+  { icone: ArrowsRightLeftIcon, titulo: 'Empréstimos, recorrentes e investimentos', texto: 'Parcelas, assinaturas e aplicações acompanhadas no mesmo lugar, sem planilha.' },
   { icone: ChartPieIcon, titulo: 'Relatórios', texto: 'Para onde foi o dinheiro, por período e por categoria, em poucos toques.' },
-  { icone: ShieldCheckIcon, titulo: 'Protegido em duas etapas', texto: 'Login com verificação pelo Google Authenticator. Seus dados não ficam atrás só de uma senha.' },
+  { icone: FingerPrintIcon, titulo: 'Protegido em duas etapas', texto: 'Login com verificação pelo Google Authenticator. Seus dados não ficam atrás só de uma senha.' },
 ];
 
 const passos = [
@@ -196,7 +193,7 @@ const campo =
       <h2 class="font-display text-3xl font-semibold tracking-tight">O que vem na assinatura</h2>
       <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <article v-for="r in recursos" :key="r.titulo" class="card">
-          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-lime text-lime-fg"><component :is="r.icone" class="h-5 w-5" /></span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-950 text-lime shadow-card"><component :is="r.icone" class="h-6 w-6" :class="r.giro" aria-hidden="true" /></span>
           <h3 class="mt-4 font-semibold">{{ r.titulo }}</h3>
           <p class="mt-1 text-sm text-muted">{{ r.texto }}</p>
         </article>
