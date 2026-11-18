@@ -66,6 +66,8 @@ const subscriptionsData = ref<SubscriptionSummaryResponse | null>(null);
 const loansData = ref<LoanSummaryResponse | null>(null);
 
 onMounted(async () => {
+  // A foto de perfil (e o nome) pode ter mudado em outro aparelho: relê sem esperar o resto.
+  auth.recarregaSettings();
   try {
     const [accs, subs, lns] = await Promise.all([
       api.get<Account[]>('/accounts'),
@@ -100,6 +102,8 @@ function hasPopup(item: NavItem): boolean {
   return false;
 }
 const avatarInitial = computed(() => (auth.user?.email?.[0] || '?').toUpperCase());
+// Foto de perfil (Configurações → Foto de perfil, 18/11/2026); sem ela, fica a inicial.
+const avatarFoto = computed(() => auth.user?.settings?.foto || null);
 
 const totalPaidLoansAmount = computed(() => {
   if (!loansData.value?.items) return 0;
@@ -262,8 +266,9 @@ const totalPaidLoansAmount = computed(() => {
           <div class="rail-tip">Sair</div>
         </div>
         <div class="relative group/nav mt-1">
-          <RouterLink to="/configuracoes" class="flex items-center justify-center w-10 h-10 rounded-full bg-lime text-lime-fg font-display font-bold text-sm shadow-lg shadow-lime/30 hover:scale-105 transition-transform" aria-label="Configurações">
-            {{ avatarInitial }}
+          <RouterLink to="/configuracoes" class="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden bg-lime text-lime-fg font-display font-bold text-sm shadow-lg shadow-lime/30 hover:scale-105 transition-transform" aria-label="Configurações">
+            <img v-if="avatarFoto" :src="avatarFoto" alt="" class="w-full h-full object-cover" />
+            <template v-else>{{ avatarInitial }}</template>
           </RouterLink>
           <div class="rail-tip">{{ auth.user?.email }} · Configurações</div>
         </div>
@@ -324,7 +329,7 @@ const totalPaidLoansAmount = computed(() => {
         </div>
         <div class="px-4 py-2 flex items-center justify-between border-b border-surface-border">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-lime text-lime-fg font-display font-bold text-xs shrink-0">{{ avatarInitial }}</div>
+            <div class="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-lime text-lime-fg font-display font-bold text-xs shrink-0"><img v-if="avatarFoto" :src="avatarFoto" alt="" class="w-full h-full object-cover" /><template v-else>{{ avatarInitial }}</template></div>
             <span class="text-xs text-muted truncate">{{ auth.user?.email }}</span>
           </div>
           <button @click="showMore = false" class="text-muted hover:text-fg p-1">

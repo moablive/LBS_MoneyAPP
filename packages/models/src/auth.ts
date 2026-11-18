@@ -4,6 +4,8 @@
 
 export interface UserSettings {
   requireReceipts: boolean;
+  /** Foto de perfil: data URL WebP de 256 px (reduzida no navegador). null = sem foto, fica a inicial. */
+  foto?: string | null;
 }
 
 export interface User {

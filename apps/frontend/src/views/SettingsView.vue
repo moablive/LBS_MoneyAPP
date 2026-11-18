@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TelegramLinkCard from '../components/TelegramLinkCard.vue';
 import BiometriaCard from '../components/BiometriaCard.vue';
+import FotoPerfilCard from '../components/FotoPerfilCard.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
@@ -113,6 +114,9 @@ function logout() {
 
     <div class="bg-surface-raised border border-surface-border rounded-2xl p-6">
       <h2 class="text-lg font-semibold text-fg/90 mb-4 border-b border-surface-border pb-2">Preferências</h2>
+
+      <!-- Foto de perfil: salva na hora, sem depender do "Salvar Alterações" lá embaixo. -->
+      <FotoPerfilCard />
 
       <!-- Vinculo da conta: vem antes do nome de exibicao porque sem vinculo o
            bot nao fala com voce, e o nome nao tem onde aparecer. -->

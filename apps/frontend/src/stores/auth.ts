@@ -250,7 +250,7 @@ export const useAuthStore = defineStore('auth', () => {
     persist();
   }
 
-  async function updateSettings(settings: { requireReceipts?: boolean; displayName?: string }) {
+  async function updateSettings(settings: { requireReceipts?: boolean; displayName?: string; foto?: string | null }) {
     const res = await fetch(`${BACKEND_API}/users/me/settings`, {
       method: 'PATCH',
       headers: {
@@ -264,6 +264,22 @@ export const useAuthStore = defineStore('auth', () => {
     if (user.value) {
       user.value.settings = updatedSettings;
       persist();
+    }
+  }
+
+  /** Relê os settings do servidor (a foto ou o nome trocados em outro aparelho). Falha calada: fica o que havia. */
+  async function recarregaSettings() {
+    if (!token.value || !user.value) return;
+    try {
+      const res = await fetch(`${BACKEND_API}/users/me/settings`, {
+        headers: { Authorization: `Bearer ${token.value}` },
+        cache: 'no-store',
+      });
+      if (!res.ok) return;
+      user.value.settings = await res.json();
+      persist();
+    } catch {
+      /* sem rede: segue com o guardado no aparelho */
     }
   }
 
@@ -288,5 +304,6 @@ export const useAuthStore = defineStore('auth', () => {
     refresh,
     persist,
     updateSettings,
+    recarregaSettings,
   };
 });
