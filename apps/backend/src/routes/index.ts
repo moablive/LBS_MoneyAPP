@@ -16,6 +16,7 @@ import { calendarRouter } from './calendar';
 import { pushRouter } from './push';
 import { empresasRouter } from './empresas';
 import { agenteRouter } from './agente';
+import { perfilRouter } from './perfil';
 import { clientesRouter } from './clientes';
 export const apiRouter = Router();
 
@@ -39,5 +40,7 @@ apiRouter.use('/push', pushRouter);
 apiRouter.use('/telegram', requireAuth, telegramRouter);
 // API do 💰 Financeiro do conselho: só consumidor de serviço, lê e lança pendente.
 apiRouter.use('/agente', agenteRouter);
+// Foto de perfil para o selo da conta do OmegaShell: só consumidor de serviço, com consentimento.
+apiRouter.use('/perfil', perfilRouter);
 // Venda do MoneyAPP: cadastro de quem preenche o formulário da página /assine (público, só grava).
 apiRouter.use('/clientes', clientesRouter);

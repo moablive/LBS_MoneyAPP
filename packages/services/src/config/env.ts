@@ -43,6 +43,13 @@ const envSchema = z.object({
    */
   MONEYAPP_CONSELHO_KEY: z.string().min(32).optional(),
   /**
+   * Chave do OmegaShell (gateway do `astralwave_omegashell`). Vira o consumidor
+   * `omegashell`, com um escopo só, FIXO no código: ler a foto de perfil
+   * (routes/perfil.ts) para o selo da conta logada. Ausente = rota desligada.
+   * Sempre exige o consentimento do dono (leitoresExternos).
+   */
+  MONEYAPP_OMEGASHELL_KEY: z.string().min(32).optional(),
+  /**
    * Mantem o ramo LEGADO do `requireAuth` (x-api-key + x-user-id confiado cego).
    * `true` enquanto o bot ainda nao repassa JWT do LoginHub; vira `false` para
    * FECHAR de vez a delegacao cega — o buraco de ler/escrever qualquer conta so

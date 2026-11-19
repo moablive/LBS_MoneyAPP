@@ -38,6 +38,8 @@ interface Consumer {
  */
 /** Escopos do 💰 Financeiro do conselho: fixos aqui, nunca vindos do env. */
 export const ESCOPOS_CONSELHO_FINANCEIRO = ['financas.read', 'financas.lancar-pendente'] as const;
+/** Escopo do OmegaShell: só a foto de perfil. Fixo aqui, nunca vindo do env. */
+export const ESCOPOS_OMEGASHELL = ['perfil.foto'] as const;
 
 function carregarConsumidores(): Consumer[] {
   const lista = carregarConsumidoresDoEnv();
@@ -46,6 +48,13 @@ function carregarConsumidores(): Consumer[] {
       id: 'conselho-financeiro',
       secret: env.MONEYAPP_CONSELHO_KEY,
       scopes: new Set(ESCOPOS_CONSELHO_FINANCEIRO),
+    });
+  }
+  if (env.MONEYAPP_OMEGASHELL_KEY) {
+    lista.push({
+      id: 'omegashell',
+      secret: env.MONEYAPP_OMEGASHELL_KEY,
+      scopes: new Set(ESCOPOS_OMEGASHELL),
     });
   }
   return lista;

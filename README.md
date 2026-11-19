@@ -402,6 +402,11 @@ Wave e Conselho Ômega; sem empresa = pessoal) e o 💰 Financeiro do Conselho d
 pela API `/api/agente/*`: lê tudo e só lança **pendente**, que o dono confirma. Detalhes no
 Google Doc "Projeto - MoneyAPP ／ Empresas e agente financeiro" (pasta awldocs do Drive).
 
+**Foto de perfil para o OmegaShell (19/11/2026).** `GET /api/perfil/foto` (routes/perfil.ts) entrega só a foto de
+perfil da conta, para o selo da conta logada do OmegaShell. Mesmo molde da API do agente: consumidor de serviço
+`omegashell` (chave `MONEYAPP_OMEGASHELL_KEY` no `.env`, escopo fixo `perfil.foto`), só pela rede interna, com o
+`x-user-id` da conta e o consentimento dela em `settings.leitoresExternos`. Sem a chave, a rota fica desligada.
+
 ## 🔗 Integração com TodoAPP
 
 > Documentação completa (fluxos, contratos, troubleshooting): `documentacao/integracao-todoapp-moneyapp.md` no repo de docs do servidor.
