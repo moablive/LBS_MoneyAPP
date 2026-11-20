@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useConfirmDialog } from '../../composables/useConfirmDialog';
 import { onKeyStroke } from '@vueuse/core';
 import { getLocalYMD } from '../../utils/date';
+import { ArrowDownTrayIcon as Download } from '@heroicons/vue/24/outline';
 
 onKeyStroke('Escape', (e) => {
   if (show.value) {
@@ -90,6 +91,15 @@ const receiptFile = ref<File | null>(null);
 const receiptBlobUrl = ref<string | null>(null);
 const loadingReceipt = ref(false);
 const isPdf = ref(false);
+const receiptName = ref('comprovante');
+
+/** Nome do arquivo baixado: o tipo vem do próprio anexo (a API devolve o mime original). */
+const EXTENSOES: Record<string, string> = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+function nomeDoAnexo(prefixo: string, mime: string) {
+  const base = (props.loanToEdit?.description || 'emprestimo').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 40) || 'emprestimo';
+  return `${prefixo}-${base}.${EXTENSOES[mime] ?? 'bin'}`;
+}
 
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -104,6 +114,7 @@ const paymentReceiptFile = ref<File | null>(null);
 const paymentReceiptBlobUrl = ref<string | null>(null);
 const loadingPaymentReceipt = ref(false);
 const isPaymentPdf = ref(false);
+const paymentReceiptName = ref('comprovante-pagamento');
 
 function onPaymentFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
@@ -208,6 +219,7 @@ watch(show, async (val) => {
         if (res.ok) {
           const blob = await res.blob();
           isPdf.value = blob.type === 'application/pdf';
+          receiptName.value = nomeDoAnexo('comprovante', blob.type);
           receiptBlobUrl.value = URL.createObjectURL(blob);
         }
       } catch (e) {
@@ -229,6 +241,7 @@ watch(show, async (val) => {
         if (res.ok) {
           const blob = await res.blob();
           isPaymentPdf.value = blob.type === 'application/pdf';
+          paymentReceiptName.value = nomeDoAnexo('comprovante-pagamento', blob.type);
           paymentReceiptBlobUrl.value = URL.createObjectURL(blob);
         }
       } catch (e) {
@@ -485,6 +498,15 @@ async function destroy() {
             <iframe v-else :src="receiptBlobUrl" class="w-full h-full rounded" title="Comprovante PDF"></iframe>
           </div>
 
+          <a
+            v-if="!loadingReceipt && receiptBlobUrl"
+            :href="receiptBlobUrl"
+            :download="receiptName"
+            class="mb-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg hover:bg-surface-overlay transition-colors"
+          >
+            <Download class="w-4 h-4" /> Baixar anexo
+          </a>
+
           <!-- Upload New Receipt -->
           <input
             type="file"
@@ -525,6 +547,15 @@ async function destroy() {
             <img v-if="!isPaymentPdf" :src="paymentReceiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
             <iframe v-else :src="paymentReceiptBlobUrl" class="w-full h-full rounded" title="Comprovante de Pagamento PDF"></iframe>
           </div>
+
+          <a
+            v-if="!loadingPaymentReceipt && paymentReceiptBlobUrl"
+            :href="paymentReceiptBlobUrl"
+            :download="paymentReceiptName"
+            class="mb-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-surface-border bg-surface-raised text-sm font-medium text-fg hover:bg-surface-overlay transition-colors"
+          >
+            <Download class="w-4 h-4" /> Baixar anexo
+          </a>
 
           <!-- Upload New Payment Receipt -->
           <input
