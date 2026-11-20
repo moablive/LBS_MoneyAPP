@@ -3,7 +3,8 @@ import { ref, computed } from 'vue';
 import type { User, PersistedState } from '@moneyapp/models';
 import { createHubAuth, type HubStorage } from '../lib/hubAuthClient';
 import { createHubPasskey, biometriaDoAparelho, type HubPasskey } from '../lib/hubPasskeyClient';
-import { marcarBiometriaAtiva, nomeDoAparelho } from '../lib/biometria';
+import { createCofreEntrada, type EntradaCofre } from '../lib/cofreEntrada';
+import { marcarBiometriaAtiva, marcarCofreAtivo, nomeDoAparelho } from '../lib/biometria';
 
 const STORAGE_KEY = 'moneyapp.auth';
 // Fallback obrigatório: sem ele, um build arg ausente virava string vazia e o
@@ -64,6 +65,8 @@ const hub = createHubAuth({
 
 // Login por biometria (passkey): cadastro e conferência são do LoginHUB.
 const passkey = createHubPasskey({ baseUrl: LOGINHUB_API, appId: LOGINHUB_APP_ID || '3' });
+// Entrada pelo cofre do LoginHUB: a chave da conta mora no cofre, que abre com a digital.
+const cofre = createCofreEntrada({ baseUrl: LOGINHUB_API, appId: LOGINHUB_APP_ID || '3' });
 
 export const useAuthStore = defineStore('auth', () => {
   const state = load();
@@ -208,6 +211,42 @@ export const useAuthStore = defineStore('auth', () => {
     await passkey.remover(token.value, id);
   }
 
+  // ── Entrada pelo cofre do LoginHUB ─────────────────────────────────────────
+
+  /** Sai do app para o cofre, que abre com a digital e assina a entrada. A volta é em `/entrar`. */
+  async function irAoCofreParaEntrar() {
+    challengeToken.value = null;
+    await cofre.irParaEntrar();
+  }
+
+  /**
+   * Volta do cofre: troca a assinatura que veio no `#` pela sessão (a mesma do
+   * login completo). Devolve `false` quando a tela abriu sem volta do cofre.
+   */
+  async function concluirEntradaPeloCofre(): Promise<boolean> {
+    const sessao = await cofre.concluir();
+    if (!sessao) return false;
+    await bootstrap(sessao.token, sessao.usuario?.nome);
+    marcarCofreAtivo(true);
+    return true;
+  }
+
+  /** Sai do app para o cofre guardar a entrada desta conta. Só com sessão completa. */
+  async function irAoCofreParaGuardar() {
+    if (!token.value) throw new Error('sem_sessao');
+    await cofre.irParaGuardar(token.value);
+  }
+
+  async function listarEntradasCofre(): Promise<EntradaCofre[]> {
+    if (!token.value) return [];
+    return cofre.listar(token.value);
+  }
+
+  async function removerEntradaCofre(id: string): Promise<void> {
+    if (!token.value) throw new Error('sem_sessao');
+    await cofre.remover(token.value, id);
+  }
+
   /**
    * Define a senha definitiva no LoginHub via Magic Link (1º acesso ou pós-reset).
    *
@@ -299,6 +338,11 @@ export const useAuthStore = defineStore('auth', () => {
     ativarBiometria,
     listarBiometrias,
     removerBiometria,
+    irAoCofreParaEntrar,
+    concluirEntradaPeloCofre,
+    irAoCofreParaGuardar,
+    listarEntradasCofre,
+    removerEntradaCofre,
     logout,
     setupPassword,
     refresh,

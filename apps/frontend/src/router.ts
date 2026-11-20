@@ -1,10 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth';
+import { hashDeEntradaGuardada } from './lib/cofreEntrada';
+import { marcarCofreAtivo } from './lib/biometria';
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/login',       name: 'login',        component: () => import('./views/LoginView.vue'), meta: { public: true } },
+    // `/entrar`: para onde o cofre do LoginHUB devolve a pessoa com a assinatura no `#` (lib/cofreEntrada.ts).
+    { path: '/login',       name: 'login',        alias: '/entrar', component: () => import('./views/LoginView.vue'), meta: { public: true } },
     { path: '/setup-password', name: 'setup_password', component: () => import('./views/SetupPasswordView.vue'), meta: { public: true } },
     // Página de venda (assinatura mensal) e a volta do Mercado Pago. Quem vende é o LoginHUB: lib/venda.ts.
     { path: '/assine', name: 'assine', component: () => import('./views/AssineView.vue'), meta: { public: true } },
@@ -38,6 +41,12 @@ router.beforeEach((to) => {
     // é assinante com a sessão vencida.
     if (to.path === '/' && !appInstalado()) return { name: 'assine', query: to.query };
     return { name: 'login', query: { next: to.fullPath } };
+  }
+  // Volta do cofre do LoginHUB depois de guardar a entrada (`/#cofre-entrada=guardada`):
+  // segue para as Configurações, onde o card da biometria confirma.
+  if (to.path === '/' && hashDeEntradaGuardada(to.hash)) {
+    marcarCofreAtivo(true);
+    return { name: 'settings', query: { cofre: 'guardada' }, replace: true };
   }
   return true;
 });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TelegramLinkCard from '../components/TelegramLinkCard.vue';
 import BiometriaCard from '../components/BiometriaCard.vue';
+import CofreEntradaCard from '../components/CofreEntradaCard.vue';
 import FotoPerfilCard from '../components/FotoPerfilCard.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -124,6 +125,9 @@ function logout() {
 
       <!-- Login por digital ou rosto neste aparelho (passkey, junto com o LoginHUB). -->
       <BiometriaCard />
+
+      <!-- Entrada pelo cofre do LoginHUB: a chave da conta mora no cofre, que abre com a digital. -->
+      <CofreEntradaCard />
 
       <div class="mb-6">
         <p class="text-fg font-medium">Nome de exibição no bot</p>

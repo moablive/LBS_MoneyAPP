@@ -338,6 +338,21 @@ passkey com digital ou rosto já vale pelos dois fatores. Quem cadastra e confer
 
 Documento: "Projeto - LoginHUB ／ Plano Biometria (passkeys)", pasta 📦 Documentação do servidor do Drive.
 
+### Entrar pelo cofre do LoginHUB (desde 19/11/2026)
+
+Segunda forma de entrar sem senha, para quem tem cofre no LoginHUB (hub v1.6.0): a chave de entrada da conta mora
+cifrada no cofre, que abre com a digital do aparelho (Touch ID no Mac) e assina um desafio de 5 minutos, de uso
+único. A passkey do navegador continua valendo ao lado.
+
+- Guardar: Configurações → "Guardar a entrada no cofre do LoginHUB" leva a `loginhub.astralwavelabel.com/cofre/entrada`;
+  a volta é em `/#cofre-entrada=guardada`, que o `router.ts` leva para as Configurações.
+- Entrar: botão "Entrar pelo cofre do LoginHUB" na tela de login; o cofre devolve para `/entrar` (alias de `/login`)
+  com a assinatura no `#`, e o hub troca pela mesma sessão do login completo.
+- `lib/cofreEntrada.ts` — cliente das rotas `/auth/cofre-entrada/*` do hub; só segue para o host do próprio hub.
+- `stores/auth.ts` — `irAoCofreParaEntrar`, `concluirEntradaPeloCofre`, `irAoCofreParaGuardar`, `listarEntradasCofre`,
+  `removerEntradaCofre`; `components/CofreEntradaCard.vue` — Configurações: guardar e tirar entradas.
+- Tirar a entrada: Configurações, apagar o item no cofre ou o "Resetar 2FA" do painel do LoginHUB.
+
 ### Venda por assinatura (desde 10/11/2026)
 
 O MoneyAPP é vendido como **assinatura mensal** (cartão automático no Mercado Pago, conta da Astral Wave).

@@ -15,6 +15,8 @@ interface Estado {
   ativa?: boolean;
   /** Quando a pessoa dispensou a oferta. */
   dispensadaEm?: number;
+  /** A entrada desta conta foi guardada no cofre do LoginHUB por este navegador. */
+  cofre?: boolean;
 }
 
 function ler(): Estado {
@@ -34,8 +36,18 @@ function gravar(estado: Estado): void {
 }
 
 export const biometriaAtivaAqui = (): boolean => ler().ativa === true;
-export const marcarBiometriaAtiva = (ativa: boolean): void => gravar(ativa ? { ativa: true } : {});
+export const marcarBiometriaAtiva = (ativa: boolean): void => {
+  const { cofre } = ler();
+  gravar(ativa ? { ativa: true, cofre } : { cofre });
+};
 export const dispensarOfertaDeBiometria = (): void => gravar({ ...ler(), dispensadaEm: Date.now() });
+
+/** Entrada pelo cofre do LoginHUB (`cofreEntrada.ts`): a tela de login sobe o botão do cofre. */
+export const cofreAtivoAqui = (): boolean => ler().cofre === true;
+export const marcarCofreAtivo = (ativo: boolean): void => {
+  const { cofre: _antes, ...resto } = ler();
+  gravar(ativo ? { ...resto, cofre: true } : resto);
+};
 
 /** Vale oferecer "ativar biometria" agora? (Não ativa aqui e sem "agora não" recente.) */
 export function podeOferecerBiometria(): boolean {

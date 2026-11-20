@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import GoogleAuthAviso from '../components/GoogleAuthAviso.vue';
 import { onMounted, ref } from 'vue';
-import { FingerPrintIcon } from '@heroicons/vue/24/outline';
-import { biometriaAtivaAqui, dispensarOfertaDeBiometria, podeOferecerBiometria } from '../lib/biometria';
+import { FingerPrintIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
+import { biometriaAtivaAqui, cofreAtivoAqui, dispensarOfertaDeBiometria, podeOferecerBiometria } from '../lib/biometria';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import TwoFactorEnroll from '../components/TwoFactorEnroll.vue';
@@ -45,9 +45,36 @@ const biometriaNoLogin = ref(false);
 const biometriaEmDestaque = ref(biometriaAtivaAqui());
 const ofertaBiometria = ref(false);
 
+// ── Entrada pelo cofre do LoginHUB ──────────────────────────────────────────
+// A chave da conta mora no cofre do hub, que abre com a digital do aparelho
+// (Touch ID no Mac) e assina a entrada. `cofreEmDestaque`: a entrada foi
+// guardada por este navegador, então o botão do cofre vem primeiro.
+const cofreEmDestaque = ref(cofreAtivoAqui());
+
 onMounted(async () => {
+  // Volta do cofre: a assinatura veio no `#` e vira sessão antes de qualquer outra coisa.
+  loading.value = true;
+  try {
+    if (await auth.concluirEntradaPeloCofre()) return irParaApp();
+  } catch (e) {
+    error.value = traduzir(e);
+  } finally {
+    loading.value = false;
+  }
   biometriaNoLogin.value = await auth.biometriaDisponivel();
 });
+
+async function entrarPeloCofre() {
+  error.value = null;
+  loading.value = true;
+  try {
+    // A página sai do app; `loading` só volta se o cofre não abriu.
+    await auth.irAoCofreParaEntrar();
+  } catch (e) {
+    error.value = traduzir(e);
+    loading.value = false;
+  }
+}
 
 async function entrarComBiometria() {
   error.value = null;
@@ -108,6 +135,7 @@ function traduzir(e: unknown): string {
   if (codigoErro === 'CODIGO_INVALIDO') return 'Código inválido. Confira o relógio do celular e tente o próximo.';
   if (codigoErro === 'CHALLENGE_INVALIDO') return 'A janela de verificação expirou. Faça login de novo.';
   if (codigoErro === 'REDE') return 'Sem conexão com o servidor de login.';
+  if (codigoErro === 'ENTRADA_INVALIDA') return 'O cofre não confirmou a entrada. Entre com e-mail e senha.';
   if (codigoErro === 'PASSKEY_INVALIDA') return 'Não foi possível confirmar a biometria. Entre com e-mail e senha.';
   if (codigoErro === 'NAO_SUPORTADO') return 'Este aparelho não conseguiu usar a biometria. Entre com e-mail e senha.';
   return msg || 'Não foi possível entrar. Tente novamente.';
@@ -194,12 +222,24 @@ async function confirmarCodigo() {
         <p class="text-sm text-muted">Entre com sua conta para continuar.</p>
       </header>
 
-      <!-- Biometria já ativada aqui: o caminho rápido vem primeiro. -->
-      <template v-if="biometriaNoLogin && biometriaEmDestaque">
+      <!-- Cofre ou biometria já ativados aqui: o caminho rápido vem primeiro. -->
+      <template v-if="biometriaNoLogin && (cofreEmDestaque || biometriaEmDestaque)">
         <button
+          v-if="cofreEmDestaque"
           type="button"
           :disabled="loading"
           class="flex w-full items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-medium rounded-xl py-3 transition-colors duration-150 ease-smooth disabled:opacity-60"
+          @click="entrarPeloCofre"
+        >
+          <LockClosedIcon class="h-5 w-5" />
+          Entrar pelo cofre do LoginHUB
+        </button>
+        <button
+          v-if="biometriaEmDestaque"
+          type="button"
+          :disabled="loading"
+          class="flex w-full items-center justify-center gap-2 font-medium rounded-xl py-3 transition-colors duration-150 ease-smooth disabled:opacity-60"
+          :class="cofreEmDestaque ? 'border border-surface-border text-fg hover:bg-surface-overlay' : 'bg-accent hover:bg-accent/90 text-white'"
           @click="entrarComBiometria"
         >
           <FingerPrintIcon class="h-5 w-5" />
@@ -255,6 +295,18 @@ async function confirmarCodigo() {
       >
         <FingerPrintIcon class="h-4 w-4" />
         Entrar com biometria
+      </button>
+
+      <!-- Entrada guardada no cofre por outro navegador: discreto. -->
+      <button
+        v-if="biometriaNoLogin && !cofreEmDestaque"
+        type="button"
+        :disabled="loading"
+        class="flex w-full items-center justify-center gap-2 text-sm text-muted hover:text-accent"
+        @click="entrarPeloCofre"
+      >
+        <LockClosedIcon class="h-4 w-4" />
+        Entrar pelo cofre do LoginHUB
       </button>
     </form>
 
