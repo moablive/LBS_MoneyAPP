@@ -10,11 +10,15 @@ import { getLocalYMD } from '../../utils/date';
 import { ArrowDownTrayIcon as Download } from '@heroicons/vue/24/outline';
 
 onKeyStroke('Escape', (e) => {
-  if (show.value) {
-    e.preventDefault();
-    show.value = false;
-  }
+  if (!show.value) return;
+  e.preventDefault();
+  // Esc fecha primeiro o anexo ampliado; só depois o modal.
+  if (anexoAberto.value) anexoAberto.value = null;
+  else show.value = false;
 });
+
+/** Anexo ampliado em tela cheia (clique na prévia). */
+const anexoAberto = ref<{ url: string; pdf: boolean; nome: string } | null>(null);
 
 const { confirm, alert } = useConfirmDialog();
 
@@ -193,6 +197,7 @@ watch(show, async (val) => {
         console.error('Failed to load accounts or categories', e);
       }
     }
+    anexoAberto.value = null;
     if (receiptBlobUrl.value) {
       URL.revokeObjectURL(receiptBlobUrl.value);
     }
@@ -493,9 +498,19 @@ async function destroy() {
           
           <!-- View Existing Receipt -->
           <div v-if="loadingReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
-          <div v-else-if="receiptBlobUrl" class="mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64" :class="{ 'h-64': isPdf }">
+          <div
+            v-else-if="receiptBlobUrl"
+            class="relative mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64 cursor-zoom-in"
+            :class="{ 'h-64': isPdf }"
+            title="Clique para ampliar"
+            @click="anexoAberto = { url: receiptBlobUrl, pdf: isPdf, nome: receiptName }"
+          >
             <img v-if="!isPdf" :src="receiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
-            <iframe v-else :src="receiptBlobUrl" class="w-full h-full rounded" title="Comprovante PDF"></iframe>
+            <template v-else>
+              <iframe :src="receiptBlobUrl" class="w-full h-full rounded" title="Comprovante PDF"></iframe>
+              <!-- O iframe engole o clique: a capa por cima abre o anexo ampliado. -->
+              <div class="absolute inset-0"></div>
+            </template>
           </div>
 
           <a
@@ -543,9 +558,19 @@ async function destroy() {
           
           <!-- View Existing Payment Receipt -->
           <div v-if="loadingPaymentReceipt" class="animate-pulse bg-surface-border h-32 w-full rounded-xl mb-3"></div>
-          <div v-else-if="paymentReceiptBlobUrl" class="mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64" :class="{ 'h-64': isPaymentPdf }">
+          <div
+            v-else-if="paymentReceiptBlobUrl"
+            class="relative mb-3 flex justify-center bg-surface-base border border-surface-border rounded-xl p-2 overflow-hidden max-h-64 cursor-zoom-in"
+            :class="{ 'h-64': isPaymentPdf }"
+            title="Clique para ampliar"
+            @click="anexoAberto = { url: paymentReceiptBlobUrl, pdf: isPaymentPdf, nome: paymentReceiptName }"
+          >
             <img v-if="!isPaymentPdf" :src="paymentReceiptBlobUrl" class="max-w-full max-h-full object-contain rounded" />
-            <iframe v-else :src="paymentReceiptBlobUrl" class="w-full h-full rounded" title="Comprovante de Pagamento PDF"></iframe>
+            <template v-else>
+              <iframe :src="paymentReceiptBlobUrl" class="w-full h-full rounded" title="Comprovante de Pagamento PDF"></iframe>
+              <!-- O iframe engole o clique: a capa por cima abre o anexo ampliado. -->
+              <div class="absolute inset-0"></div>
+            </template>
           </div>
 
           <a
@@ -601,4 +626,38 @@ async function destroy() {
       </footer>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="show && anexoAberto"
+      class="fixed inset-0 flex items-center justify-center bg-black/95 p-4 cursor-zoom-out"
+      style="z-index: 9999;"
+      @click="anexoAberto = null"
+    >
+      <img v-if="!anexoAberto.pdf" :src="anexoAberto.url" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+      <iframe
+        v-else
+        :src="anexoAberto.url"
+        class="w-full h-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl bg-white"
+        title="Comprovante PDF"
+      ></iframe>
+      <div class="absolute top-4 right-4 flex items-center gap-2">
+        <a
+          :href="anexoAberto.url"
+          :download="anexoAberto.nome"
+          @click.stop
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-black/50 hover:bg-black/80 text-white text-sm font-medium transition-colors"
+        >
+          <Download class="w-4 h-4" /> Baixar anexo
+        </a>
+        <button
+          @click.stop="anexoAberto = null"
+          class="text-white hover:text-gray-300 bg-black/50 hover:bg-black/80 p-2 rounded-full transition-colors"
+          aria-label="Fechar anexo"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
+  </Teleport>
 </template>
