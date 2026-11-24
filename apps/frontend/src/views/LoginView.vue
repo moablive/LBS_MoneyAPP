@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GoogleAuthAviso from '../components/GoogleAuthAviso.vue';
 import { onMounted, ref } from 'vue';
-import { FingerPrintIcon, LockClosedIcon } from '@heroicons/vue/24/outline';
+import { FingerPrintIcon } from '@heroicons/vue/24/outline';
 import { biometriaAtivaAqui, cofreAtivoAqui, dispensarOfertaDeBiometria, podeOferecerBiometria } from '../lib/biometria';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
@@ -231,7 +231,8 @@ async function confirmarCodigo() {
           class="flex w-full items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-medium rounded-xl py-3 transition-colors duration-150 ease-smooth disabled:opacity-60"
           @click="entrarPeloCofre"
         >
-          <LockClosedIcon class="h-5 w-5" />
+          <!-- logo oficial do LoginHUB (apps/ui/public/favicon.svg do hub) -->
+          <svg class="h-5 w-5 shrink-0 rounded-[5px] ring-1 ring-white/40" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="120" fill="#2563EB"/><path fill="#fff" d="M256 64C256 64 416 96 416 224C416 339.6 348.6 428.6 256 448C163.4 428.6 96 339.6 96 224C96 96 256 64 256 64Z"/><circle cx="256" cy="200" r="30" fill="#2563EB"/><path fill="#2563EB" d="M256 240L230 320H282L256 240Z"/></svg>
           Entrar pelo cofre do LoginHUB
         </button>
         <button
@@ -305,7 +306,7 @@ async function confirmarCodigo() {
         class="flex w-full items-center justify-center gap-2 text-sm text-muted hover:text-accent"
         @click="entrarPeloCofre"
       >
-        <LockClosedIcon class="h-4 w-4" />
+        <svg class="h-4 w-4 shrink-0" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="120" fill="#2563EB"/><path fill="#fff" d="M256 64C256 64 416 96 416 224C416 339.6 348.6 428.6 256 448C163.4 428.6 96 339.6 96 224C96 96 256 64 256 64Z"/><circle cx="256" cy="200" r="30" fill="#2563EB"/><path fill="#2563EB" d="M256 240L230 320H282L256 240Z"/></svg>
         Entrar pelo cofre do LoginHUB
       </button>
     </form>
