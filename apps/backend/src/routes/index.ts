@@ -18,6 +18,7 @@ import { empresasRouter } from './empresas';
 import { agenteRouter } from './agente';
 import { perfilRouter } from './perfil';
 import { clientesRouter } from './clientes';
+import { voiceEntriesRouter } from './voiceEntries';
 export const apiRouter = Router();
 
 apiRouter.use('/auth', authRouter);
@@ -44,3 +45,5 @@ apiRouter.use('/agente', agenteRouter);
 apiRouter.use('/perfil', perfilRouter);
 // Venda do MoneyAPP: cadastro de quem preenche o formulário da página /assine (público, só grava).
 apiRouter.use('/clientes', clientesRouter);
+// Registro por voz: contas ditas ao bot do Telegram, categorizadas e confirmadas pelo app.
+apiRouter.use('/voice-entries', voiceEntriesRouter);

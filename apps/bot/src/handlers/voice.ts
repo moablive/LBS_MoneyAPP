@@ -3,6 +3,14 @@ import { getDbUserId } from '../utils/user-cache.js';
 import { userApi } from '../utils/api.js';
 import { env } from '../config.js';
 import { brl } from '../utils/format.js';
+import { Markup } from 'telegraf';
+
+/**
+ * Registro por voz (25/11/2026): o áudio vira uma ou mais linhas na caixa "Registro por
+ * voz" do app (POST /voice-entries), sem categoria obrigatória e sem mexer no saldo. A
+ * categoria/conta que a IA entende vão só como sugestão; o dono confirma no app.
+ */
+const escapeHtml = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 
 interface OllamaParsedTransaction {
@@ -42,7 +50,7 @@ async function transcribeAudio(audioBuffer: Buffer): Promise<string> {
   return data.text;
 }
 
-async function parseTransactionWithOllama(transcription: string, availableCategories: {name: string, id: string}[], availableAccounts: {name: string, id: string}[]): Promise<OllamaParsedTransaction> {
+async function parseTransactionsWithAI(transcription: string, availableCategories: {name: string, id: string}[], availableAccounts: {name: string, id: string}[]): Promise<OllamaParsedTransaction[]> {
   // Desde 07/10/2026 o texto sai do OmniRoute (tokens de API), não do Ollama
   // local — OMNIROUTE_URL/OMNIROUTE_API_KEY no ../shared.env. A leitura de
   // recibo (scanReceipt/transactions) continua no Ollama, porque é visão.
@@ -70,7 +78,7 @@ async function parseTransactionWithOllama(transcription: string, availableCatego
 
   const systemPrompt = `
 Você é um assistente financeiro que extrai dados de transações a partir de áudios e gera respostas EXCLUSIVAMENTE em JSON, sem texto adicional.
-Dada a transcrição de áudio do usuário, você deve identificar:
+Dada a transcrição de áudio do usuário, identifique CADA conta dita (pode haver mais de uma, ex.: "30 no pão e 80 na farmácia" são duas). Para cada uma, extraia:
 1. "description": A descrição curta da despesa ou receita.
 2. "amount": O valor numérico da transação (positivo, use ponto como separador decimal).
 3. "type": O tipo da transação. Deve ser obrigatoriamente "expense" (para despesas, gastos, pagamentos) ou "income" (para receitas, ganhos, recebimentos).
@@ -86,14 +94,18 @@ Datas de referência JÁ CALCULADAS — use exatamente uma destas, não faça ar
   mês passado = ${daysAgo(30)}
 Se a data não for mencionada, use hoje.
 
-Exemplo de saída esperada:
+Responda um objeto com a lista "itens". Exemplo de saída esperada:
 {
-  "description": "Mercado",
-  "amount": 150.50,
-  "type": "expense",
-  "categoryName": "Alimentação",
-  "accountName": "Cartão Nubank",
-  "occurredAt": "2023-12-01T10:00:00"
+  "itens": [
+    {
+      "description": "Mercado",
+      "amount": 150.50,
+      "type": "expense",
+      "categoryName": "Alimentação",
+      "accountName": "Cartão Nubank",
+      "occurredAt": "2023-12-01T10:00:00"
+    }
+  ]
 }
 
 Transcrição do usuário: "${transcription}"
@@ -120,17 +132,18 @@ Transcrição do usuário: "${transcription}"
     const conteudo = (data?.choices?.[0]?.message?.content ?? '').trim()
       .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
     const result = JSON.parse(conteudo);
-    
-    return {
-      description: result.description || 'Transação sem nome',
-      amount: Number(result.amount) || 0,
-      type: result.type === 'income' ? 'income' : 'expense',
-      categoryName: result.categoryName || null,
-      accountName: result.accountName || null,
-      occurredAt: result.occurredAt || new Date().toISOString()
-    };
+    const itens: any[] = Array.isArray(result?.itens) ? result.itens : [result];
+
+    return itens.slice(0, 10).map((item) => ({
+      description: String(item?.description || 'Registro por voz').slice(0, 255),
+      amount: Number(item?.amount) || 0,
+      type: item?.type === 'income' ? 'income' as const : 'expense' as const,
+      categoryName: item?.categoryName || null,
+      accountName: item?.accountName || null,
+      occurredAt: item?.occurredAt || new Date().toISOString()
+    }));
   } catch (error) {
-    console.error('Erro ao conectar ao Ollama:', error);
+    console.error('Erro ao interpretar o áudio:', error);
     throw new Error('Falha na IA');
   }
 }
@@ -155,21 +168,16 @@ export async function handleVoiceMessage(ctx: BotContext) {
 
     // 2. Transcrição (Whisper via Groq)
     const transcription = await transcribeAudio(audioBuffer);
-    
+
     if (!transcription || transcription.trim() === '') {
-      await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, 'Não consegui escutar nada no áudio.');
+      await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, 'Não consegui escutar nada no áudio. Pode repetir?');
       return;
     }
 
-    await ctx.telegram.editMessageText(
-      ctx.chat?.id, 
-      waitMsg.message_id, 
-      undefined, 
-      `🗣️ <i>"${transcription}"</i>\n\n🧠 Entendendo a transação...`,
-      { parse_mode: 'HTML' }
-    );
+    const falado = `🗣️ <i>"${escapeHtml(transcription)}"</i>`;
+    await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, `${falado}\n\n🧠 Entendendo...`, { parse_mode: 'HTML' });
 
-    // 3. Obter contas e categorias
+    // 3. Contas e categorias, só para a IA sugerir
     const [accounts, expenseCategories, incomeCategories] = await Promise.all([
       userApi.get<{id: string, name: string, type: string}[]>('/accounts', userId),
       userApi.get<{id: string, name: string}[]>('/categories?type=expense', userId),
@@ -177,67 +185,64 @@ export async function handleVoiceMessage(ctx: BotContext) {
     ]);
     const allCategories = [...expenseCategories, ...incomeCategories];
 
-    // 4. Extração da transação com Ollama
-    const parsedTx = await parseTransactionWithOllama(transcription, allCategories, accounts);
+    // 4. Extração das contas ditas
+    const itens = (await parseTransactionsWithAI(transcription, allCategories, accounts)).filter(i => i.amount > 0);
 
-    if (parsedTx.amount <= 0) {
+    if (itens.length === 0) {
       await ctx.telegram.editMessageText(
-        ctx.chat?.id, 
-        waitMsg.message_id, 
-        undefined, 
-        `🗣️ <i>"${transcription}"</i>\n\n❌ Não consegui identificar um valor financeiro válido no áudio.`,
+        ctx.chat?.id, waitMsg.message_id, undefined,
+        `${falado}\n\n❌ Não achei um valor no áudio. Nada foi salvo — pode repetir dizendo o valor?`,
         { parse_mode: 'HTML' }
       );
       return;
     }
 
-    // Encontrar os IDs
-    let categoryId = allCategories.find(c => c.name.toLowerCase() === parsedTx.categoryName?.toLowerCase())?.id;
-    let account = accounts.find(a => a.name.toLowerCase() === parsedTx.accountName?.toLowerCase());
-
-    if (!categoryId) {
-      // Fallback para categoria controle/outros se não achar
-      const fallbackList = parsedTx.type === 'expense' ? expenseCategories : incomeCategories;
-      categoryId = fallbackList.find(c => c.name.toLowerCase().includes('controle'))?.id || fallbackList[0]?.id;
-    }
-    
-    if (!account) {
-       // Fallback para a primeira conta se não achar
-       account = accounts[0];
-    }
-    
-    if (!account || !categoryId) {
-       await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, '❌ Você não possui categorias ou contas cadastradas. Crie pelo painel web primeiro.');
-       return;
-    }
-
-    const payload = {
-      description: parsedTx.description,
-      amount: parsedTx.type === 'expense' ? -parsedTx.amount : parsedTx.amount,
-      type: parsedTx.type,
-      categoryId: categoryId,
-      accountId: account.id,
-      occurredAt: parsedTx.occurredAt,
-      status: account.type === 'credit_card' ? 'pending' : 'paid',
-    };
-
-    await userApi.post('/transactions', userId, payload);
-
-    let finalMsg = `✅ <b>Transação adicionada por voz!</b>\n\n`;
-    finalMsg += `📝 <b>Descrição:</b> ${parsedTx.description}\n`;
-    finalMsg += `💰 <b>Valor:</b> ${brl(parsedTx.amount)}\n`;
-    finalMsg += `🔄 <b>Tipo:</b> ${parsedTx.type === 'income' ? 'Receita 🟢' : 'Despesa 🔴'}\n`;
-    finalMsg += `📁 <b>Categoria:</b> ${allCategories.find(c => c.id === categoryId)?.name || 'N/A'}\n`;
-    finalMsg += `💳 <b>Conta:</b> ${account.name}\n`;
-    if (parsedTx.occurredAt) {
-      finalMsg += `⏰ <b>Data:</b> ${new Date(parsedTx.occurredAt).toLocaleString('pt-BR')}`;
+    // 5. Grava na caixa Registro por voz. A chave deixa um reenvio do mesmo áudio sem gravar de novo.
+    const chave = `${ctx.chat?.id}:${ctx.message.message_id}`;
+    const linhas: string[] = [];
+    for (const [n, item] of itens.entries()) {
+      const categoria = allCategories.find(c => c.name.toLowerCase() === item.categoryName?.toLowerCase());
+      const conta = accounts.find(a => a.name.toLowerCase() === item.accountName?.toLowerCase());
+      const ocorreu = new Date(item.occurredAt || Date.now());
+      await userApi.post('/voice-entries', userId, {
+        transcription,
+        description: item.description,
+        amount: item.amount,
+        type: item.type,
+        occurredAt: Number.isNaN(ocorreu.getTime()) ? new Date().toISOString() : ocorreu.toISOString(),
+        suggestedCategoryId: categoria?.id ?? null,
+        suggestedAccountId: conta?.id ?? null,
+        externalKey: `${chave}:${n}`,
+      });
+      linhas.push(`${item.type === 'income' ? '🟢' : '🔴'} <b>${brl(item.amount)}</b> · ${escapeHtml(item.description)}`);
     }
 
-    await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, finalMsg, { parse_mode: 'HTML' });
-    
+    const resposta = `${falado}\n\n✅ <b>${itens.length > 1 ? `${itens.length} registros salvos` : 'Registro salvo'}</b> em Registro por voz:\n${linhas.join('\n')}\n\n<i>Categorize e confirme pelo app: ainda não entrou no saldo.</i>`;
+    await ctx.telegram.editMessageText(ctx.chat?.id, waitMsg.message_id, undefined, resposta, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([Markup.button.callback('↩️ Desfazer', `voz:undo:${chave}`)]),
+    });
   } catch (error: any) {
     console.error('Erro no processamento de voz:', error);
     const errorMessage = error.message || 'Erro desconhecido';
     await ctx.reply(`Ocorreu um erro ao processar o áudio: ${errorMessage}`);
+  }
+}
+
+/** Botão "Desfazer": apaga o que ainda está pendente daquela mensagem de voz. */
+export async function handleVoiceUndo(ctx: BotContext & { match: RegExpExecArray }) {
+  try {
+    const userId = await getDbUserId(ctx.from?.id);
+    if (!userId) return ctx.answerCbQuery('Usuário não encontrado.');
+    const r = await userApi.delete<{ deleted: number }>(`/voice-entries/source/${ctx.match[1]}`, userId);
+    await ctx.answerCbQuery(r.deleted > 0 ? 'Desfeito.' : 'Já foi confirmado ou apagado.');
+    const original = (ctx.callbackQuery?.message as { text?: string } | undefined)?.text ?? '';
+    const falado = original.split('\n')[0] ?? '';
+    await ctx.editMessageText(
+      `${falado}\n\n↩️ ${r.deleted > 0 ? 'Registro desfeito, nada foi salvo.' : 'Esse registro já não está pendente.'}`,
+    ).catch(() => {});
+  } catch (error: any) {
+    console.error('Erro ao desfazer registro de voz:', error);
+    await ctx.answerCbQuery('Não consegui desfazer.').catch(() => {});
   }
 }

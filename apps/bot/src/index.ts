@@ -13,7 +13,7 @@ import { showReports, generateReportChart, generateTextReport } from './handlers
 import { showDashboard, showCards, showBalances } from './handlers/dashboard.js';
 import { showUpcoming } from './handlers/upcoming.js';
 import { showLoans, showLoanList } from './handlers/loans.js';
-import { handleVoiceMessage } from './handlers/voice.js';
+import { handleVoiceMessage, handleVoiceUndo } from './handlers/voice.js';
 import { startNotificationsCron } from './cron/notifications.js';
 import { getDbUserId } from './utils/user-cache.js';
 import { Icons } from './ui/icons.js';
@@ -96,9 +96,10 @@ bot.command('anexar', (ctx) => ctx.scene.enter(ATTACH_RECEIPT_SCENE));
 
 // Voz
 bot.hears(`${Icons.Microphone} Transação por Voz`, (ctx) => {
-  ctx.reply('🎙️ *Nova Transação por Voz*\n\nPara registrar, basta me enviar um **áudio** (mensagem de voz) explicando o que você gastou ou recebeu.\n\n_Exemplo: "Comprei 50 reais de pão na padaria no cartão nubank"_', { parse_mode: 'Markdown' });
+  ctx.reply('🎙️ *Nova Transação por Voz*\n\nBasta me enviar um **áudio** (mensagem de voz) dizendo o que você gastou ou recebeu. Fica salvo em *Registro por voz* no app, sem mexer no saldo, e lá você categoriza e confirma.\n\n_Exemplo: "Gastei 150 no mercado" ou "30 no pão e 80 na farmácia"_', { parse_mode: 'Markdown' });
 });
 bot.on('voice', handleVoiceMessage);
+bot.action(/^voz:undo:(-?\d+:\d+)$/, handleVoiceUndo);
 
 // Dashboard e Cartões
 bot.hears(`${Icons.Dashboard} Dashboard`, showDashboard);

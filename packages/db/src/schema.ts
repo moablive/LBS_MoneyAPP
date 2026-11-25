@@ -324,6 +324,63 @@ export const clientes = pgTable(
   }),
 );
 
+// Registro por voz (25/11/2026): contas ditas ao bot do Telegram. Não é lançamento:
+// fica aqui, sem categoria obrigatória e sem tocar no saldo, até o dono confirmar no
+// app (aí nasce a transação e `transactionId` aponta para ela). `amount` é sempre
+// positivo; o sinal vem de `type`. As sugestões da IA ficam à parte do que o dono escolhe.
+export const voiceEntries = pgTable(
+  "voice_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    loginhubId: integer("loginhub_id").notNull(),
+    transcription: text("transcription").notNull(),
+    description: varchar("description", { length: 255 }).notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    type: transactionTypeEnum("type").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    suggestedCategoryId: uuid("suggested_category_id").references(
+      () => categories.id,
+      { onDelete: "set null" },
+    ),
+    suggestedAccountId: uuid("suggested_account_id").references(
+      () => accounts.id,
+      { onDelete: "set null" },
+    ),
+    categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
+    accountId: uuid("account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
+    empresaId: uuid("empresa_id").references(() => empresas.id, {
+      onDelete: "set null",
+    }),
+    // pending | confirmed
+    status: varchar("status", { length: 12 }).default("pending").notNull(),
+    transactionId: uuid("transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    source: varchar("source", { length: 20 }).default("telegram").notNull(),
+    // `<chat>:<mensagem>:<item>` do Telegram: o mesmo áudio não grava duas vezes.
+    externalKey: varchar("external_key", { length: 80 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  },
+  (t) => ({
+    externalUq: uniqueIndex("voice_entries_external_uq").on(
+      t.loginhubId,
+      t.externalKey,
+    ),
+    userStatusIdx: index("voice_entries_user_status_idx").on(
+      t.loginhubId,
+      t.status,
+      t.occurredAt,
+    ),
+  }),
+);
+
 // -------- relations ----------------------------------------------------------
 
 // -------- investments --------------------------------------------------------

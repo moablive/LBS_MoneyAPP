@@ -80,4 +80,5 @@ export const userApi = {
   get: <T>(path: string, loginhubId: string) => request<T>('GET', path, loginhubId),
   post: <T>(path: string, loginhubId: string, body?: unknown) => request<T>('POST', path, loginhubId, body),
   patch: <T>(path: string, loginhubId: string, body?: unknown) => request<T>('PATCH', path, loginhubId, body),
+  delete: <T>(path: string, loginhubId: string) => request<T>('DELETE', path, loginhubId),
 };
