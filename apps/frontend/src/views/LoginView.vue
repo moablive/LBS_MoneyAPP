@@ -34,6 +34,58 @@ const loading = ref(false);
 // conferiu mas a conta exige o código do autenticador — a sessão ainda NÃO
 // existe nesse ponto.
 const codigo = ref('');
+
+// ── Entrada por código de e-mail ────────────────────────────────────────────
+// 'pedir': só o campo de e-mail; 'codigo': campo dos 6 dígitos enviados.
+const modoEmail = ref<'nenhum' | 'pedir' | 'codigo'>('nenhum');
+const emailChallengeId = ref('');
+const codigoEmail = ref('');
+
+function abrirEntradaPorEmail() {
+  error.value = null;
+  codigoEmail.value = '';
+  modoEmail.value = 'pedir';
+}
+
+function voltarParaSenha() {
+  error.value = null;
+  modoEmail.value = 'nenhum';
+}
+
+async function enviarCodigoEmail() {
+  error.value = null;
+  loading.value = true;
+  try {
+    const r = await auth.emailStart(email.value.trim());
+    emailChallengeId.value = r.challengeId;
+    codigoEmail.value = '';
+    modoEmail.value = 'codigo';
+  } catch (e) {
+    error.value = traduzir(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function confirmarCodigoEmail() {
+  error.value = null;
+  loading.value = true;
+  try {
+    // Aceita colar com espaço ("123 456").
+    const r = await auth.emailVerify(emailChallengeId.value, codigoEmail.value.replace(/\s+/g, ''));
+    if (r.etapa === 'enrolar') {
+      enrolarToken.value = r.setupToken;
+      return;
+    }
+    // '2fa': conta com app autenticador ainda pede o código do app (template troca de tela).
+    if (r.etapa === 'sessao') await depoisDeEntrar();
+  } catch (e) {
+    error.value = traduzir(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
 const usarBackup = ref(false);
 
 // ── Biometria (passkey, junto com o LoginHUB) ───────────────────────────────
@@ -213,7 +265,7 @@ async function confirmarCodigo() {
 
     <!-- Etapa 1: credenciais -->
     <form
-      v-else-if="!auth.aguardandoSegundoFator"
+      v-else-if="!auth.aguardandoSegundoFator && modoEmail === 'nenhum'"
       class="card w-full max-w-sm space-y-5"
       @submit.prevent="submit"
     >
@@ -286,6 +338,15 @@ async function confirmarCodigo() {
         {{ loading ? 'Entrando…' : 'Entrar' }}
       </button>
 
+      <button
+        type="button"
+        :disabled="loading"
+        class="w-full text-sm text-muted hover:text-accent"
+        @click="abrirEntradaPorEmail"
+      >
+        Entrar com código por e-mail
+      </button>
+
       <!-- Sem biometria ativada aqui: discreto, para quem tem a passkey sincronizada de outro aparelho. -->
       <button
         v-if="biometriaNoLogin && !biometriaEmDestaque"
@@ -311,6 +372,78 @@ async function confirmarCodigo() {
       </button>
     </form>
 
+    <!-- Entrada por código de e-mail: pede o e-mail e depois os 6 dígitos. -->
+    <form
+      v-else-if="!auth.aguardandoSegundoFator"
+      class="card w-full max-w-sm space-y-5"
+      @submit.prevent="modoEmail === 'pedir' ? enviarCodigoEmail() : confirmarCodigoEmail()"
+    >
+      <header class="space-y-4 flex flex-col items-center mb-6">
+        <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
+        <p class="text-sm text-muted">
+          {{ modoEmail === 'pedir'
+            ? 'Informe seu e-mail e enviaremos um código de 6 dígitos.'
+            : 'Enviamos um código de 6 dígitos para o seu e-mail. Ele vale por 5 minutos.' }}
+        </p>
+      </header>
+
+      <label v-if="modoEmail === 'pedir'" class="block space-y-1">
+        <span class="text-xs uppercase tracking-wide text-muted">Email</span>
+        <input
+          v-model="email"
+          type="email"
+          required
+          autocomplete="email"
+          class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2
+                 focus:outline-none focus:ring-2 focus:ring-accent/60"
+        />
+      </label>
+
+      <label v-else class="block space-y-1">
+        <span class="text-xs uppercase tracking-wide text-muted">Código</span>
+        <input
+          v-model="codigoEmail"
+          type="text"
+          required
+          autofocus
+          autocomplete="one-time-code"
+          inputmode="numeric"
+          maxlength="8"
+          placeholder="000000"
+          class="w-full bg-surface-overlay border border-surface-border rounded-xl px-3 py-2
+                 text-center tracking-[0.3em]
+                 focus:outline-none focus:ring-2 focus:ring-accent/60"
+        />
+      </label>
+
+      <p v-if="error" class="text-sm text-expense">{{ error }}</p>
+
+      <button
+        type="submit"
+        :disabled="loading || (modoEmail === 'codigo' && !codigoEmail)"
+        class="w-full bg-accent hover:bg-accent/90 active:bg-accent/80
+               text-white font-medium rounded-xl py-2.5
+               transition-colors duration-150 ease-smooth
+               disabled:opacity-60"
+      >
+        {{ loading ? 'Aguarde…' : modoEmail === 'pedir' ? 'Enviar código' : 'Entrar' }}
+      </button>
+
+      <button
+        v-if="modoEmail === 'codigo'"
+        type="button"
+        :disabled="loading"
+        class="w-full text-sm text-muted hover:text-accent"
+        @click="enviarCodigoEmail"
+      >
+        Reenviar o código
+      </button>
+
+      <button type="button" class="w-full text-sm text-muted hover:text-accent" @click="voltarParaSenha">
+        Entrar com e-mail e senha
+      </button>
+    </form>
+
     <!-- Etapa 2: segundo fator. A senha ja conferiu, mas a sessao so nasce
          depois do codigo — por isso nao ha token gravado neste ponto. -->
     <form
@@ -321,11 +454,13 @@ async function confirmarCodigo() {
       <header class="space-y-4 flex flex-col items-center mb-6">
         <img :src="logoSrc" @error="retryLogo" alt="MoneyAPP" class="h-32 w-auto object-contain" />
         <p class="text-sm text-muted">
-          {{ usarBackup
-            ? 'Digite um dos códigos de recuperação que você guardou.'
-            : 'Digite o código de 6 dígitos do seu aplicativo autenticador.' }}
+          {{ auth.desafioPorEmail
+            ? 'Enviamos um código de 6 dígitos para o seu e-mail. Ele vale por 5 minutos.'
+            : usarBackup
+              ? 'Digite um dos códigos de recuperação que você guardou.'
+              : 'Digite o código de 6 dígitos do seu aplicativo autenticador.' }}
         </p>
-        <GoogleAuthAviso v-if="!usarBackup" modo="codigo" emissor="MoneyAPP" class="mt-4 text-fg" />
+        <GoogleAuthAviso v-if="!usarBackup && !auth.desafioPorEmail" modo="codigo" emissor="MoneyAPP" class="mt-4 text-fg" />
       </header>
 
       <label class="block space-y-1">
@@ -361,6 +496,7 @@ async function confirmarCodigo() {
       </button>
 
       <button
+        v-if="!auth.desafioPorEmail"
         type="button"
         class="w-full text-sm text-muted hover:text-accent"
         @click="usarBackup = !usarBackup; codigo = ''; error = null"

@@ -2,12 +2,13 @@
 import TelegramLinkCard from '../components/TelegramLinkCard.vue';
 import BiometriaCard from '../components/BiometriaCard.vue';
 import CofreEntradaCard from '../components/CofreEntradaCard.vue';
+import SegurancaConta from '../components/SegurancaConta.vue';
 import FotoPerfilCard from '../components/FotoPerfilCard.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@moneyapp/api-client';
 import type { Account } from '@moneyapp/models';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore, hubCliente } from '../stores/auth';
 import { usePush } from '../composables/usePush';
 
 const router = useRouter();
@@ -122,6 +123,11 @@ function logout() {
       <!-- Vinculo da conta: vem antes do nome de exibicao porque sem vinculo o
            bot nao fala com voce, e o nome nao tem onde aparecer. -->
       <TelegramLinkCard />
+
+      <!-- Segurança: verificação em duas etapas por aplicativo autenticador (opcional). -->
+      <div class="mb-6">
+        <SegurancaConta :hub="hubCliente" />
+      </div>
 
       <!-- Login por digital ou rosto neste aparelho (passkey, junto com o LoginHUB). -->
       <BiometriaCard />

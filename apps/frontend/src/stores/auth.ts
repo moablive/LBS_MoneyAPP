@@ -63,6 +63,9 @@ const hub = createHubAuth({
   appKey: 'hubApp',
 });
 
+/** Instância do hub, exposta para a seção Segurança (SegurancaConta.vue). */
+export const hubCliente = hub;
+
 // Login por biometria (passkey): cadastro e conferência são do LoginHUB.
 const passkey = createHubPasskey({ baseUrl: LOGINHUB_API, appId: LOGINHUB_APP_ID || '3' });
 // Entrada pelo cofre do LoginHUB: a chave da conta mora no cofre, que abre com a digital.
@@ -134,6 +137,38 @@ export const useAuthStore = defineStore('auth', () => {
     await bootstrap(r.session.token, r.session.usuario?.nome);
     return { etapa: 'sessao' as const };
   }
+
+  /** Pede o código de 6 dígitos por e-mail (resposta igual exista a conta ou não). */
+  async function emailStart(email: string) {
+    challengeToken.value = null;
+    return hub.emailStart(email);
+  }
+
+  /** Confere o código do e-mail: mesmos três desfechos do login por senha. */
+  async function emailVerify(challengeId: string, codigo: string) {
+    challengeToken.value = null;
+    const r = await hub.emailVerify(challengeId, codigo);
+    if (r.status === 'desafio') {
+      challengeToken.value = r.challengeToken;
+      return { etapa: '2fa' as const };
+    }
+    if (r.status === 'enrolar') {
+      return { etapa: 'enrolar' as const, setupToken: r.setupToken };
+    }
+    await bootstrap(r.session.token, r.session.usuario?.nome);
+    return { etapa: 'sessao' as const };
+  }
+
+  /** O desafio pendente é de código por e-mail (claim `met`)? Só escolhe o texto da tela. */
+  const desafioPorEmail = computed(() => {
+    const t = challengeToken.value;
+    if (!t) return false;
+    try {
+      return JSON.parse(atob((t.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/'))).met === 'email';
+    } catch {
+      return false;
+    }
+  });
 
   /**
    * Enrolamento de 2FA, passo 1: pede o secret e a URI `otpauth://` ao hub.
@@ -328,7 +363,10 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     challengeToken,
     aguardandoSegundoFator,
+    desafioPorEmail,
     login,
+    emailStart,
+    emailVerify,
     iniciarEnrolamento,
     confirmarEnrolamento,
     verificarSegundoFator,
